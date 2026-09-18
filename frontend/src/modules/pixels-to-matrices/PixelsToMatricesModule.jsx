@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CURRICULUM } from '../../config/curriculum.js';
 import { useProgress } from '../../context/ProgressContext.jsx';
 import { StepContainer } from '../../components/layout/StepContainer.jsx';
@@ -12,24 +12,33 @@ import { Step6ColorScalarOps } from './steps/Step6ColorScalarOps.jsx';
 import { Step7Transformations } from './steps/Step7Transformations.jsx';
 
 export function PixelsToMatricesModule() {
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const { markStepComplete, isStepCompleted } = useProgress();
-
+  const [searchParams, setSearchParams] = useSearchParams();
   const steps = CURRICULUM.steps;
-  const currentStep = steps[currentStepIndex];
+
+  // Single-source-of-truth from URL search param
+  const stepParam = parseInt(searchParams.get('step'), 10);
+  const currentStepIndex = !isNaN(stepParam) && stepParam >= 1 && stepParam <= steps.length
+    ? stepParam - 1
+    : 0;
+
+  const { markStepComplete, isStepCompleted } = useProgress();
+  const currentStep = steps[currentStepIndex] || steps[0];
+
+  const setStep = (index) => {
+    setSearchParams({ step: steps[index].id }, { replace: true });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleNext = () => {
     markStepComplete(currentStep.id);
     if (currentStepIndex < steps.length - 1) {
-      setCurrentStepIndex(prev => prev + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setStep(currentStepIndex + 1);
     }
   };
 
   const handlePrevious = () => {
     if (currentStepIndex > 0) {
-      setCurrentStepIndex(prev => prev - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setStep(currentStepIndex - 1);
     }
   };
 
@@ -66,7 +75,7 @@ export function PixelsToMatricesModule() {
             return (
               <button
                 key={s.id}
-                onClick={() => setCurrentStepIndex(idx)}
+                onClick={() => setStep(idx)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   isActive
                     ? 'bg-indigo-600 text-white shadow-xs'

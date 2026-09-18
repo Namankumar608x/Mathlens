@@ -68,40 +68,78 @@
   margin-top: 2px;
 }
 
-.level-badge-btn {
-  background: rgba(18, 25, 41, 0.6);
+/* Theme Toggle & Level Controls */
+.theme-toggle-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(18, 25, 41, 0.7);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 18px rgba(59, 130, 246, 0.3);
+}
+
+.sun-icon {
+  color: #F59E0B;
+}
+
+.moon-icon {
+  color: #2563EB;
+}
+
+.level-selector-btn {
+  background: rgba(18, 25, 41, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 0.55rem 1.1rem;
   border-radius: 9999px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  transition: all 0.25s ease;
+  gap: 0.55rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--accent-cyan);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
 
-.level-badge-btn:hover {
+.level-selector-btn:hover {
   border-color: var(--accent-blue);
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(59, 130, 246, 0.18);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
   transform: translateY(-1px);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.25);
 }
 
-.badge {
-  padding: 0.35rem 0.85rem;
-  border-radius: 9999px;
-  font-weight: 700;
+.level-icon {
+  color: var(--accent-blue);
+  flex-shrink: 0;
+}
+
+.level-label {
+  font-family: var(--font-sans);
   font-size: 0.8rem;
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  color: var(--accent-cyan);
+  white-space: nowrap;
 }
 
-.badge.basic {
-  background: rgba(59, 130, 246, 0.15);
-  color: var(--accent-cyan);
-  border: 1px solid rgba(56, 189, 248, 0.35);
+.level-arrow {
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
 }
 
 /* Stepper Navigation */
@@ -661,14 +699,41 @@
   color: #2563EB;
 }
 
-[data-theme="light"] .level-badge-btn {
+[data-theme="light"] .theme-toggle-btn {
   background: #F1F5F9;
   border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-[data-theme="light"] .level-badge-btn:hover {
+[data-theme="light"] .theme-toggle-btn:hover {
   background: rgba(37, 99, 235, 0.1);
   border-color: #2563EB;
+  box-shadow: 0 0 15px rgba(37, 99, 235, 0.2);
+}
+
+[data-theme="light"] .level-selector-btn {
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  color: #2563EB;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .level-selector-btn:hover {
+  background: rgba(37, 99, 235, 0.15);
+  border-color: #2563EB;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.2);
+}
+
+[data-theme="light"] .level-label {
+  color: #2563EB;
+}
+
+[data-theme="light"] .level-icon {
+  color: #2563EB;
+}
+
+[data-theme="light"] .level-arrow {
+  color: #475569;
 }
 
 [data-theme="light"] .step-tab {

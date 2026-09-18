@@ -40,36 +40,35 @@ export default function Header({ currentLevel, onOpenLevelModal, theme, onToggle
         </div>
       </div>
       
-      <div className="level-badge-container" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         {/* Theme Toggle Button */}
         <motion.button
-          className="level-badge-btn"
+          className="theme-toggle-btn"
           onClick={onToggleTheme}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
           title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          style={{ padding: '0.5rem 0.75rem' }}
+          aria-label="Toggle theme"
         >
           {theme === 'dark' ? (
-            <Sun size={18} color="#F59E0B" />
+            <Sun size={18} className="theme-icon sun-icon" />
           ) : (
-            <Moon size={18} color="#2563EB" />
+            <Moon size={18} className="theme-icon moon-icon" />
           )}
         </motion.button>
 
+        {/* Level Selector Dropdown Button */}
         <motion.button 
-          className="level-badge-btn" 
+          className="level-selector-btn" 
           onClick={onOpenLevelModal}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
         >
-          <Layers size={16} color="var(--accent-blue)" />
-          {currentLevel === 'basic' ? (
-            <span className="badge basic">Basic Intuition</span>
-          ) : (
-            <span className="badge advanced">Advanced Linear Algebra</span>
-          )}
-          <ChevronDown size={14} color="var(--text-muted)" />
+          <Layers size={16} className="level-icon" />
+          <span className="level-label">
+            {currentLevel === 'basic' ? 'Basic Intuition' : 'Advanced Linear Algebra'}
+          </span>
+          <ChevronDown size={14} className="level-arrow" />
         </motion.button>
       </div>
     </header>

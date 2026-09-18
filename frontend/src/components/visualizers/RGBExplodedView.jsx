@@ -1,0 +1,147 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Layers, CircleDot, Eye } from 'lucide-react';
+
+export default function RGBExplodedView({
+  colorGrid,
+  activeTab = 'r',
+  onSelectTab,
+  hoveredCell,
+  onHoverCell,
+  onClickCell
+}) {
+  if (!colorGrid) return null;
+
+  const rMatrix = colorGrid.map(row => row.map(p => p.r));
+  const gMatrix = colorGrid.map(row => row.map(p => p.g));
+  const bMatrix = colorGrid.map(row => row.map(p => p.b));
+
+  const handleTabClick = (tab) => {
+    if (onSelectTab) onSelectTab(tab);
+  };
+
+  const renderSingleMatrix = (matrix, color, title, channelKey, isCompact = false) => (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', flex: isCompact ? 'none' : 1 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: isCompact ? '360px' : '440px', marginBottom: isCompact ? '0.35rem' : '0.75rem' }}>
+        <span className="font-serif" style={{ fontSize: isCompact ? '1.05rem' : '1.3rem', fontWeight: 800, color }}>{title}</span>
+        <span className="matrix-dims" style={{ borderColor: `${color}60`, color }}>4 × 4</span>
+      </div>
+      
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+        <div 
+          style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(4, 1fr)', 
+            gap: isCompact ? '6px' : '10px', 
+            width: '100%',
+            maxWidth: isCompact ? '360px' : '440px'
+          }}
+        >
+          {matrix.map((row, i) =>
+            row.map((val, j) => {
+              const isSelected = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+
+              return (
+                <motion.div
+                  key={`${channelKey}-${i}-${j}`}
+                  className={`matrix-cell ${isSelected ? 'hovered' : ''}`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => onClickCell && onClickCell({ row: i, col: j })}
+                  onMouseEnter={() => onHoverCell && onHoverCell({ row: i, col: j })}
+                  style={{
+                    '--cell-accent': color,
+                    borderColor: isSelected ? color : `${color}60`,
+                    borderRadius: isCompact ? '6px' : '10px',
+                    padding: isCompact ? '0.45rem 0.2rem' : '0.85rem 0.5rem',
+                    fontSize: isCompact ? '1.05rem' : '1.35rem',
+                    color: color
+                  }}
+                >
+                  {val}
+                </motion.div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="matrix-grid-card" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '1.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+        <div className="card-title" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Channel Decomposition</span>
+          <span style={{ fontSize: '0.82rem', color: '#9CA3AF', fontWeight: 500 }}>Hover cell to link image</span>
+        </div>
+
+        <div className="preset-buttons" style={{ marginBottom: '1.1rem' }}>
+          <button 
+            className={`preset-btn ${activeTab === 'r' ? 'active' : ''}`} 
+            style={{ 
+              borderColor: activeTab === 'r' ? '#FB7185' : undefined, 
+              color: activeTab === 'r' ? '#FB7185' : undefined,
+              background: activeTab === 'r' ? 'rgba(251, 113, 133, 0.15)' : undefined 
+            }}
+            onClick={() => handleTabClick('r')}
+          >
+            <CircleDot size={15} color="#FB7185" />
+            <span>Red (R)</span>
+          </button>
+          <button 
+            className={`preset-btn ${activeTab === 'g' ? 'active' : ''}`} 
+            style={{ 
+              borderColor: activeTab === 'g' ? '#34D399' : undefined, 
+              color: activeTab === 'g' ? '#34D399' : undefined,
+              background: activeTab === 'g' ? 'rgba(52, 211, 153, 0.15)' : undefined 
+            }}
+            onClick={() => handleTabClick('g')}
+          >
+            <CircleDot size={15} color="#34D399" />
+            <span>Green (G)</span>
+          </button>
+          <button 
+            className={`preset-btn ${activeTab === 'b' ? 'active' : ''}`} 
+            style={{ 
+              borderColor: activeTab === 'b' ? '#38BDF8' : undefined, 
+              color: activeTab === 'b' ? '#38BDF8' : undefined,
+              background: activeTab === 'b' ? 'rgba(56, 189, 248, 0.15)' : undefined 
+            }}
+            onClick={() => handleTabClick('b')}
+          >
+            <CircleDot size={15} color="#38BDF8" />
+            <span>Blue (B)</span>
+          </button>
+          <button 
+            className={`preset-btn ${activeTab === 'all' ? 'active' : ''}`} 
+            style={{
+              borderColor: activeTab === 'all' ? '#38BDF8' : undefined,
+              color: activeTab === 'all' ? '#38BDF8' : undefined,
+              background: activeTab === 'all' ? 'rgba(56, 189, 248, 0.15)' : undefined
+            }}
+            onClick={() => handleTabClick('all')}
+          >
+            <Layers size={15} color="#38BDF8" />
+            <span>All 3 Matrices</span>
+          </button>
+        </div>
+
+        {/* Centered Matrix Content Area */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '100%', margin: 'auto 0' }}>
+          {activeTab === 'r' && renderSingleMatrix(rMatrix, '#FB7185', 'Red Intensity Matrix (R_matrix)', 'r')}
+          {activeTab === 'g' && renderSingleMatrix(gMatrix, '#34D399', 'Green Intensity Matrix (G_matrix)', 'g')}
+          {activeTab === 'b' && renderSingleMatrix(bMatrix, '#38BDF8', 'Blue Intensity Matrix (B_matrix)', 'b')}
+
+          {activeTab === 'all' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', margin: 'auto' }}>
+              {renderSingleMatrix(rMatrix, '#FB7185', 'Red Channel Matrix (R)', 'r', true)}
+              {renderSingleMatrix(gMatrix, '#34D399', 'Green Channel Matrix (G)', 'g', true)}
+              {renderSingleMatrix(bMatrix, '#38BDF8', 'Blue Channel Matrix (B)', 'b', true)}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

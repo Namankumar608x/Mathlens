@@ -29,7 +29,7 @@ export default function Step6RGBScalarMult() {
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="step-header-box">
-        <h2 className="step-heading">Step 6: RGB Scalar Brightness Scaling</h2>
+        <h2 className="step-heading">RGB Scalar Brightness Scaling</h2>
         <p className="step-description">
           Multiplying all three RGB channel matrices by a scalar multiplier <strong>k</strong> scales colour brightness across channels: <code>R' = kR, G' = kG, B' = kB</code>.
         </p>
@@ -55,6 +55,7 @@ export default function Step6RGBScalarMult() {
               value={scalar} 
               onChange={(e) => setScalar(parseFloat(e.target.value))} 
               onInput={(e) => setScalar(parseFloat(e.target.value))}
+              style={{ '--slider-pct': `${(scalar / 2.5) * 100}%`, '--slider-color': 'var(--accent-gold)' }}
             />
             <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
               Channel Formula: <span style={{ color: 'var(--accent-gold)' }}>RGB' = {scalar.toFixed(2)} × [R, G, B]</span>
@@ -109,26 +110,22 @@ export default function Step6RGBScalarMult() {
             top: `${hoveredCell.y + 14}px`,
             pointerEvents: 'none',
             zIndex: 9999,
-            background: 'rgba(5, 11, 24, 0.94)',
-            border: '1px solid var(--accent-gold)',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.65)',
+            background: 'rgba(15, 23, 42, 0.94)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.45)',
             backdropFilter: 'blur(8px)',
-            borderRadius: '8px',
-            padding: '0.4rem 0.75rem',
+            borderRadius: '20px',
+            padding: '0.35rem 0.85rem',
             fontSize: '0.85rem',
             fontFamily: 'var(--font-mono)',
-            color: 'var(--text-primary)',
+            color: '#FFFFFF',
             whiteSpace: 'nowrap',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem'
           }}
         >
-          <span>Block: <strong>({hoveredCell.row + 1}, {hoveredCell.col + 1})</strong></span>
-          <span style={{ opacity: 0.4 }}>|</span>
-          <span>
-            RGB: [{modifiedColorGrid[hoveredCell.row][hoveredCell.col].r}, {modifiedColorGrid[hoveredCell.row][hoveredCell.col].g}, {modifiedColorGrid[hoveredCell.row][hoveredCell.col].b}]
-          </span>
+          <span style={{ color: '#F59E0B', fontWeight: 700 }}>({hoveredCell.row + 1}, {hoveredCell.col + 1})</span>
         </div>
       )}
     </motion.div>

@@ -24,7 +24,7 @@ export default function StepperNavigation({ currentStep, onSelectStep }) {
   return (
     <nav className="stepper-nav">
       <div className="steps-container">
-        {STEPS.map(step => {
+        {STEPS.map((step, idx) => {
           const isActive = currentStep === step.id;
           const Icon = step.icon;
 
@@ -33,13 +33,21 @@ export default function StepperNavigation({ currentStep, onSelectStep }) {
               key={step.id}
               className={`step-tab ${isActive ? 'active' : ''}`}
               onClick={() => onSelectStep(step.id)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
             >
+              {isActive && (
+                <motion.div
+                  layoutId="activeStepTabPill"
+                  className="step-tab-active-bg"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+              <span className="step-num-pill">0{idx + 1}</span>
               <span className="step-icon-badge">
-                <Icon size={15} />
+                <Icon size={13} />
               </span>
-              <span>{step.name}</span>
+              <span className="step-tab-title">{step.name}</span>
             </motion.button>
           );
         })}

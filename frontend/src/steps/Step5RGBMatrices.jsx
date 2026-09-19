@@ -42,7 +42,7 @@ export default function Step5RGBMatrices() {
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="step-header-box">
-        <h2 className="step-heading">Step 5: RGB Channel Matrix Decomposition</h2>
+        <h2 className="step-heading">RGB Channel Matrix Decomposition</h2>
         <p className="step-description">
           A full colour image is represented as a triple tensor <strong>(R, G, B)</strong> using three separate 2D matrices: <code>R_matrix</code>, <code>G_matrix</code>, and <code>B_matrix</code>.
         </p>

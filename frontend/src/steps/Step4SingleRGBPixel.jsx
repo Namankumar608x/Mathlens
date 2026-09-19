@@ -20,7 +20,7 @@ export default function Step4SingleRGBPixel() {
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="step-header-box">
-        <h2 className="step-heading">Step 4: Single RGB Pixel Vector</h2>
+        <h2 className="step-heading">Single RGB Pixel Vector</h2>
         <p className="step-description">
           A colour pixel is not represented by a single number. Instead, it contains three intensity components: <strong>[R, G, B]</strong> (Red, Green, Blue), each ranging from 0 to 255.
         </p>
@@ -52,7 +52,7 @@ export default function Step4SingleRGBPixel() {
                 <span style={{ color: '#EF4444', fontWeight: '700' }}>Red Channel (R):</span>
                 <span className="font-mono" style={{ color: '#EF4444', fontWeight: '800' }}>{r}</span>
               </div>
-              <input type="range" className="slider-input" min="0" max="255" value={r} onChange={(e) => setR(parseInt(e.target.value))} />
+              <input type="range" className="slider-input" min="0" max="255" value={r} onChange={(e) => setR(parseInt(e.target.value))} style={{ '--slider-pct': `${(r / 255) * 100}%`, '--slider-color': '#EF4444' }} />
             </div>
 
             <div className="slider-group">
@@ -60,7 +60,7 @@ export default function Step4SingleRGBPixel() {
                 <span style={{ color: '#10B981', fontWeight: '700' }}>Green Channel (G):</span>
                 <span className="font-mono" style={{ color: '#10B981', fontWeight: '800' }}>{g}</span>
               </div>
-              <input type="range" className="slider-input" min="0" max="255" value={g} onChange={(e) => setG(parseInt(e.target.value))} />
+              <input type="range" className="slider-input" min="0" max="255" value={g} onChange={(e) => setG(parseInt(e.target.value))} style={{ '--slider-pct': `${(g / 255) * 100}%`, '--slider-color': '#10B981' }} />
             </div>
 
             <div className="slider-group">
@@ -68,7 +68,7 @@ export default function Step4SingleRGBPixel() {
                 <span style={{ color: '#3B82F6', fontWeight: '700' }}>Blue Channel (B):</span>
                 <span className="font-mono" style={{ color: '#3B82F6', fontWeight: '800' }}>{b}</span>
               </div>
-              <input type="range" className="slider-input" min="0" max="255" value={b} onChange={(e) => setB(parseInt(e.target.value))} />
+              <input type="range" className="slider-input" min="0" max="255" value={b} onChange={(e) => setB(parseInt(e.target.value))} style={{ '--slider-pct': `${(b / 255) * 100}%`, '--slider-color': '#3B82F6' }} />
             </div>
           </div>
         </div>

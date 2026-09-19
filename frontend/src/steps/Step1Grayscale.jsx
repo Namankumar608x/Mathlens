@@ -48,7 +48,7 @@ export default function Step1Grayscale() {
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="step-header-box">
-        <h2 className="step-heading">Step 1: From Pixels to Matrices</h2>
+        <h2 className="step-heading">From Pixels to Matrices</h2>
         <p className="step-description">
           Every digital image is stored as a 2D numerical array (a <strong>matrix</strong>). In an 8-bit grayscale image, each element represents a pixel intensity from <strong>0 (Black)</strong> to <strong>255 (White)</strong>.
         </p>
@@ -113,24 +113,24 @@ export default function Step1Grayscale() {
             top: `${hoveredCell.y + 14}px`,
             pointerEvents: 'none',
             zIndex: 9999,
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-cyan)',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.65)',
+            background: 'rgba(15, 23, 42, 0.94)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.45)',
             backdropFilter: 'blur(8px)',
-            borderRadius: '8px',
-            padding: '0.4rem 0.75rem',
+            borderRadius: '20px',
+            padding: '0.35rem 0.85rem',
             fontSize: '0.85rem',
             fontFamily: 'var(--font-mono)',
-            color: 'var(--text-primary)',
+            color: '#FFFFFF',
             whiteSpace: 'nowrap',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem'
           }}
         >
-          <span>Block: <strong>({hoveredCell.row + 1}, {hoveredCell.col + 1})</strong></span>
-          <span style={{ opacity: 0.4 }}>|</span>
-          <span>Val: <strong style={{ color: 'var(--accent-cyan)' }}>{matrix[hoveredCell.row][hoveredCell.col]}</strong></span>
+          <span style={{ color: '#94A3B8', fontWeight: 600 }}>({hoveredCell.row + 1}, {hoveredCell.col + 1})</span>
+          <span style={{ opacity: 0.3, color: '#94A3B8' }}>|</span>
+          <span>Val: <strong style={{ color: '#38BDF8', fontWeight: 700 }}>{matrix[hoveredCell.row][hoveredCell.col]}</strong></span>
         </div>
       )}
     </motion.div>

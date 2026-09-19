@@ -23,46 +23,48 @@ export default function RGBExplodedView({
   const renderSingleMatrix = (matrix, color, title, channelKey, isCompact = false) => (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', flex: isCompact ? 'none' : 1 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: isCompact ? '360px' : '440px', marginBottom: isCompact ? '0.35rem' : '0.75rem' }}>
-        <span className="font-serif" style={{ fontSize: isCompact ? '1.05rem' : '1.3rem', fontWeight: 800, color }}>{title}</span>
-        <span className="matrix-dims" style={{ borderColor: `${color}60`, color }}>4 × 4</span>
+        <span className="font-serif" style={{ fontSize: isCompact ? '1.05rem' : '1.2rem', fontWeight: 700, color }}>{title}</span>
+        <span className="matrix-dims" style={{ borderColor: `${color}60`, color, background: `${color}15` }}>4 × 4</span>
       </div>
       
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-        <div 
-          style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(4, 1fr)', 
-            gap: isCompact ? '6px' : '10px', 
-            width: '100%',
-            maxWidth: isCompact ? '360px' : '440px'
-          }}
-        >
-          {matrix.map((row, i) =>
-            row.map((val, j) => {
-              const isSelected = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+        <div className="matrix-bracket-container" style={{ width: '100%', maxWidth: isCompact ? '360px' : '440px' }}>
+          <div 
+            className="matrix-grid"
+            style={{ 
+              gridTemplateColumns: 'repeat(4, 1fr)', 
+              gap: isCompact ? '6px' : '10px', 
+              width: '100%'
+            }}
+          >
+            {matrix.map((row, i) =>
+              row.map((val, j) => {
+                const isSelected = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
 
-              return (
-                <motion.div
-                  key={`${channelKey}-${i}-${j}`}
-                  className={`matrix-cell ${isSelected ? 'hovered' : ''}`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => onClickCell && onClickCell({ row: i, col: j })}
-                  onMouseEnter={() => onHoverCell && onHoverCell({ row: i, col: j })}
-                  style={{
-                    '--cell-accent': color,
-                    borderColor: isSelected ? color : `${color}60`,
-                    borderRadius: isCompact ? '6px' : '10px',
-                    padding: isCompact ? '0.45rem 0.2rem' : '0.85rem 0.5rem',
-                    fontSize: isCompact ? '1.05rem' : '1.35rem',
-                    color: color
-                  }}
-                >
-                  {val}
-                </motion.div>
-              );
-            })
-          )}
+                return (
+                  <motion.div
+                    key={`${channelKey}-${i}-${j}`}
+                    className={`matrix-cell ${isSelected ? 'hovered' : ''}`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => onClickCell && onClickCell({ row: i, col: j })}
+                    onMouseEnter={() => onHoverCell && onHoverCell({ row: i, col: j })}
+                    style={{
+                      '--cell-accent': color,
+                      borderColor: isSelected ? color : undefined,
+                      borderRadius: isCompact ? '6px' : '10px',
+                      padding: isCompact ? '0.45rem 0.2rem' : '0.85rem 0.5rem',
+                      fontSize: isCompact ? '1.05rem' : '1.35rem'
+                    }}
+                  >
+                    <span className="matrix-cell-val" style={{ color: isSelected ? undefined : color }}>
+                      {val}
+                    </span>
+                  </motion.div>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -73,7 +75,7 @@ export default function RGBExplodedView({
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
         <div className="card-title" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>Channel Decomposition</span>
-          <span style={{ fontSize: '0.82rem', color: '#9CA3AF', fontWeight: 500 }}>Hover cell to link image</span>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>Hover cell to link image</span>
         </div>
 
         <div className="preset-buttons" style={{ marginBottom: '1.1rem' }}>
@@ -116,13 +118,13 @@ export default function RGBExplodedView({
           <button 
             className={`preset-btn ${activeTab === 'all' ? 'active' : ''}`} 
             style={{
-              borderColor: activeTab === 'all' ? '#38BDF8' : undefined,
-              color: activeTab === 'all' ? '#38BDF8' : undefined,
-              background: activeTab === 'all' ? 'rgba(56, 189, 248, 0.15)' : undefined
+              borderColor: activeTab === 'all' ? 'var(--accent-purple)' : undefined,
+              color: activeTab === 'all' ? 'var(--accent-purple)' : undefined,
+              background: activeTab === 'all' ? 'rgba(6, 182, 212, 0.15)' : undefined
             }}
             onClick={() => handleTabClick('all')}
           >
-            <Layers size={15} color="#38BDF8" />
+            <Layers size={15} color={activeTab === 'all' ? 'var(--accent-purple)' : '#64748B'} />
             <span>All 3 Matrices</span>
           </button>
         </div>

@@ -25,7 +25,7 @@ export default function Step3ScalarBrightness() {
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="step-header-box">
-        <h2 className="step-heading">Step 3: Scalar Multiplication & Image Brightness</h2>
+        <h2 className="step-heading">Scalar Multiplication & Image Brightness</h2>
         <p className="step-description">
           Multiplying a matrix <strong>A</strong> by a scalar multiplier <strong>k</strong> (<code>A' = kA</code>) scales pixel intensity. When <strong>k &gt; 1</strong>, the image brightens (e.g. <code>A' = 1.5A</code>). When <strong>0 &lt; k &lt; 1</strong>, the image darkens (e.g. <code>A' = 0.5A</code>). Values above 255 are clipped.
         </p>
@@ -38,7 +38,7 @@ export default function Step3ScalarBrightness() {
           <div className="slider-group" style={{ marginBottom: 0 }}>
             <div className="slider-label" style={{ marginBottom: '0.35rem' }}>
               <span>Scalar Multiplier (k):</span>
-              <span className="font-mono" style={{ color: '#38BDF8', fontSize: '1.25rem', fontWeight: '800' }}>
+              <span className="font-mono" style={{ color: 'var(--accent-gold)', fontSize: '1.25rem', fontWeight: '800' }}>
                 {scalar.toFixed(2)}×
               </span>
             </div>
@@ -51,9 +51,10 @@ export default function Step3ScalarBrightness() {
               value={scalar}
               onChange={(e) => setScalar(parseFloat(e.target.value))}
               onInput={(e) => setScalar(parseFloat(e.target.value))}
+              style={{ '--slider-pct': `${(scalar / 3.0) * 100}%`, '--slider-color': 'var(--accent-gold)' }}
             />
             <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
-              Operation: <span style={{ color: '#38BDF8' }}>A' = {scalar.toFixed(2)} × A</span> (max clip at 255)
+              Operation: <span style={{ color: 'var(--accent-gold)', fontWeight: '700' }}>A' = {scalar.toFixed(2)} × A</span> (max clip at 255)
             </div>
           </div>
 
@@ -102,14 +103,14 @@ export default function Step3ScalarBrightness() {
           matrix={scaledMatrix}
           hoveredCell={hoveredCell}
           onHoverCell={setHoveredCell}
-          highlightColor="#38BDF8"
+          highlightColor="var(--accent-purple)"
           title="Resulting Scaled Image (A')"
         />
         <MatrixGrid
           matrix={scaledMatrix}
           hoveredCell={hoveredCell}
           onHoverCell={setHoveredCell}
-          accentColor="#38BDF8"
+          accentColor="var(--accent-purple)"
           title="Resulting Output Matrix A' = kA"
         />
       </div>
@@ -124,26 +125,22 @@ export default function Step3ScalarBrightness() {
             top: `${hoveredCell.y + 14}px`,
             pointerEvents: 'none',
             zIndex: 9999,
-            background: 'rgba(6, 10, 20, 0.94)',
-            border: '1px solid #38BDF8',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.65)',
+            background: 'rgba(15, 23, 42, 0.94)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.45)',
             backdropFilter: 'blur(8px)',
-            borderRadius: '8px',
-            padding: '0.4rem 0.75rem',
+            borderRadius: '20px',
+            padding: '0.35rem 0.85rem',
             fontSize: '0.85rem',
             fontFamily: 'var(--font-mono)',
-            color: 'var(--text-primary)',
+            color: '#FFFFFF',
             whiteSpace: 'nowrap',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem'
           }}
         >
-          <span>Block: <strong>({hoveredCell.row + 1}, {hoveredCell.col + 1})</strong></span>
-          <span style={{ opacity: 0.4 }}>|</span>
-          <span>
-            {BASE_MATRIX[hoveredCell.row][hoveredCell.col]} × {scalar.toFixed(2)} = <strong style={{ color: '#38BDF8' }}>{scaledMatrix[hoveredCell.row][hoveredCell.col]}</strong>
-          </span>
+          <span style={{ color: 'var(--accent-purple)', fontWeight: 700 }}>({hoveredCell.row + 1}, {hoveredCell.col + 1})</span>
         </div>
       )}
     </motion.div>

@@ -6,7 +6,7 @@ export default function MatrixGrid({
   onHoverCell,
   editable = false,
   onChangeCell,
-  accentColor = '#3B82F6',
+  accentColor = 'var(--accent-purple)',
   title = "Matrix Representation A"
 }) {
   if (!matrix || !matrix.length) return null;

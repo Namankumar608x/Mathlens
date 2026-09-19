@@ -56,6 +56,7 @@ export default function App() {
     <div className="app-container">
       <Header
         currentLevel={currentLevel}
+        onSelectLevel={setCurrentLevel}
         onOpenLevelModal={() => setIsLevelModalOpen(true)}
         theme={theme}
         onToggleTheme={toggleTheme}

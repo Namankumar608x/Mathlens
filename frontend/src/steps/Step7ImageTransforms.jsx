@@ -8,6 +8,38 @@ export default function Step7ImageTransforms() {
   const [matrixInputs, setMatrixInputs] = useState({ a: "1.00", b: "0.00", c: "0.00", d: "1.00" });
   const [transformType, setTransformType] = useState('identity');
 
+  const animateToMatrix = (target) => {
+    const start = { ...matrix2x2 };
+    const duration = 250;
+    const startTime = performance.now();
+
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const ease = 1 - Math.pow(1 - progress, 3);
+
+      const current = {
+        a: start.a + (target.a - start.a) * ease,
+        b: start.b + (target.b - start.b) * ease,
+        c: start.c + (target.c - start.c) * ease,
+        d: start.d + (target.d - start.d) * ease
+      };
+
+      setMatrix2x2(current);
+      setMatrixInputs({
+        a: current.a.toFixed(2),
+        b: current.b.toFixed(2),
+        c: current.c.toFixed(2),
+        d: current.d.toFixed(2)
+      });
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      }
+    };
+    requestAnimationFrame(step);
+  };
+
   const handleSelectPreset = (type) => {
     setTransformType(type);
     let m = { a: 1, b: 0, c: 0, d: 1 };
@@ -17,13 +49,7 @@ export default function Step7ImageTransforms() {
     else if (type === 'shearX') m = getShearMatrix(0.5, 0);
     else if (type === 'reflectX') m = { a: -1, b: 0, c: 0, d: 1 };
 
-    setMatrix2x2(m);
-    setMatrixInputs({
-      a: m.a.toFixed(2),
-      b: m.b.toFixed(2),
-      c: m.c.toFixed(2),
-      d: m.d.toFixed(2)
-    });
+    animateToMatrix(m);
   };
 
   const handleInputChange = (key, rawVal) => {
@@ -61,11 +87,11 @@ export default function Step7ImageTransforms() {
   };
 
   const renderCellInput = (key, labelName) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-      <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-        Entry {labelName}:
-      </span>
-      <div className="matrix-cell-stepper" style={{ border: '1px solid rgba(59, 130, 246, 0.4)' }}>
+    <div className="matrix-cell-card">
+      <div className="matrix-cell-header">
+        <span className="matrix-cell-tag">{labelName}</span>
+      </div>
+      <div className="matrix-cell-input-row">
         <input 
           type="text" 
           inputMode="decimal"
@@ -74,13 +100,13 @@ export default function Step7ImageTransforms() {
           onChange={(e) => handleInputChange(key, e.target.value)} 
           onBlur={() => handleInputBlur(key)}
           onKeyDown={(e) => handleKeyDown(key, e)}
-          style={{ color: '#3B82F6', fontWeight: 800 }}
         />
         <div className="stepper-arrow-buttons">
           <button 
             className="stepper-arrow-btn" 
             onClick={() => handleStepValue(key, 0.1)}
             title="Increase (+0.1)"
+            type="button"
           >
             ▲
           </button>
@@ -88,6 +114,7 @@ export default function Step7ImageTransforms() {
             className="stepper-arrow-btn" 
             onClick={() => handleStepValue(key, -0.1)}
             title="Decrease (-0.1)"
+            type="button"
           >
             ▼
           </button>
@@ -95,6 +122,9 @@ export default function Step7ImageTransforms() {
       </div>
     </div>
   );
+
+  const det = (matrix2x2.a * matrix2x2.d - matrix2x2.b * matrix2x2.c).toFixed(2);
+  const trace = (matrix2x2.a + matrix2x2.d).toFixed(2);
 
   return (
     <motion.div 
@@ -104,30 +134,30 @@ export default function Step7ImageTransforms() {
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="step-header-box">
-        <h2 className="step-heading">Step 7: 2D Image Transformation Lab</h2>
+        <h2 className="step-heading">2D Image Transformation Lab</h2>
         <p className="step-description">
-          Transform spatial coordinates of pixels directly via matrix-vector multiplication: <code>P' = AP</code> where <strong>A</strong> is a 2×2 transformation matrix. Use the <strong>▲/▼ buttons</strong> or <strong>Arrow keys</strong> to adjust entries.
+          Transform spatial coordinates of pixels directly via matrix-vector multiplication: <code>P' = AP</code> where <strong>A</strong> is a 2×2 transformation matrix. Use the <strong>▲/▼ buttons</strong>, <strong>Arrow keys</strong>, or <strong>Presets</strong> below to explore linear transformations.
         </p>
       </div>
 
       <div className="preset-buttons">
         <button className={`preset-btn ${transformType === 'identity' ? 'active' : ''}`} onClick={() => handleSelectPreset('identity')}>
-          Identity (Original)
+          ↺ Identity
         </button>
         <button className={`preset-btn ${transformType === 'rotate45' ? 'active' : ''}`} onClick={() => handleSelectPreset('rotate45')}>
-          Rotate 45°
+          🔄 Rotate 45°
         </button>
         <button className={`preset-btn ${transformType === 'rotate90' ? 'active' : ''}`} onClick={() => handleSelectPreset('rotate90')}>
-          Rotate 90°
+          🔄 Rotate 90°
         </button>
         <button className={`preset-btn ${transformType === 'scaleDouble' ? 'active' : ''}`} onClick={() => handleSelectPreset('scaleDouble')}>
-          Scale 1.5×
+          🔍 Scale 1.5×
         </button>
         <button className={`preset-btn ${transformType === 'shearX' ? 'active' : ''}`} onClick={() => handleSelectPreset('shearX')}>
-          Shear X
+          📐 Shear X
         </button>
         <button className={`preset-btn ${transformType === 'reflectX' ? 'active' : ''}`} onClick={() => handleSelectPreset('reflectX')}>
-          Reflect Y-Axis
+          🪞 Reflect Y
         </button>
       </div>
 
@@ -135,20 +165,28 @@ export default function Step7ImageTransforms() {
         <div className="transform-matrix-input-card">
           <div className="matrix-header">
             <h3 className="card-title">Transformation Matrix A</h3>
-            <span className="matrix-dims" style={{ borderColor: 'rgba(59, 130, 246, 0.4)', color: '#3B82F6', background: 'rgba(59, 130, 246, 0.12)' }}>
+            <span className="matrix-dims" style={{ borderColor: 'var(--border-violet)', color: 'var(--accent-purple)', background: 'rgba(139, 92, 246, 0.14)' }}>
               2 × 2
             </span>
           </div>
 
-          <div className="matrix-bracket-container" style={{ flex: 1, margin: 'auto 0' }}>
-            <span className="bracket" style={{ color: '#3B82F6' }}>[</span>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%', maxWidth: '280px' }}>
-              {renderCellInput('a', 'a₁₁')}
-              {renderCellInput('b', 'a₁₂')}
-              {renderCellInput('c', 'a₂₁')}
-              {renderCellInput('d', 'a₂₂')}
+          <div className="matrix-input-container">
+            {/* Mathematical Bracket Frame */}
+            <div className="matrix-bracket-frame">
+              <div className="matrix-input-grid">
+                {renderCellInput('a', 'a₁₁')}
+                {renderCellInput('b', 'a₁₂')}
+                {renderCellInput('c', 'a₂₁')}
+                {renderCellInput('d', 'a₂₂')}
+              </div>
             </div>
-            <span className="bracket" style={{ color: '#3B82F6' }}>]</span>
+
+            {/* Matrix Properties Banner */}
+            <div className="matrix-formula-banner">
+              <span>det(A) = <strong style={{ color: 'var(--accent-purple)' }}>{det}</strong></span>
+              <span style={{ opacity: 0.3 }}>|</span>
+              <span>Tr(A) = <strong style={{ color: 'var(--accent-purple)' }}>{trace}</strong></span>
+            </div>
           </div>
         </div>
 

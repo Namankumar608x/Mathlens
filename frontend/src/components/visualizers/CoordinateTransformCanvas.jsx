@@ -20,6 +20,31 @@ export default function CoordinateTransformCanvas({ matrix2x2 }) {
 
   const safeMatrix = { a, b, c, d };
 
+  const drawArrow = (ctx, fromX, fromY, toX, toY, color, width = 3, label = '') => {
+    const headlen = 10;
+    const angle = Math.atan2(toY - fromY, toX - fromX);
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.fill();
+
+    if (label) {
+      ctx.font = '700 12px "JetBrains Mono", monospace';
+      ctx.fillText(label, toX + Math.cos(angle) * 14, toY + Math.sin(angle) * 14);
+    }
+    ctx.restore();
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -35,6 +60,11 @@ export default function CoordinateTransformCanvas({ matrix2x2 }) {
     const centerY = height / 2;
     const unitStep = 45; // 45px per 1 mathematical grid unit
 
+    const toScreen = (p) => ({
+      x: centerX + p.x * unitStep,
+      y: centerY - p.y * unitStep
+    });
+
     // Clear background
     ctx.fillStyle = isLight ? '#F8FAFC' : '#06080E';
     ctx.fillRect(0, 0, width, height);
@@ -42,11 +72,10 @@ export default function CoordinateTransformCanvas({ matrix2x2 }) {
     const gridUnitsX = Math.floor((width / 2) / unitStep);
     const gridUnitsY = Math.floor((height / 2) / unitStep);
 
-    // 1. Draw Subtle Subgrid Lines
+    // 1. Standard static Cartesian grid lines
     ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.07)' : 'rgba(255, 255, 255, 0.05)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-
     for (let i = -gridUnitsX; i <= gridUnitsX; i++) {
       if (i === 0) continue;
       const x = centerX + i * unitStep;
@@ -68,142 +97,87 @@ export default function CoordinateTransformCanvas({ matrix2x2 }) {
     ctx.strokeStyle = '#2563EB';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    
-    // X-Axis
     ctx.moveTo(15, centerY);
     ctx.lineTo(width - 15, centerY);
-    // Y-Axis
     ctx.moveTo(centerX, 15);
     ctx.lineTo(centerX, height - 15);
     ctx.stroke();
     ctx.restore();
 
-    // Draw Axis Arrow Tips
+    // Axis Arrow Tips
     ctx.fillStyle = '#2563EB';
-    // X-Axis Arrow Tip (Right)
     ctx.beginPath();
     ctx.moveTo(width - 12, centerY - 5);
     ctx.lineTo(width - 2, centerY);
     ctx.lineTo(width - 12, centerY + 5);
     ctx.fill();
 
-    // Y-Axis Arrow Tip (Top)
     ctx.beginPath();
     ctx.moveTo(centerX - 5, 12);
     ctx.lineTo(centerX, 2);
     ctx.lineTo(centerX + 5, 12);
     ctx.fill();
 
-    // Base Arrow Shape (Original Unit Coordinates)
-    const baseUnitPoints = [
-      { x: 0, y: 0 },
-      { x: 0.8, y: 0 },
-      { x: 0.8, y: 1.8 },
-      { x: 1.4, y: 1.8 },
-      { x: 0, y: 3.0 },
-      { x: -1.4, y: 1.8 },
-      { x: -0.8, y: 1.8 },
-      { x: -0.8, y: 0 }
-    ];
+    // 3. Simple Basis Vector Transformation
+    const origin = toScreen({ x: 0, y: 0 });
+    const iHatTransformed = toScreen(transformPoint(safeMatrix, { x: 1, y: 0 }));
+    const jHatTransformed = toScreen(transformPoint(safeMatrix, { x: 0, y: 1 }));
+    const cornerTransformed = toScreen(transformPoint(safeMatrix, { x: 1, y: 1 }));
 
-    // Transformed points in unit coordinates
-    const transformedUnitPoints = baseUnitPoints.map(p => transformPoint(safeMatrix, p));
-
-    const toScreen = (p) => ({
-      x: centerX + p.x * unitStep,
-      y: centerY - p.y * unitStep
-    });
-
-    const originalScreenPoints = baseUnitPoints.map(toScreen);
-    const transformedScreenPoints = transformedUnitPoints.map(toScreen);
-
-    // 3. Draw Original Ghost Reference Shape (Dashed)
+    // Translucent Parallelogram for det(A) Area
     ctx.save();
-    ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)';
-    ctx.fillStyle = isLight ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)';
+    ctx.fillStyle = isLight ? 'rgba(59, 130, 246, 0.15)' : 'rgba(56, 189, 248, 0.18)';
+    ctx.strokeStyle = isLight ? 'rgba(59, 130, 246, 0.4)' : 'rgba(56, 189, 248, 0.5)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    originalScreenPoints.forEach((p, idx) => {
-      if (idx === 0) ctx.moveTo(p.x, p.y);
-      else ctx.lineTo(p.x, p.y);
-    });
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(iHatTransformed.x, iHatTransformed.y);
+    ctx.lineTo(cornerTransformed.x, cornerTransformed.y);
+    ctx.lineTo(jHatTransformed.x, jHatTransformed.y);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
     ctx.restore();
 
-    // 4. Draw Transformed Shape (Glowing Gradient Fill & Stroke)
-    ctx.save();
-    const grad = ctx.createLinearGradient(centerX, centerY - 150, centerX, centerY + 150);
-    grad.addColorStop(0, 'rgba(2, 132, 199, 0.35)');
-    grad.addColorStop(1, 'rgba(37, 99, 235, 0.2)');
+    // Original Basis Ghosts
+    const origIHat = toScreen({ x: 1, y: 0 });
+    const origJHat = toScreen({ x: 0, y: 1 });
+    drawArrow(ctx, origin.x, origin.y, origIHat.x, origIHat.y, 'rgba(236, 72, 153, 0.35)', 2, 'i');
+    drawArrow(ctx, origin.x, origin.y, origJHat.x, origJHat.y, 'rgba(16, 185, 129, 0.35)', 2, 'j');
 
-    ctx.fillStyle = grad;
-    ctx.shadowColor = '#0284C7';
-    ctx.shadowBlur = 10;
-    ctx.strokeStyle = '#0284C7';
-    ctx.lineWidth = 2.5;
+    // Transformed i-hat Vector
+    drawArrow(ctx, origin.x, origin.y, iHatTransformed.x, iHatTransformed.y, '#EC4899', 3.5, "i'");
 
-    ctx.beginPath();
-    transformedScreenPoints.forEach((p, idx) => {
-      if (idx === 0) ctx.moveTo(p.x, p.y);
-      else ctx.lineTo(p.x, p.y);
-    });
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
+    // Transformed j-hat Vector
+    drawArrow(ctx, origin.x, origin.y, jHatTransformed.x, jHatTransformed.y, '#10B981', 3.5, "j'");
 
-    // 5. Draw Vertex Points on Transformed Shape
-    transformedScreenPoints.forEach(p => {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = isLight ? '#1E293B' : '#FFFFFF';
-      ctx.fill();
-      ctx.strokeStyle = '#2563EB';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    });
-
-    // 6. Draw Clean Axis Tick Labels with Pill Backdrops
+    // 4. Axis Tick Labels with Pill Backdrops
     ctx.font = '600 11px "JetBrains Mono", monospace';
-
-    // X-axis number ticks
     for (let i = -gridUnitsX + 1; i <= gridUnitsX - 1; i++) {
       if (i === 0) continue;
       const posX = centerX + i * unitStep;
       const posY = centerY + 18;
-      const label = `${i}`;
-
-      // Draw background pill badge to prevent overlapping lines/shapes
       ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.9)' : 'rgba(6, 8, 14, 0.85)';
       ctx.fillRect(posX - 10, posY - 7, 20, 14);
-
       ctx.fillStyle = isLight ? '#334155' : '#94A3B8';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(label, posX, posY);
+      ctx.fillText(`${i}`, posX, posY);
     }
 
-    // Y-axis number ticks
     for (let j = -gridUnitsY + 1; j <= gridUnitsY - 1; j++) {
       if (j === 0) continue;
       const posX = centerX - 18;
       const posY = centerY - j * unitStep;
-      const label = `${j}`;
-
-      // Draw background pill badge
       ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.9)' : 'rgba(6, 8, 14, 0.85)';
       ctx.fillRect(posX - 12, posY - 7, 22, 14);
-
       ctx.fillStyle = isLight ? '#334155' : '#94A3B8';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(label, posX, posY);
+      ctx.fillText(`${j}`, posX, posY);
     }
 
-    // Origin (0,0) Badge (Quad 3 - Bottom Left Offset)
+    // Origin (0,0) Badge
     ctx.fillStyle = isLight ? '#E2E8F0' : 'rgba(15, 23, 42, 0.9)';
     ctx.fillRect(centerX - 36, centerY + 8, 30, 16);
     ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)';
@@ -216,7 +190,6 @@ export default function CoordinateTransformCanvas({ matrix2x2 }) {
 
   }, [safeMatrix.a, safeMatrix.b, safeMatrix.c, safeMatrix.d]);
 
-  // Calculate Determinant det(A) = ad - bc
   const det = (a * d - b * c).toFixed(2);
 
   return (
@@ -226,7 +199,7 @@ export default function CoordinateTransformCanvas({ matrix2x2 }) {
         <span className="font-mono" style={{ fontSize: '0.85rem', color: 'var(--accent-cyan)' }}>Grid: 1 unit = 45px</span>
       </div>
 
-      <div style={{ position: 'relative', width: '100%' }}>
+      <div style={{ position: 'relative', width: '100%', marginTop: '0.75rem' }}>
         <canvas 
           ref={canvasRef} 
           style={{ 

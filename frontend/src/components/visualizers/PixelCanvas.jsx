@@ -20,10 +20,21 @@ export default function PixelCanvas({
     if (!canvas || !rows || !cols) return;
     const ctx = canvas.getContext('2d');
 
-    canvas.width = cols * pixelSize;
-    canvas.height = rows * pixelSize;
+    const dpr = window.devicePixelRatio || 1;
+    const width = cols * pixelSize;
+    const height = rows * pixelSize;
 
-    // Draw grid
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+    // 1. Draw solid pixel fill boxes
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         let fillStyle = '#000000';
@@ -37,22 +48,45 @@ export default function PixelCanvas({
 
         ctx.fillStyle = fillStyle;
         ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
+      }
+    }
 
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    // 2. Draw sharp adaptive grid lines on top of all pixels
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        let brightness = 0;
+        if (matrix) {
+          brightness = matrix[r][c];
+        } else if (colorGrid) {
+          const pixel = colorGrid[r][c];
+          brightness = 0.299 * pixel.r + 0.587 * pixel.g + 0.114 * pixel.b;
+        }
+
+        // Adaptive high contrast grid stroke for both black (0) and white (255) pixels
+        if (brightness < 75) {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.38)'; // High visibility light line on black/dark
+        } else if (brightness > 180) {
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)'; // High visibility dark line on white/light
+        } else {
+          ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.28)' : 'rgba(255, 255, 255, 0.32)';
+        }
+
         ctx.lineWidth = 1;
-        ctx.strokeRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
+        // Inset by 0.5px so outer edge lines are strictly inside canvas bounds and never clipped
+        ctx.strokeRect(c * pixelSize + 0.5, r * pixelSize + 0.5, pixelSize - 1, pixelSize - 1);
 
         // Highlight hovered or selected cell
         if (hoveredCell && hoveredCell.row === r && hoveredCell.col === c) {
-          ctx.lineWidth = 3.5;
+          ctx.lineWidth = 3;
           ctx.strokeStyle = highlightColor;
-          ctx.strokeRect(c * pixelSize + 1.75, r * pixelSize + 1.75, pixelSize - 3.5, pixelSize - 3.5);
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+          ctx.strokeRect(c * pixelSize + 1.5, r * pixelSize + 1.5, pixelSize - 3, pixelSize - 3);
+          ctx.fillStyle = 'rgba(59, 130, 246, 0.22)';
           ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
-          ctx.lineWidth = 1;
         }
       }
     }
+
+    ctx.restore();
   }, [matrix, colorGrid, hoveredCell, rows, cols, pixelSize, highlightColor]);
 
   const getCellFromEvent = (e) => {
@@ -111,6 +145,12 @@ export default function PixelCanvas({
             onClick={handleClick}
             onMouseLeave={handleMouseLeave}
             className="pixel-canvas"
+            style={{
+              borderRadius: '12px',
+              border: '1px solid var(--border-color)',
+              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
+              display: 'block'
+            }}
           />
         </div>
       </div>

@@ -1,12 +1,238 @@
+:root {
+  /* DARK MODE: Blue / Cyan Futuristic Laboratory Accent System */
+  --bg-primary: #0B0F17;   /* Deep Dark Blue-Black Base */
+  --bg-secondary: #121824; /* Secondary Dark Container */
+  --bg-card: #182234;      /* Dark Blue Card Background */
+  --bg-card-hover: #1E2B42;/* Dark Blue Hover State */
+  --bg-elevated: #24344E;  /* Elevated Blue Container */
+  
+  --text-primary: #F8FAFC;  /* Pure Light Text */
+  --text-secondary: #CBD5E1;/* Soft Blue-Gray Light Text */
+  --text-muted: #64748B;    /* Muted Blue Text */
+  
+  /* Primary & Accent Map for Dark Theme (Cyan / Blue System) */
+  --accent-purple: #06B6D4; /* Electric Cyan */
+  --accent-violet: #0D9488; /* Deep Teal Accent */
+  --accent-blue: #0284C7;   /* Sky Blue Accent */
+  --accent-cobalt: #0891B2; /* Deep Cobalt Blue */
+  --accent-periwinkle: #22D3EE;/* Bright Cyan */
+  --accent-cyan: #06B6D4;   /* Electric Cyan */
+  --accent-emerald: #10B981;/* Emerald Green */
+  --accent-mint: #34D399;   /* Mint Green */
+  --accent-green: #10B981;
+  --accent-rose: #F43F5E;   /* Rose Accent */
+  --accent-gold: #F59E0B;   /* Amber Accent */
+  
+  --border-color: rgba(255, 255, 255, 0.09);
+  --border-hover: rgba(6, 182, 212, 0.45);
+  --border-violet: rgba(13, 148, 136, 0.4);
+  --border-cyan: rgba(6, 182, 212, 0.35);
+
+  --font-serif: 'Lora', 'Newsreader', Georgia, serif;
+  --font-display: 'Lora', 'Newsreader', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  color-scheme: dark;
+  color: var(--text-secondary);
+  background-color: var(--bg-primary);
+  font-family: var(--font-sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="light"] {
+  /* LIGHT MODE: Smooth, Refined Olive Green Theme (#5C7249 / #50663D) */
+  --bg-primary: #F3F6F0;   /* Soft Pale Olive Cream Alabaster Base */
+  --bg-secondary: #E8EFE2; /* Soft Olive Secondary */
+  --bg-card: rgba(255, 255, 255, 0.92); /* Frosted White Card */
+  --bg-card-hover: #EDF3E7;/* Soft Olive Hover */
+  --bg-elevated: #E3ECD9;  /* Elevated Container */
+  
+  --text-primary: #1C2617;  /* Deep Olive Charcoal Text */
+  --text-secondary: #33442A;/* Medium Olive Secondary Text */
+  --text-muted: #586B4B;    /* Muted Sage Text */
+  
+  /* Primary & Accent Map for Light Theme (Smooth Olive System) */
+  --accent-purple: #5C7249; /* Primary Smooth Olive Accent */
+  --accent-teal: #5C7249;
+  --accent-violet: #687E54;
+  --accent-blue: #50663D;
+  --accent-cobalt: #425531;
+  --accent-periwinkle: #687E54;
+  --accent-cyan: #5C7249;
+  --accent-emerald: #5C7249;
+  --accent-mint: #7E8B52;
+  --accent-green: #5C7249;
+  --accent-rose: #D9485C;
+  --accent-gold: #687E54;
+  
+  --border-color: rgba(92, 114, 73, 0.18);
+  --border-hover: rgba(92, 114, 73, 0.45);
+  --border-violet: rgba(104, 126, 84, 0.4);
+  --border-cyan: rgba(92, 114, 73, 0.35);
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  position: relative;
+}
+
+/* Ambient Soft Filled Circle Orbs for Background */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(100px);
+  opacity: 0.16;
+  transition: all 0.5s ease;
+}
+
+/* Dark Mode Orbs: Blue & Cyan */
+body::before {
+  width: 50vw;
+  height: 50vw;
+  max-width: 600px;
+  max-height: 600px;
+  top: -120px;
+  left: -120px;
+  background: radial-gradient(circle, #06B6D4 0%, #0D9488 75%, transparent 100%);
+}
+
+body::after {
+  width: 55vw;
+  height: 55vw;
+  max-width: 700px;
+  max-height: 700px;
+  bottom: -160px;
+  right: -160px;
+  background: radial-gradient(circle, #0D9488 0%, #0284C7 75%, transparent 100%);
+}
+
+/* Light Mode Textured Olive Background */
+[data-theme="light"] body {
+  background-color: #F3F6F0;
+  background-image: 
+    radial-gradient(circle at 12% 18%, rgba(207, 225, 185, 0.55) 0%, transparent 45%),
+    radial-gradient(circle at 88% 82%, rgba(231, 245, 220, 0.7) 0%, transparent 50%),
+    radial-gradient(rgba(92, 114, 73, 0.09) 1.5px, transparent 1.5px);
+  background-size: 100% 100%, 100% 100%, 26px 26px;
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] body::before {
+  opacity: 0.3;
+  background: radial-gradient(circle, #CFE1B9 0%, #B6C99B 75%, transparent 100%);
+}
+
+[data-theme="light"] body::after {
+  opacity: 0.28;
+  background: radial-gradient(circle, #E7F5DC 0%, #CFE1B9 75%, transparent 100%);
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+/* Editorial Mathematics Typography System */
+h1, h2, h3, .serif-heading {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+h1 {
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  margin: 0;
+}
+
+h2 {
+  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  margin: 0 0 0.6rem 0;
+}
+
+h3 {
+  font-size: clamp(1.15rem, 2vw, 1.4rem);
+  margin: 0 0 0.5rem 0;
+}
+
+p {
+  line-height: 1.65;
+  font-family: var(--font-sans);
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-mono);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="light"] .gradient-text {
+  background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-violet) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.25);
+  border-radius: 4px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(56, 74, 49, 0.25);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-purple);
+}
+
 @import "tailwindcss";
 
 @layer base {
   :root {
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: var(--font-sans), 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   }
   
   code, kbd, samp, pre, .font-mono {
-    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 }
 
@@ -14,29 +240,29 @@
 .bg-math-grid {
   background-size: 32px 32px;
   background-image: 
-    linear-gradient(to right, rgba(99, 102, 241, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(56, 74, 49, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 74, 49, 0.08) 1px, transparent 1px);
 }
 
 .dark .bg-math-grid {
   background-size: 32px 32px;
   background-image: 
-    linear-gradient(to right, rgba(99, 102, 241, 0.1) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(99, 102, 241, 0.1) 1px, transparent 1px);
+    linear-gradient(to right, rgba(6, 182, 212, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(6, 182, 212, 0.1) 1px, transparent 1px);
 }
 
 /* Glow gradient effects */
 .glow-indigo {
-  box-shadow: 0 0 50px -10px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 0 50px -10px rgba(6, 182, 212, 0.25);
 }
 
 .glow-violet {
-  box-shadow: 0 0 60px -15px rgba(139, 92, 246, 0.25);
+  box-shadow: 0 0 60px -15px rgba(13, 148, 136, 0.25);
 }
 
 /* Custom Slider Styles */
 input[type="range"] {
-  accent-color: #6366f1;
+  accent-color: var(--accent-purple);
 }
 
 /* Glassmorphism helpers */
@@ -48,7 +274,7 @@ input[type="range"] {
 }
 
 .dark .glass-panel {
-  background: rgba(17, 24, 39, 0.75);
+  background: rgba(18, 24, 36, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);

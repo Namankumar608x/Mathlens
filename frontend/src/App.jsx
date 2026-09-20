@@ -1,42 +1,82 @@
-import { Routes, Route } from 'react-router-dom';
-import { UserLevelProvider } from './context/UserLevelContext.jsx';
-import { ProgressProvider } from './context/ProgressContext.jsx';
-import { Navbar } from './components/layout/Navbar.jsx';
-import { LevelSelectorModal } from './modules/onboarding/LevelSelectorModal.jsx';
+import React, { useState, useEffect } from 'react';
+import Header from './components/common/Header';
+import LevelSelectorModal from './components/common/LevelSelectorModal';
+import StepperNavigation from './components/layout/StepperNavigation';
 
-import { HomeScreen } from './screens/HomeScreen.jsx';
-import { ModuleViewScreen } from './screens/ModuleViewScreen.jsx';
-import { SandboxScreen } from './screens/SandboxScreen.jsx';
-import { NotFoundScreen } from './screens/NotFoundScreen.jsx';
+import Step1Grayscale from './steps/Step1Grayscale';
+import Step2CellEditing from './steps/Step2CellEditing';
+import Step3ScalarBrightness from './steps/Step3ScalarBrightness';
+import Step4SingleRGBPixel from './steps/Step4SingleRGBPixel';
+import Step5RGBMatrices from './steps/Step5RGBMatrices';
+import Step6RGBScalarMult from './steps/Step6RGBScalarMult';
+import Step7ImageTransforms from './steps/Step7ImageTransforms';
 
-function App() {
+import './App.css';
+
+export default function App() {
+  const [currentLevel, setCurrentLevel] = useState('basic');
+  const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('mathlens_theme') || 'dark';
+  });
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    localStorage.setItem('mathlens_theme', nextTheme);
+  };
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return <Step1Grayscale />;
+      case 2:
+        return <Step2CellEditing />;
+      case 3:
+        return <Step3ScalarBrightness />;
+      case 4:
+        return <Step4SingleRGBPixel />;
+      case 5:
+        return <Step5RGBMatrices />;
+      case 6:
+        return <Step6RGBScalarMult />;
+      case 7:
+        return <Step7ImageTransforms />;
+      default:
+        return <Step1Grayscale />;
+    }
+  };
+
   return (
-    <UserLevelProvider>
-      <ProgressProvider>
-        <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">
-          {/* Main App Navigation */}
-          <Navbar />
+    <div className="app-container">
+      <Header
+        currentLevel={currentLevel}
+        onSelectLevel={setCurrentLevel}
+        onOpenLevelModal={() => setIsLevelModalOpen(true)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
 
-          {/* Onboarding Level Selector Modal */}
-          <LevelSelectorModal />
+      <StepperNavigation
+        currentStep={currentStep}
+        onSelectStep={setCurrentStep}
+      />
 
-          {/* Page Routing */}
-          <main className="flex-1">
-            <Routes>
-              <Route path="/" element={<HomeScreen />} />
-              <Route path="/learn/pixels-to-matrices" element={<ModuleViewScreen />} />
-              <Route path="/sandbox" element={<SandboxScreen />} />
-              <Route path="*" element={<NotFoundScreen />} />
-            </Routes>
-          </main>
+      <main className="main-content">
+        {renderStepContent()}
+      </main>
 
-          <footer className="border-t border-gray-200 dark:border-gray-800 py-6 text-center text-xs text-gray-500 dark:text-gray-400">
-            MathLens &bull; Visual & Interactive Linear Algebra for Digital Images
-          </footer>
-        </div>
-      </ProgressProvider>
-    </UserLevelProvider>
+      <LevelSelectorModal
+        isOpen={isLevelModalOpen}
+        currentLevel={currentLevel}
+        onSelectLevel={setCurrentLevel}
+        onClose={() => setIsLevelModalOpen(false)}
+      />
+    </div>
   );
 }
-
-export default App;

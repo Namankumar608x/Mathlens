@@ -20,7 +20,8 @@ const STEPS = [
   { id: 5, name: 'RGB Channels', icon: Layers },
   { id: 6, name: 'RGB Brightness', icon: Sliders },
   { id: 7, name: '2D Transformations', icon: Compass },
-  { id: 8, name: 'Addition & Subtraction', icon: Blend },
+  { id: 8, name: 'Addition & Blending', icon: Blend },
+  { id: 9, name: 'Background Subtraction', icon: Scissors },
 ];
 
 export default function StepperNavigation({ currentStep, onSelectStep }) {
@@ -59,7 +60,7 @@ export default function StepperNavigation({ currentStep, onSelectStep }) {
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
               )}
-              <span className="step-num-pill">0{idx + 1}</span>
+              <span className="step-num-pill">{String(idx + 1).padStart(2, '0')}</span>
               <span className="step-icon-badge">
                 <Icon size={13} />
               </span>

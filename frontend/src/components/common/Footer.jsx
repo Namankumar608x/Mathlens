@@ -42,7 +42,10 @@ export default function Footer({ currentStep, onSelectStep, onOpenLevelModal }) 
                 07. 2D Image Transforms
               </button>
               <button onClick={() => onSelectStep(8)} className={currentStep === 8 ? 'active' : ''}>
-                08. Addition & Subtraction
+                08. Addition & Blending
+              </button>
+              <button onClick={() => onSelectStep(9)} className={currentStep === 9 ? 'active' : ''}>
+                09. Background Subtraction
               </button>
             </div>
           </div>

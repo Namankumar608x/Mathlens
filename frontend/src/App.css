@@ -2973,6 +2973,7 @@
     gap: 1.25rem;
   }
 
+  /* Reflow into clean vertical mathematical pipeline */
   .subtraction-horizontal-line-container {
     overflow-x: auto;
     padding-bottom: 0.85rem;

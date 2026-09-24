@@ -92,6 +92,20 @@ export function absDifferenceMatrices(A, B) {
 }
 
 /**
+ * Creates a binary or thresholded matrix: val > threshold ? highValue : lowValue
+ * @param {number[][]} matrix
+ * @param {number} threshold
+ * @param {number} highValue
+ * @param {number} lowValue
+ * @returns {number[][]}
+ */
+export function thresholdMatrix(matrix, threshold, highValue = 255, lowValue = 0) {
+  return matrix.map(row =>
+    row.map(val => (val > threshold ? highValue : lowValue))
+  );
+}
+
+/**
  * Clones a 2D matrix to prevent unintended mutations.
  * @param {number[][]} matrix 
  * @returns {number[][]}

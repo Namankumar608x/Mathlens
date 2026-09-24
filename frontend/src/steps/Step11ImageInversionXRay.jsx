@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   Activity,
   Maximize2,
+  Undo2,
   Zap,
   Info
 } from 'lucide-react';
@@ -509,6 +510,14 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
             >
               <Maximize2 size={13} />
               <span>8.5 Determinant</span>
+            </button>
+            <button 
+              className="sub-chapter-pill"
+              onClick={() => onSelectStep ? onSelectStep(13) : (window.location.hash = '#step13')}
+              title="Jump to 8.6 Matrix Inverse: Undo the Transformation"
+            >
+              <Undo2 size={13} />
+              <span>8.6 Matrix Inverse</span>
             </button>
           </div>
         </div>

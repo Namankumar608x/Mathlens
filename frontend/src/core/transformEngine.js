@@ -135,6 +135,58 @@ export function getDeterminantAnalysis(det) {
 }
 
 /**
+ * Computes the inverse of a 2x2 matrix:
+ * A^-1 = (1 / det) * [ d  -b ]
+ *                    [ -c  a ]
+ * Returns null if det(A) == 0 (singular matrix)
+ */
+export function computeInverseMatrix(matrix2x2) {
+  const a = matrix2x2 && typeof matrix2x2.a === 'number' && !isNaN(matrix2x2.a) ? matrix2x2.a : 1;
+  const b = matrix2x2 && typeof matrix2x2.b === 'number' && !isNaN(matrix2x2.b) ? matrix2x2.b : 0;
+  const c = matrix2x2 && typeof matrix2x2.c === 'number' && !isNaN(matrix2x2.c) ? matrix2x2.c : 0;
+  const d = matrix2x2 && typeof matrix2x2.d === 'number' && !isNaN(matrix2x2.d) ? matrix2x2.d : 1;
+
+  const det = a * d - b * c;
+  if (Math.abs(det) < 1e-6) {
+    return null; // Singular, no inverse exists
+  }
+
+  return {
+    a: d / det,
+    b: -b / det,
+    c: -c / det,
+    d: a / det,
+    det: det
+  };
+}
+
+/**
+ * Multiplies two 2x2 matrices: M = M1 * M2
+ */
+export function multiply2x2(m1, m2) {
+  const a1 = m1.a, b1 = m1.b, c1 = m1.c, d1 = m1.d;
+  const a2 = m2.a, b2 = m2.b, c2 = m2.c, d2 = m2.d;
+  return {
+    a: a1 * a2 + b1 * c2,
+    b: a1 * b2 + b1 * d2,
+    c: c1 * a2 + d1 * c2,
+    d: c1 * b2 + d1 * d2
+  };
+}
+
+/**
+ * Linearly interpolates between two 2x2 matrices: M(t) = (1-t)*M1 + t*M2
+ */
+export function interpolateMatrix(m1, m2, t) {
+  return {
+    a: m1.a * (1 - t) + m2.a * t,
+    b: m1.b * (1 - t) + m2.b * t,
+    c: m1.c * (1 - t) + m2.c * t,
+    d: m1.d * (1 - t) + m2.d * t
+  };
+}
+
+/**
  * Draws crisp procedural subject graphics on a canvas context centered around (0, 0)
  * in Cartesian units. Size parameter is the width/height in coordinate units.
  */

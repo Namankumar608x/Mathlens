@@ -20,7 +20,8 @@ import {
   Layers,
   ArrowRight,
   TrendingDown,
-  Grid
+  Grid,
+  Undo2
 } from 'lucide-react';
 import { computeDeterminant, getDeterminantAnalysis } from '../core/transformEngine';
 import CoordinateTransformCanvas from '../components/visualizers/CoordinateTransformCanvas';
@@ -300,6 +301,14 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
             >
               <Maximize2 size={13} />
               <span>8.5 Determinant</span>
+            </button>
+            <button 
+              className="sub-chapter-pill"
+              onClick={() => onSelectStep ? onSelectStep(13) : (window.location.hash = '#step13')}
+              title="Jump to 8.6 Matrix Inverse: Undo the Transformation"
+            >
+              <Undo2 size={13} />
+              <span>8.6 Matrix Inverse</span>
             </button>
           </div>
         </div>

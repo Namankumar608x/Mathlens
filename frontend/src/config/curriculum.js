@@ -80,12 +80,12 @@ export const CURRICULUM = {
     {
       id: 8,
       slug: 'matrix-arithmetic-geometry',
-      title: 'Step 8: Matrix Applications (Arithmetic, Inversion & Determinants)',
+      title: 'Step 8: Matrix Applications (Arithmetic, Inversion, Determinants & Inverse)',
       shortTitle: 'Matrix Applications',
-      summary: 'Explore 8.1 Matrix Addition (Image Blending), 8.2 Background Removal, 8.3 Change Detection, 8.4 Image Inversion (X-ray Effect: A′ = 255 − A), and 8.5 Determinant: Stretch, Shrink, Flip or Collapse (det(A) = ad − bc).',
-      concepts: ['Alpha Blending C = αA + (1-α)B', 'Background Removal D = |I - B|', 'Change Detection D = |A - B|', 'Image Inversion A′ = 255 − A', 'Determinant det(A) = ad - bc', 'Area Scaling |det(A)|', 'Dimension Collapse det(A) = 0', 'Orientation Reversal det(A) < 0'],
-      basicHint: 'Explore image blending, subtraction, negative effects, and see how the determinant visually measures image area scaling and orientation flips!',
-      advancedFormula: "\\det(A) = ad - bc, \\quad \\text{Area}' = |\\det(A)| \\cdot \\text{Area}"
+      summary: 'Explore 8.1 Matrix Addition (Image Blending), 8.2 Background Removal, 8.3 Change Detection, 8.4 Image Inversion (X-ray Effect: A′ = 255 − A), 8.5 Determinant: Stretch, Shrink, Flip or Collapse (det(A) = ad − bc), and 8.6 Matrix Inverse: Undo the Transformation (x = A⁻¹x′).',
+      concepts: ['Alpha Blending C = αA + (1-α)B', 'Background Removal D = |I - B|', 'Change Detection D = |A - B|', 'Image Inversion A′ = 255 − A', 'Determinant det(A) = ad - bc', 'Matrix Inverse A⁻¹', 'Undo Transformation x = A⁻¹x′', 'Singular Matrix Non-Invertibility'],
+      basicHint: 'Transform an image with any matrix, then use the inverse matrix A⁻¹ to undo the deformation and restore the original picture!',
+      advancedFormula: "x = A^{-1}x', \\quad A^{-1} = \\frac{1}{ad - bc} \\begin{bmatrix} d & -b \\\\ -c & a \\end{bmatrix}"
     }
   ],
   upcomingModules: [

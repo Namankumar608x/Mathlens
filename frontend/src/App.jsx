@@ -11,6 +11,7 @@ import Step5RGBMatrices from './steps/Step5RGBMatrices';
 import Step6RGBScalarMult from './steps/Step6RGBScalarMult';
 import Step7ImageTransforms from './steps/Step7ImageTransforms';
 import Step8MatrixAddition from './steps/Step8MatrixAddition';
+import Step9MatrixSubtraction from './steps/Step9MatrixSubtraction';
 
 import './App.css';
 
@@ -19,7 +20,7 @@ export default function App() {
   const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(() => {
     const saved = localStorage.getItem('mathlens_step');
-    return saved ? parseInt(saved, 10) : 8;
+    return saved ? parseInt(saved, 10) : 9;
   });
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('mathlens_theme') || 'dark';
@@ -57,7 +58,9 @@ export default function App() {
       case 7:
         return <Step7ImageTransforms />;
       case 8:
-        return <Step8MatrixAddition />;
+        return <Step8MatrixAddition onSelectStep={handleSelectStep} />;
+      case 9:
+        return <Step9MatrixSubtraction onSelectStep={handleSelectStep} />;
       default:
         return <Step1Grayscale />;
     }

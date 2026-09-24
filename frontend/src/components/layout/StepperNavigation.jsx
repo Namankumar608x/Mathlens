@@ -8,7 +8,8 @@ import {
   Layers, 
   Sliders, 
   Compass,
-  Blend
+  Blend,
+  Scissors
 } from 'lucide-react';
 
 const STEPS = [

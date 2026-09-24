@@ -80,12 +80,22 @@ export const CURRICULUM = {
     {
       id: 8,
       slug: 'matrix-addition-blend',
-      title: 'Step 8: Matrix Addition & Subtraction (Arithmetic & Blending)',
-      shortTitle: 'Addition & Subtraction',
-      summary: 'Combine and compare images of the same dimensions using matrix addition (C = αA + (1-α)B, C = A + B) and matrix subtraction (C = clamp(A - B), C = |A - B| for change detection).',
-      concepts: ['Element-by-Element Addition & Subtraction', 'Alpha Blending', 'Absolute Difference', 'Change & Motion Detection', 'Saturation & Underflow Clipping'],
-      basicHint: 'Add matrices to blend scenes together, or subtract matrices to highlight movement, differences, and hidden details between frames.',
-      advancedFormula: 'C_{i,j} = \\text{clamp}\\left(\\alpha A_{i,j} \\pm (1-\\alpha) B_{i,j}\\right) \\quad \\text{or} \\quad |A_{i,j} - B_{i,j}|'
+      title: 'Step 8: Matrix Addition & Blending',
+      shortTitle: 'Addition & Blending',
+      summary: 'Combine and blend images of the same dimensions using matrix addition: C = αA + (1-α)B and C = clamp(A + B).',
+      concepts: ['Element-wise Addition', 'Alpha Blending', 'Linear Interpolation', 'Overflow Saturation Clipping'],
+      basicHint: 'Add matrices to blend scenes together like Photoshop layers or combine exposures.',
+      advancedFormula: 'C_{i,j} = \\text{clamp}\\left(\\alpha A_{i,j} + (1-\\alpha) B_{i,j}\\right)'
+    },
+    {
+      id: 9,
+      slug: 'background-subtraction',
+      title: 'Step 9: Matrix Subtraction & Background Removal',
+      shortTitle: 'Background Subtraction',
+      summary: 'Subtract an empty background matrix B from a scene matrix I: D = |I - B|, then apply threshold T to isolate the moving object mask M.',
+      concepts: ['Element-wise Subtraction', 'Absolute Difference |I - B|', 'Noise Resistance', 'Binary Threshold Masking M(x, y)'],
+      basicHint: 'Subtracting a static background makes unchanged areas turn black (0), leaving only the moved object clearly visible!',
+      advancedFormula: 'D(x, y) = |I(x, y) - B(x, y)|, \\quad M(x, y) = \\begin{cases} 1 & \\text{if } D(x, y) > T \\\\ 0 & \\text{otherwise} \\end{cases}'
     }
   ],
   upcomingModules: [

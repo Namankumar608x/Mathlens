@@ -45,7 +45,7 @@ export function subtractMatrices(matA, matB, mode = 'direct', alpha = 1.0) {
     for (let j = 0; j < cols; j++) {
       const valA = matA[i][j];
       const valB = matB[i][j];
-      if (mode === 'abs') {
+      if (mode === 'abs' || mode === true) {
         // Absolute difference C = |A - B| (used in change & motion detection)
         result[i][j] = clampPixel(Math.abs(valA - valB));
       } else if (mode === 'weighted') {
@@ -59,6 +59,12 @@ export function subtractMatrices(matA, matB, mode = 'direct', alpha = 1.0) {
   }
 
   return result;
+}
+
+export function thresholdMatrix(matrix, threshold, highValue = 255, lowValue = 0) {
+  return matrix.map(row =>
+    row.map(val => (val > threshold ? highValue : lowValue))
+  );
 }
 
 export function splitRGBChannels(colorGrid) {

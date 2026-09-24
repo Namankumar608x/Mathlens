@@ -8,7 +8,8 @@ import {
   Layers, 
   Sliders, 
   Compass,
-  Blend
+  Blend,
+  Scissors
 } from 'lucide-react';
 
 const STEPS = [
@@ -20,6 +21,7 @@ const STEPS = [
   { id: 6, name: 'RGB Brightness', icon: Sliders },
   { id: 7, name: '2D Transformations', icon: Compass },
   { id: 8, name: 'Matrix Addition', icon: Blend },
+  { id: 9, name: 'Matrix Subtraction', icon: Scissors },
 ];
 
 export default function StepperNavigation({ currentStep, onSelectStep }) {

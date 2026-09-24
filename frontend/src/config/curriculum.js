@@ -86,6 +86,16 @@ export const CURRICULUM = {
       concepts: ['Element-by-Element Addition', 'Alpha Blending', 'Convex Combination', 'Pixel Intensity Saturation & Overflow'],
       basicHint: 'Moving the α slider gradually blends Image A into Image B. Every pixel in the result is the weighted sum of corresponding pixels.',
       advancedFormula: 'C_{i,j} = \\text{clamp}\\left(\\alpha A_{i,j} + (1-\\alpha) B_{i,j}\\right), \\quad 0 \\le \\alpha \\le 1'
+    },
+    {
+      id: 9,
+      slug: 'matrix-subtraction-background-removal',
+      title: 'Step 8.2: Matrix Subtraction & Background Removal',
+      shortTitle: 'Matrix Subtraction',
+      summary: 'Subtract an empty background B from scene with object I to compute difference D = |I - B| and extract a foreground mask M with threshold T.',
+      concepts: ['Matrix Subtraction', 'Difference Matrix D = |I - B|', 'Thresholding Mask M(x,y)', 'Camera Sensor Noise vs Foreground Detection'],
+      basicHint: 'Subtracting the empty background leaves near-zero for unchanged spots and large numbers where the new object appeared. The threshold ignores small camera noise.',
+      advancedFormula: 'D(x, y) = |I(x, y) - B(x, y)|, \\quad M(x, y) = \\begin{cases} 1, & D(x, y) > T \\\\ 0, & D(x, y) \\le T \\end{cases}'
     }
   ],
   upcomingModules: [

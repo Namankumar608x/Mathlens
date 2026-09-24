@@ -11,7 +11,8 @@ import {
   Layers, 
   Sparkles,
   Info,
-  AlertTriangle
+  AlertTriangle,
+  Scissors
 } from 'lucide-react';
 import { clampPixel, createEmptyMatrix } from '../core/mathEngine';
 
@@ -298,13 +299,31 @@ export default function Step8MatrixAddition({ onSelectStep }) {
     >
       {/* STEP HEADER */}
       <div className="step-header-box">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem' }}>
-          <span className="modal-badge-tag" style={{ margin: 0 }}>
-            Chapter 8.1
-          </span>
-          <span style={{ fontSize: '0.85rem', color: 'var(--accent-purple)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-            Element-by-Element Operations
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.45rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <span className="modal-badge-tag" style={{ margin: 0 }}>
+              Chapter 8.1
+            </span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--accent-purple)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+              Matrix Addition & Blending
+            </span>
+          </div>
+
+          {/* Sub-Chapter Switcher */}
+          <div className="sub-chapter-nav">
+            <button className="sub-chapter-pill active" title="Current: 8.1 Matrix Addition">
+              <Blend size={13} />
+              <span>8.1 Matrix Addition</span>
+            </button>
+            <button 
+              className="sub-chapter-pill"
+              onClick={() => onSelectStep ? onSelectStep(9) : null}
+              title="Jump to 8.2 Matrix Subtraction"
+            >
+              <Scissors size={13} />
+              <span>8.2 Matrix Subtraction</span>
+            </button>
+          </div>
         </div>
         <h2 className="step-heading">8.1 Matrix Addition: Blend Two Images</h2>
         <p className="step-description">

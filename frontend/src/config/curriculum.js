@@ -79,13 +79,13 @@ export const CURRICULUM = {
     },
     {
       id: 8,
-      slug: 'matrix-addition-blend',
-      title: 'Step 8: Matrix Arithmetic (Addition, Subtraction & Inversion)',
-      shortTitle: 'Matrix Arithmetic',
-      summary: 'Explore 8.1 Matrix Addition (Image Blending), 8.2 Matrix Subtraction (Background Removal), 8.3 Matrix Subtraction (Find What Changed), and 8.4 Image Inversion (X-ray-like Negative Effect: A′ = 255 − A).',
-      concepts: ['Alpha Blending C = αA + (1-α)B', 'Background Removal D = |I - B|', 'Binary Thresholding M(x, y)', 'Change & Motion Detection D = |A - B|', 'Image Inversion A′ = 255 − A', 'X-Ray-like Visual Effect'],
-      basicHint: 'Subtracting matrices reveals changes or reverses contrast (0 ➔ 255, 255 ➔ 0) to produce an X-ray-like negative effect!',
-      advancedFormula: "A'(x, y) = 255 - A(x, y) \\quad \\text{and} \\quad D(x, y) = |A(x, y) - B(x, y)|"
+      slug: 'matrix-arithmetic-geometry',
+      title: 'Step 8: Matrix Applications (Arithmetic, Inversion & Determinants)',
+      shortTitle: 'Matrix Applications',
+      summary: 'Explore 8.1 Matrix Addition (Image Blending), 8.2 Background Removal, 8.3 Change Detection, 8.4 Image Inversion (X-ray Effect: A′ = 255 − A), and 8.5 Determinant: Stretch, Shrink, Flip or Collapse (det(A) = ad − bc).',
+      concepts: ['Alpha Blending C = αA + (1-α)B', 'Background Removal D = |I - B|', 'Change Detection D = |A - B|', 'Image Inversion A′ = 255 − A', 'Determinant det(A) = ad - bc', 'Area Scaling |det(A)|', 'Dimension Collapse det(A) = 0', 'Orientation Reversal det(A) < 0'],
+      basicHint: 'Explore image blending, subtraction, negative effects, and see how the determinant visually measures image area scaling and orientation flips!',
+      advancedFormula: "\\det(A) = ad - bc, \\quad \\text{Area}' = |\\det(A)| \\cdot \\text{Area}"
     }
   ],
   upcomingModules: [

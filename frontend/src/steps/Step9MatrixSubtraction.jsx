@@ -17,7 +17,8 @@ import {
   Sliders,
   AlertCircle,
   Scan,
-  Activity
+  Activity,
+  Maximize2
 } from 'lucide-react';
 import { clampPixel, createEmptyMatrix, subtractMatrices, thresholdMatrix } from '../core/mathEngine';
 
@@ -385,6 +386,14 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
             >
               <Activity size={13} />
               <span>8.4 Invert &amp; X-Ray</span>
+            </button>
+            <button 
+              className="sub-chapter-pill"
+              onClick={() => onSelectStep ? onSelectStep(12) : (window.location.hash = '#step12')}
+              title="Jump to 8.5 Determinant: Stretch, Shrink, Flip or Collapse"
+            >
+              <Maximize2 size={13} />
+              <span>8.5 Determinant</span>
             </button>
           </div>
         </div>

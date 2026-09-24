@@ -3379,4 +3379,163 @@
   overflow: visible;
 }
 
+/* =========================================================
+   STEP 8.5: DETERMINANT: STRETCH, SHRINK, FLIP OR COLLAPSE
+   ========================================================= */
+
+.determinant-hero-hud {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.3s ease;
+}
+
+.matrix-slider-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.matrix-slider-card:hover, .matrix-slider-card:focus-within {
+  border-color: var(--accent-purple);
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.12);
+}
+
+.matrix-slider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.matrix-cell-key {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--accent-purple);
+  background: rgba(168, 85, 247, 0.12);
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+}
+
+.matrix-cell-subtext {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.matrix-slider-val-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.matrix-slider-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.styled-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+  transition: opacity 0.2s;
+}
+
+[data-theme="light"] .styled-slider {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.styled-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-purple);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
+  transition: transform 0.1s ease;
+}
+
+.styled-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.styled-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-purple);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
+}
+
+.matrix-slider-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.stepper-mini-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stepper-mini-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-purple);
+  background: rgba(168, 85, 247, 0.12);
+}
+
+.preset-card-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.case-callout-card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.case-callout-card.active {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transform: scale(1.02);
+}
+
+.theory-explainer-card {
+  padding: 1.25rem 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.theory-sub-block {
+  padding: 0.85rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+
 

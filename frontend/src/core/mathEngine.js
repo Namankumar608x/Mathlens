@@ -36,29 +36,25 @@ export function addMatrices(matA, matB, alpha = null) {
   return result;
 }
 
-export function subtractMatrices(matI, matB, useAbsolute = true) {
-  const rows = matI.length;
-  const cols = matI[0].length;
+export function subtractMatrices(matA, matB, mode = 'direct', alpha = 1.0) {
+  const rows = matA.length;
+  const cols = matA[0].length;
   const result = createEmptyMatrix(rows, cols);
 
   for (let i = 0; i < rows; i++) {
     for (let j = 0; j < cols; j++) {
-      const diff = matI[i][j] - matB[i][j];
-      result[i][j] = useAbsolute ? clampPixel(Math.abs(diff)) : clampPixel(Math.max(0, diff));
-    }
-  }
-
-  return result;
-}
-
-export function thresholdMatrix(matD, threshold, foregroundVal = 1) {
-  const rows = matD.length;
-  const cols = matD[0].length;
-  const result = createEmptyMatrix(rows, cols);
-
-  for (let i = 0; i < rows; i++) {
-    for (let j = 0; j < cols; j++) {
-      result[i][j] = matD[i][j] > threshold ? foregroundVal : 0;
+      const valA = matA[i][j];
+      const valB = matB[i][j];
+      if (mode === 'abs') {
+        // Absolute difference C = |A - B| (used in change & motion detection)
+        result[i][j] = clampPixel(Math.abs(valA - valB));
+      } else if (mode === 'weighted') {
+        // Weighted subtraction C = clamp(A - αB)
+        result[i][j] = clampPixel(valA - alpha * valB);
+      } else {
+        // Direct subtraction C = clamp(A - B) (clamped at 0 underflow)
+        result[i][j] = clampPixel(valA - valB);
+      }
     }
   }
 

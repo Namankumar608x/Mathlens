@@ -40,7 +40,7 @@ export default function StepperNavigation({ currentStep, onSelectStep }) {
     <nav className="stepper-nav" aria-label="Step navigation">
       <div className="steps-container">
         {STEPS.map((step, idx) => {
-          const isActive = currentStep === step.id;
+          const isActive = currentStep === step.id || (step.id === 8 && (currentStep === 9 || currentStep === 10));
           const Icon = step.icon;
 
           return (
@@ -48,7 +48,7 @@ export default function StepperNavigation({ currentStep, onSelectStep }) {
               key={step.id}
               ref={isActive ? activeTabRef : null}
               className={`step-tab ${isActive ? 'active' : ''}`}
-              onClick={() => onSelectStep(step.id)}
+              onClick={() => onSelectStep(step.id === 8 && (currentStep === 9 || currentStep === 10) ? currentStep : step.id)}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
             >

@@ -80,12 +80,12 @@ export const CURRICULUM = {
     {
       id: 8,
       slug: 'matrix-addition-blend',
-      title: 'Step 8: Matrix Addition & Subtraction (Arithmetic & Blending)',
-      shortTitle: 'Addition & Subtraction',
-      summary: 'Combine and compare images of the same dimensions using matrix addition (C = αA + (1-α)B, C = A + B) and matrix subtraction (C = clamp(A - B), C = |A - B| for change detection).',
-      concepts: ['Element-by-Element Addition & Subtraction', 'Alpha Blending', 'Absolute Difference', 'Change & Motion Detection', 'Saturation & Underflow Clipping'],
-      basicHint: 'Add matrices to blend scenes together, or subtract matrices to highlight movement, differences, and hidden details between frames.',
-      advancedFormula: 'C_{i,j} = \\text{clamp}\\left(\\alpha A_{i,j} \\pm (1-\\alpha) B_{i,j}\\right) \\quad \\text{or} \\quad |A_{i,j} - B_{i,j}|'
+      title: 'Step 8: Matrix Arithmetic (Addition & Subtraction)',
+      shortTitle: 'Matrix Arithmetic',
+      summary: 'Explore 8.1 Matrix Addition (Image Blending), 8.2 Matrix Subtraction (Background Removal), and 8.3 Matrix Subtraction (Find What Changed & Motion Detection).',
+      concepts: ['Alpha Blending C = αA + (1-α)B', 'Background Removal D = |I - B|', 'Binary Thresholding M(x, y)', 'Change & Motion Detection D = |A - B|', 'Photographic Sensor Noise T'],
+      basicHint: 'Subtracting two photographs highlights whatever was added, removed, or moved between the shots!',
+      advancedFormula: 'D(x, y) = |A(x, y) - B(x, y)|, \\quad M(x, y) = \\begin{cases} 1 & D(x, y) > T \\\\ 0 & D(x, y) \\le T \\end{cases}'
     }
   ],
   upcomingModules: [

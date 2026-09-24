@@ -295,19 +295,36 @@
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-color);
   overflow-x: auto;
-  padding: 0.85rem 2rem;
-  scrollbar-width: none;
+  padding: 0.75rem 1.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-theme="light"] .stepper-nav {
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
 }
 
 .stepper-nav::-webkit-scrollbar {
-  display: none;
+  height: 4px;
+}
+
+.stepper-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+[data-theme="light"] .stepper-nav::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
 }
 
 .steps-container {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   max-width: 1300px;
+  width: max-content;
+  min-width: 100%;
   margin: 0 auto;
   gap: 0.65rem;
   flex-wrap: nowrap;
@@ -323,6 +340,7 @@
   cursor: pointer;
   white-space: nowrap;
   font-family: var(--font-sans);
+  flex-shrink: 0;
   font-size: 0.84rem;
   font-weight: 600;
   display: flex;
@@ -759,6 +777,9 @@
   border: 1px solid var(--border-color);
   cursor: pointer;
   transition: all 0.2s ease;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 .pixel-canvas:hover {
@@ -2458,8 +2479,16 @@
   border-color: rgba(16, 185, 129, 0.35);
 }
 
-/* Small screen responsiveness for 4 columns */
-@media (max-width: 1140px) {
+/* =========================================================
+   COMPREHENSIVE RESPONSIVE DESIGN SYSTEM
+   ========================================================= */
+
+/* 1. Laptops & Compact Desktops (<= 1200px) */
+@media (max-width: 1200px) {
+  .main-content {
+    padding: 2rem 1.5rem;
+  }
+
   .subtraction-controls-grid {
     grid-template-columns: 1fr;
     gap: 1.25rem;
@@ -2468,7 +2497,312 @@
   .subtraction-horizontal-line-container {
     overflow-x: auto;
     padding-bottom: 0.85rem;
-    grid-template-columns: 260px auto 260px auto 260px auto 260px;
+    grid-template-columns: minmax(260px, 1fr) auto minmax(260px, 1fr) auto minmax(260px, 1fr) auto minmax(260px, 1fr);
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  }
+
+  [data-theme="light"] .subtraction-horizontal-line-container {
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  }
+
+  .addition-horizontal-line-container {
+    overflow-x: auto;
+    padding-bottom: 0.85rem;
+    grid-template-columns: minmax(280px, 1fr) auto minmax(280px, 1fr) auto minmax(280px, 1fr);
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  }
+
+  [data-theme="light"] .addition-horizontal-line-container {
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  }
+
+  .subtraction-horizontal-line-container .addition-column-card,
+  .addition-horizontal-line-container .addition-column-card {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+}
+
+/* 2. Tablets & Small Laptops (<= 992px) */
+@media (max-width: 992px) {
+  .header-bar {
+    padding: 0.85rem 1.5rem;
+  }
+
+  .brand-title {
+    font-size: 1.8rem;
+  }
+
+  .side-by-side-container {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem;
+  }
+
+  .step-7-layout {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem;
+  }
+
+  .two-part-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem;
+  }
+
+  .addition-controls-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem;
+  }
+
+  .matrix-grid {
+    max-width: 440px;
+    margin: 0 auto;
+  }
+}
+
+/* 3. Phablets & Mobile Landscape (<= 768px) */
+@media (max-width: 768px) {
+  .header-bar {
+    padding: 0.75rem 1rem;
+  }
+
+  .brand-title {
+    font-size: 1.55rem;
+  }
+
+  .brand-mark-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
+  }
+
+  .track-slider-container {
+    padding: 2px;
+  }
+
+  .track-slider-option {
+    padding: 0.35rem 0.65rem;
+  }
+
+  .track-slider-text {
+    font-size: 0.74rem;
+  }
+
+  .theme-toggle-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .stepper-nav {
+    padding: 0.55rem 0.85rem;
+  }
+
+  .step-tab {
+    padding: 0.45rem 0.8rem;
+    font-size: 0.78rem;
+    gap: 0.4rem;
+  }
+
+  .step-num-pill {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.35rem;
+  }
+
+  .main-content {
+    padding: 1.25rem 0.95rem;
+  }
+
+  .step-module {
+    gap: 1.25rem;
+  }
+
+  .step-heading {
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+
+  .step-description {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .sub-chapter-nav {
+    width: 100%;
+  }
+
+  .sub-chapter-pill {
+    flex: 1;
+    justify-content: center;
+    font-size: 0.74rem;
+    padding: 0.35rem 0.5rem;
+  }
+
+  .matrix-grid-card, 
+  .canvas-card, 
+  .slider-card, 
+  .info-card, 
+  .transform-canvas-card, 
+  .transform-matrix-input-card, 
+  .top-control-card,
+  .addition-controls-card,
+  .subtraction-controls-card {
+    padding: 1.15rem 1rem;
+    border-radius: 14px;
+  }
+
+  .matrix-bracket-container {
+    padding: 0 0.5rem;
+  }
+
+  .matrix-grid {
+    gap: 6px;
+  }
+
+  .matrix-cell {
+    min-height: 44px;
+    font-size: 1.05rem;
+    border-radius: 8px;
+    padding: 0.4rem 0.2rem;
+  }
+
+  .subtraction-horizontal-line-container .addition-column-card,
+  .addition-horizontal-line-container .addition-column-card {
+    min-width: 255px;
+    padding: 0.85rem 0.75rem;
+  }
+
+  .operator-badge {
+    width: 38px;
+    height: 38px;
+  }
+
+  .addition-operator-divider {
+    gap: 0.35rem;
+  }
+
+  .modal-card {
+    padding: 1.4rem 1.15rem;
+    width: 94vw;
+    max-height: 90vh;
+  }
+
+  .modal-title {
+    font-size: 1.45rem;
+  }
+
+  .level-card {
+    padding: 0.9rem;
+  }
+}
+
+/* 4. Small Mobile Devices (<= 520px) */
+@media (max-width: 520px) {
+  .header-bar {
+    padding: 0.65rem 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .brand-title {
+    font-size: 1.35rem;
+  }
+
+  .brand-mark-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+  }
+
+  .track-slider-text span:last-child {
+    font-size: 0.7rem;
+  }
+
+  .track-slider-option {
+    padding: 0.3rem 0.5rem;
+  }
+
+  .main-content {
+    padding: 1rem 0.65rem;
+  }
+
+  .step-heading {
+    font-size: 1.25rem;
+  }
+
+  .step-description {
+    font-size: 0.84rem;
+  }
+
+  .matrix-cell {
+    min-height: 38px;
+    font-size: 0.95rem;
+    padding: 0.2rem 0.1rem;
+  }
+
+  .compact-cell {
+    min-height: 38px;
+    padding: 0.1rem;
+  }
+
+  .compact-input {
+    font-size: 0.88rem !important;
+  }
+
+  .matrix-header h3, .card-title, .canvas-header h3 {
+    font-size: 1rem;
+  }
+
+  .matrix-dims {
+    font-size: 0.68rem;
+    padding: 0.15rem 0.45rem;
+  }
+
+  .preset-buttons {
+    gap: 0.4rem;
+  }
+
+  .preset-btn {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.76rem;
+  }
+
+  .noise-pill-group {
+    flex-wrap: wrap;
+  }
+
+  .noise-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.68rem;
+  }
+
+  .canvas-subrow {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    gap: 0.6rem;
+  }
+
+  .canvas-subrow-info {
+    align-items: center;
+    text-align: center;
+  }
+
+  .operator-badge {
+    width: 34px;
+    height: 34px;
+  }
+
+  .operator-label {
+    font-size: 0.65rem;
+  }
+
+  .modal-card {
+    padding: 1.2rem 0.9rem;
+    width: 96vw;
   }
 }
 

@@ -36,6 +36,31 @@ export function addMatrices(matA, matB, alpha = null) {
   return result;
 }
 
+export function subtractMatrices(matA, matB, mode = 'direct', alpha = 1.0) {
+  const rows = matA.length;
+  const cols = matA[0].length;
+  const result = createEmptyMatrix(rows, cols);
+
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const valA = matA[i][j];
+      const valB = matB[i][j];
+      if (mode === 'abs') {
+        // Absolute difference C = |A - B| (used in change & motion detection)
+        result[i][j] = clampPixel(Math.abs(valA - valB));
+      } else if (mode === 'weighted') {
+        // Weighted subtraction C = clamp(A - αB)
+        result[i][j] = clampPixel(valA - alpha * valB);
+      } else {
+        // Direct subtraction C = clamp(A - B) (clamped at 0 underflow)
+        result[i][j] = clampPixel(valA - valB);
+      }
+    }
+  }
+
+  return result;
+}
+
 export function splitRGBChannels(colorGrid) {
   const rows = colorGrid.length;
   const cols = colorGrid[0].length;

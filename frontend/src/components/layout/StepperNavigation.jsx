@@ -19,12 +19,24 @@ const STEPS = [
   { id: 5, name: 'RGB Channels', icon: Layers },
   { id: 6, name: 'RGB Brightness', icon: Sliders },
   { id: 7, name: '2D Transformations', icon: Compass },
-  { id: 8, name: 'Matrix Addition', icon: Blend },
+  { id: 8, name: 'Addition & Subtraction', icon: Blend },
 ];
 
 export default function StepperNavigation({ currentStep, onSelectStep }) {
+  const activeTabRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (activeTabRef.current) {
+      activeTabRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+    }
+  }, [currentStep]);
+
   return (
-    <nav className="stepper-nav">
+    <nav className="stepper-nav" aria-label="Step navigation">
       <div className="steps-container">
         {STEPS.map((step, idx) => {
           const isActive = currentStep === step.id;
@@ -33,6 +45,7 @@ export default function StepperNavigation({ currentStep, onSelectStep }) {
           return (
             <motion.button
               key={step.id}
+              ref={isActive ? activeTabRef : null}
               className={`step-tab ${isActive ? 'active' : ''}`}
               onClick={() => onSelectStep(step.id)}
               whileHover={{ scale: 1.03 }}

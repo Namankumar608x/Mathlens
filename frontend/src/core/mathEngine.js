@@ -16,6 +16,26 @@ export function scaleMatrix(matrix, scalar) {
   );
 }
 
+export function addMatrices(matA, matB, alpha = null) {
+  const rows = matA.length;
+  const cols = matA[0].length;
+  const result = createEmptyMatrix(rows, cols);
+
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      if (alpha === null) {
+        // Direct addition C = A + B (clamped to 255)
+        result[i][j] = clampPixel(matA[i][j] + matB[i][j]);
+      } else {
+        // Blended addition C = αA + (1-α)B
+        result[i][j] = clampPixel(alpha * matA[i][j] + (1 - alpha) * matB[i][j]);
+      }
+    }
+  }
+
+  return result;
+}
+
 export function splitRGBChannels(colorGrid) {
   const rows = colorGrid.length;
   const cols = colorGrid[0].length;

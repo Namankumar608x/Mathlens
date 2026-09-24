@@ -76,7 +76,16 @@ export const CURRICULUM = {
       summary: 'Transform 2D image coordinates using transformation matrices: X\' = AX (scaling, rotation, shearing).',
       concepts: ['Linear Transformations', 'Coordinate Mapping X\'=AX', 'Rotation & Shear Matrices'],
       basicHint: 'Moving pixels around according to a math formula allows you to rotate, stretch, and tilt images!',
-      advancedFormula: "X' = A X, \\quad \\begin{bmatrix} x' \\\\ y' \\end{bmatrix} = \\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix} \\begin{bmatrix} x \\\\ y \\end{bmatrix}"
+    },
+    {
+      id: 8,
+      slug: 'matrix-addition-blend',
+      title: 'Step 8: Matrix Addition & Image Blending',
+      shortTitle: 'Matrix Addition',
+      summary: 'Select two images of the same size and combine them using matrix addition C = αA + (1-α)B and direct addition C = A + B.',
+      concepts: ['Element-by-Element Addition', 'Alpha Blending', 'Convex Combination', 'Pixel Intensity Saturation & Overflow'],
+      basicHint: 'Moving the α slider gradually blends Image A into Image B. Every pixel in the result is the weighted sum of corresponding pixels.',
+      advancedFormula: 'C_{i,j} = \\text{clamp}\\left(\\alpha A_{i,j} + (1-\\alpha) B_{i,j}\\right), \\quad 0 \\le \\alpha \\le 1'
     }
   ],
   upcomingModules: [

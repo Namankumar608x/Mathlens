@@ -76,6 +76,26 @@ export function thresholdMatrix(matD, threshold, foregroundVal = 1) {
   return result;
 }
 
+export function invertMatrix(matrix, factor = 1.0) {
+  const rows = matrix.length;
+  const cols = matrix[0].length;
+  const result = createEmptyMatrix(rows, cols);
+
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const orig = matrix[i][j];
+      const inverted = 255 - orig;
+      if (factor === 1.0) {
+        result[i][j] = clampPixel(inverted);
+      } else {
+        result[i][j] = clampPixel((1 - factor) * orig + factor * inverted);
+      }
+    }
+  }
+
+  return result;
+}
+
 export function splitRGBChannels(colorGrid) {
   const rows = colorGrid.length;
   const cols = colorGrid[0].length;

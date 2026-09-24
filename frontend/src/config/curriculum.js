@@ -80,12 +80,12 @@ export const CURRICULUM = {
     {
       id: 8,
       slug: 'matrix-addition-blend',
-      title: 'Step 8: Matrix Arithmetic (Addition & Subtraction)',
+      title: 'Step 8: Matrix Arithmetic (Addition, Subtraction & Inversion)',
       shortTitle: 'Matrix Arithmetic',
-      summary: 'Explore 8.1 Matrix Addition (Image Blending), 8.2 Matrix Subtraction (Background Removal), and 8.3 Matrix Subtraction (Find What Changed & Motion Detection).',
-      concepts: ['Alpha Blending C = αA + (1-α)B', 'Background Removal D = |I - B|', 'Binary Thresholding M(x, y)', 'Change & Motion Detection D = |A - B|', 'Photographic Sensor Noise T'],
-      basicHint: 'Subtracting two photographs highlights whatever was added, removed, or moved between the shots!',
-      advancedFormula: 'D(x, y) = |A(x, y) - B(x, y)|, \\quad M(x, y) = \\begin{cases} 1 & D(x, y) > T \\\\ 0 & D(x, y) \\le T \\end{cases}'
+      summary: 'Explore 8.1 Matrix Addition (Image Blending), 8.2 Matrix Subtraction (Background Removal), 8.3 Matrix Subtraction (Find What Changed), and 8.4 Image Inversion (X-ray-like Negative Effect: A′ = 255 − A).',
+      concepts: ['Alpha Blending C = αA + (1-α)B', 'Background Removal D = |I - B|', 'Binary Thresholding M(x, y)', 'Change & Motion Detection D = |A - B|', 'Image Inversion A′ = 255 − A', 'X-Ray-like Visual Effect'],
+      basicHint: 'Subtracting matrices reveals changes or reverses contrast (0 ➔ 255, 255 ➔ 0) to produce an X-ray-like negative effect!',
+      advancedFormula: "A'(x, y) = 255 - A(x, y) \\quad \\text{and} \\quad D(x, y) = |A(x, y) - B(x, y)|"
     }
   ],
   upcomingModules: [

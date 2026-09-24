@@ -13,6 +13,7 @@ import Step7ImageTransforms from './steps/Step7ImageTransforms';
 import Step8MatrixAddition from './steps/Step8MatrixAddition';
 import Step9MatrixSubtraction from './steps/Step9MatrixSubtraction';
 import Step10FindWhatChanged from './steps/Step10FindWhatChanged';
+import Step11ImageInversionXRay from './steps/Step11ImageInversionXRay';
 
 import './App.css';
 
@@ -21,7 +22,7 @@ export default function App() {
   const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(() => {
     const saved = localStorage.getItem('mathlens_step');
-    return saved ? parseInt(saved, 10) : 10;
+    return saved ? parseInt(saved, 10) : 11;
   });
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('mathlens_theme') || 'dark';
@@ -64,6 +65,8 @@ export default function App() {
         return <Step9MatrixSubtraction onSelectStep={handleSelectStep} />;
       case 10:
         return <Step10FindWhatChanged onSelectStep={handleSelectStep} />;
+      case 11:
+        return <Step11ImageInversionXRay onSelectStep={handleSelectStep} />;
       default:
         return <Step1Grayscale />;
     }

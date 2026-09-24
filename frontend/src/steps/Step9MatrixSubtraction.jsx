@@ -16,7 +16,8 @@ import {
   Eye,
   Sliders,
   AlertCircle,
-  Scan
+  Scan,
+  Activity
 } from 'lucide-react';
 import { clampPixel, createEmptyMatrix, subtractMatrices, thresholdMatrix } from '../core/mathEngine';
 
@@ -376,6 +377,14 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
             >
               <Scan size={13} />
               <span>8.3 What Changed</span>
+            </button>
+            <button 
+              className="sub-chapter-pill"
+              onClick={() => onSelectStep ? onSelectStep(11) : (window.location.hash = '#step11')}
+              title="Jump to 8.4 Image Inversion & X-Ray Effect"
+            >
+              <Activity size={13} />
+              <span>8.4 Invert &amp; X-Ray</span>
             </button>
           </div>
         </div>

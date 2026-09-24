@@ -1982,34 +1982,76 @@
 }
 
 .compact-grid {
-  gap: 6px;
+  gap: 4px;
   max-width: 100%;
 }
 
 .compact-cell {
-  min-height: 38px;
-  padding: 0.25rem 0.2rem;
+  min-height: 42px;
+  padding: 0.15rem 0.1rem;
   border-radius: 8px;
+  position: relative;
+  overflow: visible;
 }
 
 .compact-inner {
-  padding: 0 0.1rem;
-}
-
-.compact-input {
-  font-size: 0.95rem;
-  font-weight: 700;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
 }
 
+.compact-input {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  font-size: 0.92rem !important;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  text-align: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  overflow: hidden;
+  letter-spacing: -0.3px;
+}
+
+/* Stepper buttons float on hover/focus in compact cells so number has 100% width */
 .compact-steppers {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
   gap: 1px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1px;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.compact-cell:hover .compact-steppers,
+.compact-cell:focus-within .compact-steppers {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .compact-steppers .stepper-arrow-btn {
-  font-size: 0.5rem;
+  font-size: 0.48rem;
   padding: 1px 3px;
-  border-radius: 3px;
+  border-radius: 2px;
+  line-height: 1;
 }
 
 .compact-val {
@@ -2241,11 +2283,15 @@
    ========================================================= */
 .subtraction-horizontal-line-container {
   display: grid;
-  grid-template-columns: minmax(230px, 1fr) auto minmax(230px, 1fr) auto minmax(230px, 1fr) auto minmax(230px, 1fr);
+  grid-template-columns: minmax(235px, 1fr) auto minmax(235px, 1fr) auto minmax(235px, 1fr) auto minmax(235px, 1fr);
   align-items: stretch;
-  gap: 0.65rem;
+  gap: 0.55rem;
   width: 100%;
   margin: 0 auto;
+}
+
+.subtraction-horizontal-line-container .addition-column-card {
+  padding: 0.95rem 0.85rem;
 }
 
 .card-scene-i {
@@ -2361,38 +2407,55 @@
   border-radius: 3px;
 }
 
-/* Mini Toggle for Mask vs Segmented Object */
-.mini-toggle-pill-wrap {
-  display: inline-flex;
+/* Dedicated Toggle Bar inside Mask Card (Kept 100% inside outer box) */
+.mask-view-toggle-bar {
+  display: flex;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 2px;
-  gap: 2px;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0.65rem;
 }
 
-.mini-toggle-btn {
+.mask-toggle-pill {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   background: transparent;
   border: none;
   color: var(--text-muted);
   font-family: var(--font-sans);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  padding: 0.15rem 0.45rem;
-  border-radius: 4px;
+  padding: 0.3rem 0.45rem;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
+  white-space: nowrap;
 }
 
-.mini-toggle-btn:hover {
+.mask-toggle-pill:hover {
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
 }
 
-.mini-toggle-btn.active {
+.mask-toggle-pill.active {
   background: var(--bg-card);
   color: var(--accent-emerald);
   font-weight: 700;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="light"] .mask-toggle-pill.active {
+  background: #FFFFFF;
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.35);
 }
 
 /* Small screen responsiveness for 4 columns */

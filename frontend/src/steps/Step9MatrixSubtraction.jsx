@@ -638,6 +638,11 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
                         }}
                         onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
                         onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                        onWheel={(e) => {
+                          e.preventDefault();
+                          const delta = e.deltaY < 0 ? 5 : -5;
+                          handleCellChangeI(i, j, Math.min(255, Math.max(0, val + delta)));
+                        }}
                       >
                         <div className="editable-cell-inner compact-inner">
                           <input
@@ -765,6 +770,11 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
                         }}
                         onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
                         onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                        onWheel={(e) => {
+                          e.preventDefault();
+                          const delta = e.deltaY < 0 ? 5 : -5;
+                          handleCellChangeB(i, j, Math.min(255, Math.max(0, val + delta)));
+                        }}
                       >
                         <div className="editable-cell-inner compact-inner">
                           <input
@@ -933,34 +943,39 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
             <div className="col-header-left">
               <span className="matrix-title-badge badge-m">M</span>
               <div>
-                <h3 className="addition-card-title">Binary Mask Matrix M</h3>
+                <h3 className="addition-card-title">Binary Mask M</h3>
                 <span className="addition-card-subtitle" style={{ color: 'var(--accent-emerald)' }}>
                   1: Foreground, 0: Background
                 </span>
               </div>
             </div>
             <div className="col-header-right">
-              {/* Toggle Canvas View between Mask and Segmented Object */}
-              <div className="mini-toggle-pill-wrap">
-                <button
-                  className={`mini-toggle-btn ${outputView === 'mask' ? 'active' : ''}`}
-                  onClick={() => setOutputView('mask')}
-                  title="View Binary Mask M(x, y)"
-                >
-                  Mask (M)
-                </button>
-                <button
-                  className={`mini-toggle-btn ${outputView === 'segmented' ? 'active' : ''}`}
-                  onClick={() => setOutputView('segmented')}
-                  title="View Extracted Object (I * M)"
-                >
-                  Extracted
-                </button>
-              </div>
+              <span className="matrix-dims">4 × 4</span>
             </div>
           </div>
 
           <div className="addition-card-body">
+            {/* Toggle View: Mask vs Extracted (Contained inside outer card box) */}
+            <div className="mask-view-toggle-bar">
+              <button
+                type="button"
+                className={`mask-toggle-pill ${outputView === 'mask' ? 'active' : ''}`}
+                onClick={() => setOutputView('mask')}
+                title="View Binary Mask M(x, y)"
+              >
+                <Eye size={12} />
+                <span>Mask (M)</span>
+              </button>
+              <button
+                type="button"
+                className={`mask-toggle-pill ${outputView === 'segmented' ? 'active' : ''}`}
+                onClick={() => setOutputView('segmented')}
+                title="View Extracted Object (I * M)"
+              >
+                <Scissors size={12} />
+                <span>Extracted</span>
+              </button>
+            </div>
             <div className="canvas-subrow">
               <PipelineCanvas
                 matrix={matrixM}
@@ -1033,46 +1048,54 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
 
       </div>
 
-      {/* FLOATING CURSOR TOOLTIP */}
-      {hoveredCell && hoveredCell.x !== undefined && (
-        <div 
-          className="cursor-tooltip"
-          style={{
-            position: 'fixed',
-            left: `${hoveredCell.x + 14}px`,
-            top: `${hoveredCell.y + 14}px`,
-            pointerEvents: 'none',
-            zIndex: 9999,
-            background: 'rgba(15, 23, 42, 0.95)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
-            backdropFilter: 'blur(8px)',
-            borderRadius: '20px',
-            padding: '0.35rem 0.85rem',
-            fontSize: '0.82rem',
-            fontFamily: 'var(--font-mono)',
-            color: '#FFFFFF',
-            whiteSpace: 'nowrap',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-        >
-          <span style={{ color: 'var(--accent-purple)', fontWeight: 700 }}>
-            ({hoveredCell.row + 1}, {hoveredCell.col + 1})
-          </span>
-          <span style={{ opacity: 0.3 }}>|</span>
-          <span>I: <strong style={{ color: 'var(--accent-purple)' }}>{matrixI[hoveredCell.row][hoveredCell.col]}</strong></span>
-          <span style={{ opacity: 0.3 }}>−</span>
-          <span>B: <strong style={{ color: '#F59E0B' }}>{noisyMatrixB[hoveredCell.row][hoveredCell.col]}</strong></span>
-          <span style={{ opacity: 0.3 }}>=</span>
-          <span>D: <strong style={{ color: 'var(--accent-cyan)' }}>{matrixD[hoveredCell.row][hoveredCell.col]}</strong></span>
-          <span style={{ opacity: 0.3 }}>➔</span>
-          <span>M: <strong style={{ color: matrixM[hoveredCell.row][hoveredCell.col] === 1 ? '#10B981' : '#64748B' }}>
-            {matrixM[hoveredCell.row][hoveredCell.col]} ({matrixM[hoveredCell.row][hoveredCell.col] === 1 ? 'FG' : 'BG'})
-          </strong></span>
-        </div>
-      )}
+      {/* FLOATING CURSOR TOOLTIP (Guarded against right-edge overflow to eliminate layout shaking) */}
+      {hoveredCell && hoveredCell.x !== undefined && (() => {
+        const tooltipWidth = 340;
+        const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+        const leftPos = hoveredCell.x > (screenWidth - tooltipWidth - 20)
+          ? Math.max(10, hoveredCell.x - tooltipWidth - 14)
+          : hoveredCell.x + 14;
+
+        return (
+          <div 
+            className="cursor-tooltip"
+            style={{
+              position: 'fixed',
+              left: `${leftPos}px`,
+              top: `${hoveredCell.y + 14}px`,
+              pointerEvents: 'none',
+              zIndex: 9999,
+              background: 'rgba(15, 23, 42, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
+              backdropFilter: 'blur(8px)',
+              borderRadius: '20px',
+              padding: '0.35rem 0.85rem',
+              fontSize: '0.82rem',
+              fontFamily: 'var(--font-mono)',
+              color: '#FFFFFF',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <span style={{ color: 'var(--accent-purple)', fontWeight: 700 }}>
+              ({hoveredCell.row + 1}, {hoveredCell.col + 1})
+            </span>
+            <span style={{ opacity: 0.3 }}>|</span>
+            <span>I: <strong style={{ color: 'var(--accent-purple)' }}>{matrixI[hoveredCell.row][hoveredCell.col]}</strong></span>
+            <span style={{ opacity: 0.3 }}>−</span>
+            <span>B: <strong style={{ color: '#F59E0B' }}>{noisyMatrixB[hoveredCell.row][hoveredCell.col]}</strong></span>
+            <span style={{ opacity: 0.3 }}>=</span>
+            <span>D: <strong style={{ color: 'var(--accent-cyan)' }}>{matrixD[hoveredCell.row][hoveredCell.col]}</strong></span>
+            <span style={{ opacity: 0.3 }}>➔</span>
+            <span>M: <strong style={{ color: matrixM[hoveredCell.row][hoveredCell.col] === 1 ? '#10B981' : '#64748B' }}>
+              {matrixM[hoveredCell.row][hoveredCell.col]} ({matrixM[hoveredCell.row][hoveredCell.col] === 1 ? 'FG' : 'BG'})
+            </strong></span>
+          </div>
+        );
+      })()}
     </motion.div>
   );
 }

@@ -19,7 +19,8 @@ import {
   Scan,
   Activity,
   Maximize2,
-  Undo2
+  Undo2,
+  ZoomIn
 } from 'lucide-react';
 import { clampPixel, createEmptyMatrix, subtractMatrices, thresholdMatrix } from '../core/mathEngine';
 
@@ -403,6 +404,14 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
             >
               <Undo2 size={13} />
               <span>8.6 Matrix Inverse</span>
+            </button>
+            <button 
+              className="sub-chapter-pill"
+              onClick={() => onSelectStep ? onSelectStep(14) : (window.location.hash = '#step14')}
+              title="Jump to 8.7 Matrix Inverse: Zoom In and Zoom Out"
+            >
+              <ZoomIn size={13} />
+              <span>8.7 Zoom In &amp; Out</span>
             </button>
           </div>
         </div>

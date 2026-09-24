@@ -82,10 +82,10 @@ export const CURRICULUM = {
       slug: 'matrix-arithmetic-geometry',
       title: 'Step 8: Matrix Applications (Arithmetic, Inversion, Determinants & Inverse)',
       shortTitle: 'Matrix Applications',
-      summary: 'Explore 8.1 Matrix Addition (Image Blending), 8.2 Background Removal, 8.3 Change Detection, 8.4 Image Inversion (X-ray Effect: A′ = 255 − A), 8.5 Determinant: Stretch, Shrink, Flip or Collapse (det(A) = ad − bc), and 8.6 Matrix Inverse: Undo the Transformation (x = A⁻¹x′).',
-      concepts: ['Alpha Blending C = αA + (1-α)B', 'Background Removal D = |I - B|', 'Change Detection D = |A - B|', 'Image Inversion A′ = 255 − A', 'Determinant det(A) = ad - bc', 'Matrix Inverse A⁻¹', 'Undo Transformation x = A⁻¹x′', 'Singular Matrix Non-Invertibility'],
-      basicHint: 'Transform an image with any matrix, then use the inverse matrix A⁻¹ to undo the deformation and restore the original picture!',
-      advancedFormula: "x = A^{-1}x', \\quad A^{-1} = \\frac{1}{ad - bc} \\begin{bmatrix} d & -b \\\\ -c & a \\end{bmatrix}"
+      summary: 'Explore 8.1 Matrix Addition (Image Blending), 8.2 Background Removal, 8.3 Change Detection, 8.4 Image Inversion (X-ray Effect: A′ = 255 − A), 8.5 Determinant: Stretch, Shrink, Flip or Collapse (det(A) = ad − bc), 8.6 Matrix Inverse: Undo Transformation (x = A⁻¹x′), and 8.7 Matrix Inverse: Zoom In and Zoom Out (S = [k 0; 0 k], S⁻¹ = [1/k 0; 0 1/k]).',
+      concepts: ['Alpha Blending C = αA + (1-α)B', 'Background Removal D = |I - B|', 'Change Detection D = |A - B|', 'Image Inversion A′ = 255 − A', 'Determinant det(A) = ad - bc', 'Matrix Inverse A⁻¹', 'Zoom Scaling Matrix S = [k 0; 0 k]', 'Inverse Zoom S⁻¹ = [1/k 0; 0 1/k]', 'Identity S⁻¹S = I'],
+      basicHint: 'Zoom into an image using scaling matrix S=[k 0; 0 k], then apply inverse scaling matrix S⁻¹=[1/k 0; 0 1/k] to restore original scale!',
+      advancedFormula: "S = \\begin{bmatrix} k & 0 \\\\ 0 & k \\end{bmatrix}, \\quad S^{-1} = \\begin{bmatrix} 1/k & 0 \\\\ 0 & 1/k \\end{bmatrix}, \\quad S^{-1}S = I"
     }
   ],
   upcomingModules: [

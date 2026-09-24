@@ -180,7 +180,7 @@ export default function CoordinateTransformCanvas({
       // Canvas affine matrix: m11=a, m12=-c, m21=-b, m22=d (accounting for screen Y inversion)
       ctx.transform(a, -c, -b, d, 0, 0);
 
-      if (customImage && customImage.complete && customImage.naturalWidth > 0) {
+      if (subjectType === 'custom' && customImage && customImage.complete && customImage.naturalWidth > 0) {
         const imgSize = 3.6 * unitStep;
         ctx.drawImage(customImage, -imgSize / 2, -imgSize / 2, imgSize, imgSize);
         ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';

@@ -16,6 +16,7 @@ import Step10FindWhatChanged from './steps/Step10FindWhatChanged';
 import Step11ImageInversionXRay from './steps/Step11ImageInversionXRay';
 import Step12DeterminantVisualizer from './steps/Step12DeterminantVisualizer';
 import Step13MatrixInverse from './steps/Step13MatrixInverse';
+import Step14MatrixInverseZoom from './steps/Step14MatrixInverseZoom';
 
 import './App.css';
 
@@ -24,7 +25,7 @@ export default function App() {
   const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(() => {
     const saved = localStorage.getItem('mathlens_step');
-    return saved ? parseInt(saved, 10) : 13;
+    return saved ? parseInt(saved, 10) : 14;
   });
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('mathlens_theme') || 'dark';
@@ -73,6 +74,8 @@ export default function App() {
         return <Step12DeterminantVisualizer onSelectStep={handleSelectStep} />;
       case 13:
         return <Step13MatrixInverse onSelectStep={handleSelectStep} />;
+      case 14:
+        return <Step14MatrixInverseZoom onSelectStep={handleSelectStep} />;
       default:
         return <Step1Grayscale />;
     }

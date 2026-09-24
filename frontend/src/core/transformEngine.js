@@ -336,8 +336,57 @@ export function drawProceduralSubject(ctx, type = 'portrait', unitStep = 45, isL
     ctx.lineTo(0, half * 0.85);
     ctx.lineTo(half * 0.18, half * 0.48);
     ctx.fill();
+  } else if (type === 'macro') {
+    // Silicon Microchip with intricate circuits (fantastic for demonstrating zoom in/out!)
+    // Outer Ceramic Package
+    ctx.fillStyle = isLight ? '#334155' : '#0F172A';
+    ctx.strokeStyle = '#38BDF8';
+    ctx.lineWidth = 2.5;
+    ctx.fillRect(-half * 0.85, -half * 0.85, half * 1.7, half * 1.7);
+    ctx.strokeRect(-half * 0.85, -half * 0.85, half * 1.7, half * 1.7);
+
+    // Silicon Die (Center dark green/slate square)
+    ctx.fillStyle = '#064E3B';
+    ctx.strokeStyle = '#10B981';
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(-half * 0.55, -half * 0.55, half * 1.1, half * 1.1);
+    ctx.strokeRect(-half * 0.55, -half * 0.55, half * 1.1, half * 1.1);
+
+    // Gold Bond Pads & Micro-traces
+    ctx.strokeStyle = '#F59E0B';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = -4; i <= 4; i++) {
+      const offset = (i / 4.5) * half * 0.75;
+      // Top/Bottom pins
+      ctx.moveTo(offset, -half * 0.85);
+      ctx.lineTo(offset * 0.7, -half * 0.55);
+      ctx.moveTo(offset, half * 0.85);
+      ctx.lineTo(offset * 0.7, half * 0.55);
+      // Left/Right pins
+      ctx.moveTo(-half * 0.85, offset);
+      ctx.lineTo(-half * 0.55, offset * 0.7);
+      ctx.moveTo(half * 0.85, offset);
+      ctx.lineTo(half * 0.55, offset * 0.7);
+    }
+    ctx.stroke();
+
+    // Central CPU Core
+    ctx.fillStyle = '#1E293B';
+    ctx.strokeStyle = '#FBBF24';
+    ctx.lineWidth = 2;
+    ctx.fillRect(-half * 0.28, -half * 0.28, half * 0.56, half * 0.56);
+    ctx.strokeRect(-half * 0.28, -half * 0.28, half * 0.56, half * 0.56);
+
+    // Inner Silicon Die
+    ctx.fillStyle = '#0F172A';
+    ctx.fillRect(-half * 0.18, -half * 0.18, half * 0.36, half * 0.36);
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-half * 0.18, -half * 0.18, half * 0.36, half * 0.36);
   }
 
   ctx.restore();
 }
+
 

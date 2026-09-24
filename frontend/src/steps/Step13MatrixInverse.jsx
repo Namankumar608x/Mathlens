@@ -23,7 +23,8 @@ import {
   Play,
   Pause,
   RefreshCw,
-  Grid
+  Grid,
+  ZoomIn
 } from 'lucide-react';
 import { 
   computeDeterminant, 
@@ -327,6 +328,14 @@ export default function Step13MatrixInverse({ onSelectStep }) {
             >
               <Undo2 size={13} />
               <span>8.6 Matrix Inverse</span>
+            </button>
+            <button 
+              className="sub-chapter-pill"
+              onClick={() => onSelectStep ? onSelectStep(14) : (window.location.hash = '#step14')}
+              title="Jump to 8.7 Matrix Inverse: Zoom In and Zoom Out"
+            >
+              <ZoomIn size={13} />
+              <span>8.7 Zoom In &amp; Out</span>
             </button>
           </div>
         </div>

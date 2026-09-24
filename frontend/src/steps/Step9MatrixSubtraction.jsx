@@ -15,7 +15,8 @@ import {
   Blend,
   Eye,
   Sliders,
-  AlertCircle
+  AlertCircle,
+  Scan
 } from 'lucide-react';
 import { clampPixel, createEmptyMatrix, subtractMatrices, thresholdMatrix } from '../core/mathEngine';
 
@@ -359,14 +360,22 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
               title="Jump to 8.1 Matrix Addition (Image Blending)"
             >
               <Blend size={13} />
-              <span>8.1 Matrix Addition</span>
+              <span>8.1 Blend</span>
             </button>
             <button 
               className="sub-chapter-pill active"
               title="Current: 8.2 Matrix Subtraction (Background Removal)"
             >
               <Scissors size={13} />
-              <span>8.2 Matrix Subtraction</span>
+              <span>8.2 Remove BG</span>
+            </button>
+            <button 
+              className="sub-chapter-pill"
+              onClick={() => onSelectStep ? onSelectStep(10) : (window.location.hash = '#step10')}
+              title="Jump to 8.3 Matrix Subtraction (Find What Changed)"
+            >
+              <Scan size={13} />
+              <span>8.3 What Changed</span>
             </button>
           </div>
         </div>

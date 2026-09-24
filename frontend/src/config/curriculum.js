@@ -80,22 +80,12 @@ export const CURRICULUM = {
     {
       id: 8,
       slug: 'matrix-addition-blend',
-      title: 'Step 8: Matrix Addition & Blending',
-      shortTitle: 'Addition & Blending',
-      summary: 'Combine and blend images of the same dimensions using matrix addition: C = αA + (1-α)B and C = clamp(A + B).',
-      concepts: ['Element-wise Addition', 'Alpha Blending', 'Linear Interpolation', 'Overflow Saturation Clipping'],
-      basicHint: 'Add matrices to blend scenes together like Photoshop layers or combine exposures.',
-      advancedFormula: 'C_{i,j} = \\text{clamp}\\left(\\alpha A_{i,j} + (1-\\alpha) B_{i,j}\\right)'
-    },
-    {
-      id: 9,
-      slug: 'background-subtraction',
-      title: 'Step 9: Matrix Subtraction & Background Removal',
-      shortTitle: 'Background Subtraction',
-      summary: 'Subtract an empty background matrix B from a scene matrix I: D = |I - B|, then apply threshold T to isolate the moving object mask M.',
-      concepts: ['Element-wise Subtraction', 'Absolute Difference |I - B|', 'Noise Resistance', 'Binary Threshold Masking M(x, y)'],
-      basicHint: 'Subtracting a static background makes unchanged areas turn black (0), leaving only the moved object clearly visible!',
-      advancedFormula: 'D(x, y) = |I(x, y) - B(x, y)|, \\quad M(x, y) = \\begin{cases} 1 & \\text{if } D(x, y) > T \\\\ 0 & \\text{otherwise} \\end{cases}'
+      title: 'Step 8: Matrix Arithmetic (Addition & Subtraction)',
+      shortTitle: 'Matrix Arithmetic',
+      summary: 'Explore 8.1 Matrix Addition (Image Blending), 8.2 Matrix Subtraction (Background Removal), and 8.3 Matrix Subtraction (Find What Changed & Motion Detection).',
+      concepts: ['Alpha Blending C = αA + (1-α)B', 'Background Removal D = |I - B|', 'Binary Thresholding M(x, y)', 'Change & Motion Detection D = |A - B|', 'Photographic Sensor Noise T'],
+      basicHint: 'Subtracting two photographs highlights whatever was added, removed, or moved between the shots!',
+      advancedFormula: 'D(x, y) = |A(x, y) - B(x, y)|, \\quad M(x, y) = \\begin{cases} 1 & D(x, y) > T \\\\ 0 & D(x, y) \\le T \\end{cases}'
     }
   ],
   upcomingModules: [

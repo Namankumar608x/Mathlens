@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Compass, Layers } from 'lucide-react';
+import { BookOpen, Compass, Layers, GraduationCap } from 'lucide-react';
 
-export default function Footer({ currentStep, onSelectStep, onOpenLevelModal }) {
+export default function Footer({ currentStep, onSelectStep, onOpenLevelModal, onOpenCredits }) {
   return (
     <footer className="app-footer">
       <div className="footer-content">
@@ -14,6 +14,9 @@ export default function Footer({ currentStep, onSelectStep, onOpenLevelModal }) 
           <p className="footer-quote">
             An interactive mathematics laboratory exploring matrix representations, spatial transformations, and digital image processing.
           </p>
+          <div className="footer-inst-tag">
+            <span>IIIT Vadodara • Academic Research &amp; Education</span>
+          </div>
         </div>
 
         <div className="footer-links-group">
@@ -42,7 +45,7 @@ export default function Footer({ currentStep, onSelectStep, onOpenLevelModal }) 
                 07. 2D Image Transforms
               </button>
               <button onClick={() => onSelectStep(8)} className={currentStep === 8 ? 'active' : ''}>
-                08. Addition & Blending
+                08. Addition &amp; Blending
               </button>
               <button onClick={() => onSelectStep(9)} className={currentStep === 9 ? 'active' : ''}>
                 09. Background Subtraction
@@ -61,11 +64,32 @@ export default function Footer({ currentStep, onSelectStep, onOpenLevelModal }) 
               Designed for visual intuition in linear algebra and digital image processing.
             </p>
           </div>
+
+          <div className="footer-column">
+            <h4>Development &amp; Supervision</h4>
+            <div className="footer-team-info">
+              <p className="footer-supervisor-line">
+                <span className="footer-label">Supervisor:</span> <strong>Prof. Payal Wadhwa</strong>
+              </p>
+              <p className="footer-devs-line">
+                <span className="footer-label">Developers:</span> Naman Kumar, Mayank Soni, Krishana Yadav
+              </p>
+              <p className="footer-inst-line">
+                Indian Institute of Information Technology Vadodara
+              </p>
+              {onOpenCredits && (
+                <button onClick={onOpenCredits} className="footer-credits-link">
+                  <GraduationCap size={14} />
+                  <span>View Developer Details</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="footer-bottom">
-        <span>© MathLens Matrix Laboratory — Modern Mathematics Interactive Series</span>
+        <span>© MathLens Matrix Laboratory — IIIT Vadodara</span>
         <span className="footer-math-symbol">A · x = λ · x</span>
       </div>
     </footer>

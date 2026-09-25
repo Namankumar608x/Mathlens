@@ -1,14 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sun, Moon, Sparkles } from 'lucide-react';
+import { Sun, Moon, Sparkles, GraduationCap } from 'lucide-react';
 
-export default function Header({ currentLevel, onSelectLevel, onOpenLevelModal, theme, onToggleTheme }) {
+export default function Header({ currentLevel, onSelectLevel, onOpenLevelModal, onOpenCredits, theme, onToggleTheme }) {
   return (
     <header className="header-bar">
       <div className="brand-section">
         <h1 className="brand-title">MathLens</h1>
       </div>
-      
+
       <div className="header-controls">
         {/* Sliding Pill Control for Basic & Advanced */}
         <div className="track-slider-container">
@@ -48,6 +48,21 @@ export default function Header({ currentLevel, onSelectLevel, onOpenLevelModal, 
             </span>
           </button>
         </div>
+
+        {/* Developers Button */}
+        {onOpenCredits && (
+          <motion.button
+            className="credits-trigger-btn"
+            onClick={onOpenCredits}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            title="View Developers & Faculty Supervisor"
+            aria-label="View Developers & Faculty Supervisor"
+          >
+            <GraduationCap size={15} />
+            <span>Developers</span>
+          </motion.button>
+        )}
 
         {/* Theme Toggle Button */}
         <motion.button

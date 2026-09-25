@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/common/Header';
+import Footer from './components/common/Footer';
 import LevelSelectorModal from './components/common/LevelSelectorModal';
+import DeveloperCreditsModal from './components/common/DeveloperCreditsModal';
 import StepperNavigation from './components/layout/StepperNavigation';
 
 import Step1Grayscale from './steps/Step1Grayscale';
@@ -23,6 +25,7 @@ import './App.css';
 export default function App() {
   const [currentLevel, setCurrentLevel] = useState('basic');
   const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
+  const [isCreditsOpen, setIsCreditsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(() => {
     const saved = localStorage.getItem('mathlens_step');
     return saved ? parseInt(saved, 10) : 14;
@@ -87,6 +90,7 @@ export default function App() {
         currentLevel={currentLevel}
         onSelectLevel={setCurrentLevel}
         onOpenLevelModal={() => setIsLevelModalOpen(true)}
+        onOpenCredits={() => setIsCreditsOpen(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -100,11 +104,23 @@ export default function App() {
         {renderStepContent()}
       </main>
 
+      <Footer
+        currentStep={currentStep}
+        onSelectStep={handleSelectStep}
+        onOpenLevelModal={() => setIsLevelModalOpen(true)}
+        onOpenCredits={() => setIsCreditsOpen(true)}
+      />
+
       <LevelSelectorModal
         isOpen={isLevelModalOpen}
         currentLevel={currentLevel}
         onSelectLevel={setCurrentLevel}
         onClose={() => setIsLevelModalOpen(false)}
+      />
+
+      <DeveloperCreditsModal
+        isOpen={isCreditsOpen}
+        onClose={() => setIsCreditsOpen(false)}
       />
     </div>
   );

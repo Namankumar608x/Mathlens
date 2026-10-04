@@ -354,7 +354,7 @@ export default function Step13MatrixInverse({ onSelectStep }) {
         <div style={{
           marginTop: '1.25rem',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
           gap: '1rem',
           alignItems: 'center'
         }}>
@@ -552,14 +552,14 @@ export default function Step13MatrixInverse({ onSelectStep }) {
       </div>
 
       {/* MAIN TWO-COLUMN LAB WORKBENCH */}
-      <div className="interactive-lab-grid" style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="interactive-lab-grid" style={{ marginTop: '1.5rem', alignItems: 'start' }}>
         
         {/* LEFT COLUMN: Matrices Side-by-Side, Presets, Controls */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
           
           {/* 1. SIDE-BY-SIDE MATRICES: FORWARD A vs INVERSE A^-1 */}
           <div className="control-panel-card">
-            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Sparkles size={16} style={{ color: 'var(--accent-purple)' }} />
                 <span>Transformation A and Inverse A⁻¹</span>
@@ -569,7 +569,7 @@ export default function Step13MatrixInverse({ onSelectStep }) {
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginTop: '1rem' }}>
               
               {/* Box 1: Matrix A */}
               <div style={{
@@ -732,7 +732,7 @@ export default function Step13MatrixInverse({ onSelectStep }) {
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginTop: '1rem' }}>
+            <div className="matrix-entries-2x2-grid" style={{ marginTop: '1rem' }}>
               {/* Slider a */}
               <div className="matrix-slider-card">
                 <div className="matrix-slider-header">

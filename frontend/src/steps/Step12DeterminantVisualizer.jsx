@@ -420,14 +420,14 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
       </div>
 
       {/* MAIN TWO-COLUMN LAB WORKBENCH */}
-      <div className="interactive-lab-grid" style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="interactive-lab-grid" style={{ marginTop: '1.5rem', alignItems: 'start' }}>
         
         {/* LEFT COLUMN: Controls, Presets, Image Picker */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
           
           {/* 1. MATRIX SLIDERS [a, b; c, d] */}
           <div className="control-panel-card">
-            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Sliders size={16} style={{ color: 'var(--accent-purple)' }} />
                 <span>Matrix Elements A = [a b; c d]</span>
@@ -437,7 +437,7 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginTop: '1rem' }}>
+            <div className="matrix-entries-2x2-grid" style={{ marginTop: '1rem' }}>
               {renderEntryControl('a', 'a (Scale X)', 'i\'_x component')}
               {renderEntryControl('b', 'b (Shear X)', 'j\'_x component')}
               {renderEntryControl('c', 'c (Shear Y)', 'i\'_y component')}
@@ -681,7 +681,7 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
           />
 
           {/* DYNAMIC CASE COMPARISON CARDS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.85rem' }}>
             
             {/* Case 1: Stretch */}
             <div 
@@ -773,7 +773,7 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
           <span>Mathematical Intuition: The Determinant as an Area Scaling Factor</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginTop: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1.25rem', marginTop: '1rem' }}>
           <div className="theory-sub-block">
             <h4 style={{ color: 'var(--accent-cyan)', fontSize: '0.92rem', marginBottom: '0.4rem' }}>
               1. Why det(A) = ad − bc measures Area

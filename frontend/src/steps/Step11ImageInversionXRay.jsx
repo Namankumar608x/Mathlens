@@ -1242,7 +1242,7 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
               </div>
 
               {/* 4 Canvases for Custom Photo */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.25rem', alignItems: 'center' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '1.25rem', alignItems: 'center' }}>
                 
                 {/* 1. Original Uploaded Photo */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
@@ -1328,7 +1328,7 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
           <span>Mathematical Foundations: Point Transformations &amp; Digital Negatives</span>
         </h3>
         
-        <div className="math-concept-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginTop: '0.85rem' }}>
+        <div className="math-concept-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1.25rem', marginTop: '0.85rem' }}>
           
           <div className="math-concept-box">
             <h4 style={{ color: 'var(--accent-purple)', fontSize: '0.92rem', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

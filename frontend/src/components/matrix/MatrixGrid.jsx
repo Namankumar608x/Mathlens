@@ -39,6 +39,11 @@ export default function MatrixGrid({
                   }}
                   onMouseEnter={(e) => onHoverCell && onHoverCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
                   onMouseMove={(e) => onHoverCell && onHoverCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                  onTouchStart={(e) => {
+                    if (e.touches && e.touches[0]) {
+                      onHoverCell && onHoverCell({ row: i, col: j, x: e.touches[0].clientX, y: e.touches[0].clientY });
+                    }
+                  }}
                 >
                   {editable ? (
                     <div className="editable-cell-inner">

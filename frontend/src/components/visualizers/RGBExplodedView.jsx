@@ -49,6 +49,7 @@ export default function RGBExplodedView({
                     whileHover={{ scale: 1.04 }}
                     whileTap={{ scale: 0.96 }}
                     onMouseEnter={() => onHoverCell && onHoverCell({ row: i, col: j })}
+                    onTouchStart={() => onHoverCell && onHoverCell({ row: i, col: j })}
                     style={{
                       '--cell-accent': color,
                       borderColor: isSelected ? color : undefined,
@@ -56,7 +57,8 @@ export default function RGBExplodedView({
                       padding: isCompact ? '0.2rem 0.1rem' : '0.5rem 0.25rem',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      touchAction: 'manipulation'
                     }}
                   >
                     <input
@@ -102,7 +104,7 @@ export default function RGBExplodedView({
           <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>Click cell to edit value</span>
         </div>
 
-        <div className="channel-tab-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.45rem', marginBottom: '1.2rem', width: '100%' }}>
+        <div className="channel-tab-bar">
           <button 
             className={`channel-tab-btn ${activeTab === 'r' ? 'active-r' : ''}`} 
             onClick={() => handleTabClick('r')}

@@ -24,7 +24,10 @@ export default function Header({ currentLevel, onSelectLevel, onOpenLevelModal, 
                 transition={{ type: 'spring', stiffness: 450, damping: 35 }}
               />
             )}
-            <span className="track-slider-text">Basic Intuition</span>
+            <span className="track-slider-text">
+              <span className="track-text-long">Basic Intuition</span>
+              <span className="track-text-short">Basic</span>
+            </span>
           </button>
 
           <button
@@ -44,7 +47,8 @@ export default function Header({ currentLevel, onSelectLevel, onOpenLevelModal, 
             )}
             <span className="track-slider-text flex items-center gap-1.5">
               <Sparkles size={13} className="inline opacity-90" />
-              <span>Advanced Math</span>
+              <span className="track-text-long">Advanced Math</span>
+              <span className="track-text-short">Advanced</span>
             </span>
           </button>
         </div>
@@ -60,7 +64,7 @@ export default function Header({ currentLevel, onSelectLevel, onOpenLevelModal, 
             aria-label="View Developers & Faculty Supervisor"
           >
             <GraduationCap size={15} />
-            <span>Developers</span>
+            <span className="credits-btn-text">Developers</span>
           </motion.button>
         )}
 

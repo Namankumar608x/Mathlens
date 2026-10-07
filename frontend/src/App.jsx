@@ -8,7 +8,7 @@ import MobileBottomNav from './components/layout/MobileBottomNav';
 import FeatureSheet from './components/navigation/FeatureSheet';
 import CommandPalette from './components/navigation/CommandPalette';
 import MathBackground from './components/background/MathBackground';
-import Footer from './components/common/Footer';
+
 
 import HeroSection from './components/home/HeroSection';
 import CurriculumScreen from './screens/CurriculumScreen';
@@ -295,10 +295,10 @@ export default function App() {
         onClose={() => setIsLevelModalOpen(false)}
       />
 
-      <DeveloperCreditsModal
+      {/* <DeveloperCreditsModal
         isOpen={isCreditsOpen}
         onClose={() => setIsCreditsOpen(false)}
-      />
+      /> */}
     </div>
   );
 }

@@ -74,12 +74,12 @@ export default function Footer({ onSelectStep, onSelectView }) {
               <p className="footer-inst-line">
                 Indian Institute of Information Technology Vadodara
               </p>
-              {onOpenCredits && (
+              {/* {onOpenCredits && (
                 <button onClick={onOpenCredits} className="footer-credits-link">
                   <GraduationCap size={14} />
                   <span>View Developer Details</span>
                 </button>
-              )}
+              )} */}
             </div>
           </div>
         </div>

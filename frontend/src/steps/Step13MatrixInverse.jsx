@@ -34,6 +34,8 @@ import {
   interpolateMatrix 
 } from '../core/transformEngine';
 import CoordinateTransformCanvas from '../components/visualizers/CoordinateTransformCanvas';
+import VisualLabsNav from '../components/navigation/VisualLabsNav';
+import StepFooter from '../components/layout/StepFooter';
 
 // Curated presets specifically designed for matrix inversion exploration
 const INVERSE_PRESETS = [
@@ -273,75 +275,18 @@ export default function Step13MatrixInverse({ onSelectStep }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.45rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
             <span className="modal-badge-tag" style={{ margin: 0, background: 'rgba(139, 92, 246, 0.15)', color: 'var(--accent-purple)', borderColor: 'rgba(139, 92, 246, 0.35)' }}>
-              Chapter 8.6
+              Visual Lab 13
             </span>
             <span style={{ fontSize: '0.85rem', color: 'var(--accent-purple)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-              Reversible Geometry &amp; Inversion: x = A⁻¹x′
+              Reversible Geometry: x = A⁻¹x′
             </span>
           </div>
 
-          {/* Sub-Chapter Switcher with all 6 sub-chapters */}
-          <div className="sub-chapter-nav">
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(8) : (window.location.hash = '#step8')}
-              title="8.1 Matrix Addition (Image Blending)"
-            >
-              <Blend size={13} />
-              <span>8.1 Blend</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(9) : (window.location.hash = '#step9')}
-              title="8.2 Matrix Subtraction (Background Removal)"
-            >
-              <Scissors size={13} />
-              <span>8.2 Remove BG</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(10) : (window.location.hash = '#step10')}
-              title="8.3 Matrix Subtraction (Find What Changed)"
-            >
-              <Scan size={13} />
-              <span>8.3 What Changed</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(11) : (window.location.hash = '#step11')}
-              title="8.4 Image Inversion & X-Ray Effect"
-            >
-              <Activity size={13} />
-              <span>8.4 Invert &amp; X-Ray</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(12) : (window.location.hash = '#step12')}
-              title="8.5 Determinant: Stretch, Shrink, Flip or Collapse"
-            >
-              <Maximize2 size={13} />
-              <span>8.5 Determinant</span>
-            </button>
-            <button 
-              className="sub-chapter-pill active"
-              title="Current: 8.6 Matrix Inverse: Undo the Transformation"
-            >
-              <Undo2 size={13} />
-              <span>8.6 Matrix Inverse</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(14) : (window.location.hash = '#step14')}
-              title="Jump to 8.7 Matrix Inverse: Zoom In and Zoom Out"
-            >
-              <ZoomIn size={13} />
-              <span>8.7 Zoom In &amp; Out</span>
-            </button>
-          </div>
+          <VisualLabsNav activeStep={13} onSelectStep={onSelectStep} />
         </div>
 
         <h2 className="step-heading">
-          8.6 Matrix Inverse: Undo the Transformation
+          Visual Lab 13: Matrix Inverse
         </h2>
         <p className="step-description">
           First transform an image using <code>x′ = Ax</code> where <strong>A</strong> can be any linear operation: 
@@ -1046,6 +991,8 @@ export default function Step13MatrixInverse({ onSelectStep }) {
           </div>
         </div>
       </div>
+
+      <StepFooter stepNumber={13} onSelectStep={onSelectStep} />
     </motion.div>
   );
 }

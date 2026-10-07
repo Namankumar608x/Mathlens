@@ -21,6 +21,8 @@ import {
   ZoomIn
 } from 'lucide-react';
 import { clampPixel, createEmptyMatrix } from '../core/mathEngine';
+import VisualLabsNav from '../components/navigation/VisualLabsNav';
+import StepFooter from '../components/layout/StepFooter';
 
 // Default presets for Image A and Image B (Addition & Subtraction pairings)
 const PRESET_PAIRS = {
@@ -402,76 +404,19 @@ export default function Step8MatrixAddition({ onSelectStep }) {
       <div className="step-header-box">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.45rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-            <span className="modal-badge-tag" style={{ margin: 0 }}>
-              Chapter 8.1
+            <span className="modal-badge-tag" style={{ margin: 0, background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', borderColor: 'rgba(59, 130, 246, 0.35)' }}>
+              Visual Lab 08
             </span>
-            <span style={{ fontSize: '0.85rem', color: 'var(--accent-purple)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-              Element-by-Element Operations
+            <span style={{ fontSize: '0.85rem', color: 'var(--accent-blue)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+              Matrix Blending: C = αA + (1 − α)B
             </span>
           </div>
 
-          {/* Sub-Chapter Switcher */}
-          <div className="sub-chapter-nav">
-            <button 
-              className="sub-chapter-pill active"
-              title="Current: 8.1 Matrix Addition (Image Blending)"
-            >
-              <Blend size={13} />
-              <span>8.1 Blend</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(9) : (window.location.hash = '#step9')}
-              title="Jump to 8.2 Matrix Subtraction (Background Removal)"
-            >
-              <Scissors size={13} />
-              <span>8.2 Remove BG</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(10) : (window.location.hash = '#step10')}
-              title="Jump to 8.3 Matrix Subtraction (Find What Changed)"
-            >
-              <Scan size={13} />
-              <span>8.3 What Changed</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(11) : (window.location.hash = '#step11')}
-              title="Jump to 8.4 Image Inversion & X-Ray Effect"
-            >
-              <Activity size={13} />
-              <span>8.4 Invert &amp; X-Ray</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(12) : (window.location.hash = '#step12')}
-              title="Jump to 8.5 Determinant: Stretch, Shrink, Flip or Collapse"
-            >
-              <Maximize2 size={13} />
-              <span>8.5 Determinant</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(13) : (window.location.hash = '#step13')}
-              title="Jump to 8.6 Matrix Inverse: Undo the Transformation"
-            >
-              <Undo2 size={13} />
-              <span>8.6 Matrix Inverse</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(14) : (window.location.hash = '#step14')}
-              title="Jump to 8.7 Matrix Inverse: Zoom In and Zoom Out"
-            >
-              <ZoomIn size={13} />
-              <span>8.7 Zoom In &amp; Out</span>
-            </button>
-          </div>
+          <VisualLabsNav activeStep={8} onSelectStep={onSelectStep} />
         </div>
 
         <h2 className="step-heading">
-          8.1 Matrix Addition: Blend Two Images
+          Visual Lab 08: Matrix Blending
         </h2>
         <p className="step-description">
           {operation === 'add' ? (
@@ -904,85 +849,101 @@ export default function Step8MatrixAddition({ onSelectStep }) {
             </div>
 
             {/* Editable 4x4 Numerical Matrix Grid */}
-            <div className="matrix-bracket-container compact-bracket">
-              <div 
-                className="matrix-grid compact-grid"
-                style={{ gridTemplateColumns: `repeat(${matrixA[0].length}, 1fr)` }}
-                onMouseLeave={() => setHoveredCell(null)}
-              >
-                {matrixA.map((row, i) =>
-                  row.map((val, j) => {
-                    const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                    return (
-                      <div
-                        key={`a-${i}-${j}`}
-                        className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                        style={{
-                          '--cell-accent': 'var(--accent-purple)',
-                          borderColor: isHovered ? 'var(--accent-purple)' : undefined,
-                          background: `linear-gradient(135deg, rgba(${val},${val},${val},0.14) 0%, var(--bg-secondary) 100%)`
-                        }}
-                        onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                        onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                        onWheel={(e) => {
-                          e.preventDefault();
-                          const delta = e.deltaY < 0 ? 5 : -5;
-                          handleCellChangeA(i, j, Math.min(255, Math.max(0, val + delta)));
-                        }}
-                      >
-                        <div className="editable-cell-inner compact-inner">
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={val}
-                            onFocus={(e) => e.target.select()}
-                            onChange={(e) => {
-                              const parsed = parseInt(e.target.value);
-                              const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
-                              handleCellChangeA(i, j, valid);
+            <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': 'var(--accent-purple)' }}>
+              <div className="matrix-left-bracket" style={{ borderColor: 'var(--accent-purple)' }} />
+              <div className="matrix-with-indices">
+                <div className="matrix-col-indices-row">
+                  {matrixA[0].map((_, cIdx) => (
+                    <span key={`col-a-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
+                  ))}
+                </div>
+                <div className="matrix-body-row">
+                  <div className="matrix-row-indices-col">
+                    {matrixA.map((_, rIdx) => (
+                      <span key={`row-a-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
+                    ))}
+                  </div>
+                  <div 
+                    className="matrix-grid compact-grid"
+                    style={{ gridTemplateColumns: `repeat(${matrixA[0].length}, 1fr)` }}
+                    onMouseLeave={() => setHoveredCell(null)}
+                  >
+                    {matrixA.map((row, i) =>
+                      row.map((val, j) => {
+                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                        return (
+                          <div
+                            key={`a-${i}-${j}`}
+                            className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
+                            style={{
+                              '--cell-accent': 'var(--accent-purple)',
+                              borderColor: isHovered ? 'var(--accent-purple)' : undefined,
+                              background: `linear-gradient(135deg, rgba(${val},${val},${val},0.14) 0%, var(--bg-secondary) 100%)`
                             }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-                                e.preventDefault();
-                                handleCellChangeA(i, j, Math.min(255, val + 5));
-                              } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-                                e.preventDefault();
-                                handleCellChangeA(i, j, Math.max(0, val - 5));
-                              }
+                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                            onWheel={(e) => {
+                              e.preventDefault();
+                              const delta = e.deltaY < 0 ? 5 : -5;
+                              handleCellChangeA(i, j, Math.min(255, Math.max(0, val + delta)));
                             }}
-                            className="matrix-cell-input compact-input"
-                            style={{ color: 'var(--accent-purple)' }}
-                          />
-                          <div className="stepper-arrow-buttons compact-steppers">
-                            <button
-                              type="button"
-                              className="stepper-arrow-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCellChangeA(i, j, Math.min(255, val + 10));
-                              }}
-                              title="+10"
-                            >
-                              ▲
-                            </button>
-                            <button
-                              type="button"
-                              className="stepper-arrow-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCellChangeA(i, j, Math.max(0, val - 10));
-                              }}
-                              title="-10"
-                            >
-                              ▼
-                            </button>
+                          >
+                            <div className="editable-cell-inner compact-inner">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={val}
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => {
+                                  const parsed = parseInt(e.target.value);
+                                  const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
+                                  handleCellChangeA(i, j, valid);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+                                    e.preventDefault();
+                                    handleCellChangeA(i, j, Math.min(255, val + 5));
+                                  } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
+                                    e.preventDefault();
+                                    handleCellChangeA(i, j, Math.max(0, val - 5));
+                                  }
+                                }}
+                                className="matrix-cell-input compact-input"
+                                style={{ color: 'var(--accent-purple)' }}
+                              />
+                              <div className="stepper-arrow-buttons compact-steppers">
+                                <button
+                                  type="button"
+                                  className="stepper-arrow-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCellChangeA(i, j, Math.min(255, val + 10));
+                                  }}
+                                  title="+10"
+                                >
+                                  ▲
+                                </button>
+                                <button
+                                  type="button"
+                                  className="stepper-arrow-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCellChangeA(i, j, Math.max(0, val - 10));
+                                  }}
+                                  title="-10"
+                                >
+                                  ▼
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
               </div>
+              <div className="matrix-right-bracket" style={{ borderColor: 'var(--accent-purple)' }} />
             </div>
           </div>
         </div>
@@ -1065,85 +1026,101 @@ export default function Step8MatrixAddition({ onSelectStep }) {
             </div>
 
             {/* Editable 4x4 Numerical Matrix Grid */}
-            <div className="matrix-bracket-container compact-bracket">
-              <div 
-                className="matrix-grid compact-grid"
-                style={{ gridTemplateColumns: `repeat(${matrixB[0].length}, 1fr)` }}
-                onMouseLeave={() => setHoveredCell(null)}
-              >
-                {matrixB.map((row, i) =>
-                  row.map((val, j) => {
-                    const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                    return (
-                      <div
-                        key={`b-${i}-${j}`}
-                        className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                        style={{
-                          '--cell-accent': '#F59E0B',
-                          borderColor: isHovered ? '#F59E0B' : undefined,
-                          background: `linear-gradient(135deg, rgba(${val},${val},${val},0.14) 0%, var(--bg-secondary) 100%)`
-                        }}
-                        onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                        onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                        onWheel={(e) => {
-                          e.preventDefault();
-                          const delta = e.deltaY < 0 ? 5 : -5;
-                          handleCellChangeB(i, j, Math.min(255, Math.max(0, val + delta)));
-                        }}
-                      >
-                        <div className="editable-cell-inner compact-inner">
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={val}
-                            onFocus={(e) => e.target.select()}
-                            onChange={(e) => {
-                              const parsed = parseInt(e.target.value);
-                              const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
-                              handleCellChangeB(i, j, valid);
+            <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': '#F59E0B' }}>
+              <div className="matrix-left-bracket" style={{ borderColor: '#F59E0B' }} />
+              <div className="matrix-with-indices">
+                <div className="matrix-col-indices-row">
+                  {matrixB[0].map((_, cIdx) => (
+                    <span key={`col-b-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
+                  ))}
+                </div>
+                <div className="matrix-body-row">
+                  <div className="matrix-row-indices-col">
+                    {matrixB.map((_, rIdx) => (
+                      <span key={`row-b-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
+                    ))}
+                  </div>
+                  <div 
+                    className="matrix-grid compact-grid"
+                    style={{ gridTemplateColumns: `repeat(${matrixB[0].length}, 1fr)` }}
+                    onMouseLeave={() => setHoveredCell(null)}
+                  >
+                    {matrixB.map((row, i) =>
+                      row.map((val, j) => {
+                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                        return (
+                          <div
+                            key={`b-${i}-${j}`}
+                            className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
+                            style={{
+                              '--cell-accent': '#F59E0B',
+                              borderColor: isHovered ? '#F59E0B' : undefined,
+                              background: `linear-gradient(135deg, rgba(${val},${val},${val},0.14) 0%, var(--bg-secondary) 100%)`
                             }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-                                e.preventDefault();
-                                handleCellChangeB(i, j, Math.min(255, val + 5));
-                              } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-                                e.preventDefault();
-                                handleCellChangeB(i, j, Math.max(0, val - 5));
-                              }
+                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                            onWheel={(e) => {
+                              e.preventDefault();
+                              const delta = e.deltaY < 0 ? 5 : -5;
+                              handleCellChangeB(i, j, Math.min(255, Math.max(0, val + delta)));
                             }}
-                            className="matrix-cell-input compact-input"
-                            style={{ color: '#F59E0B' }}
-                          />
-                          <div className="stepper-arrow-buttons compact-steppers">
-                            <button
-                              type="button"
-                              className="stepper-arrow-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCellChangeB(i, j, Math.min(255, val + 10));
-                              }}
-                              title="+10"
-                            >
-                              ▲
-                            </button>
-                            <button
-                              type="button"
-                              className="stepper-arrow-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCellChangeB(i, j, Math.max(0, val - 10));
-                              }}
-                              title="-10"
-                            >
-                              ▼
-                            </button>
+                          >
+                            <div className="editable-cell-inner compact-inner">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={val}
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => {
+                                  const parsed = parseInt(e.target.value);
+                                  const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
+                                  handleCellChangeB(i, j, valid);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+                                    e.preventDefault();
+                                    handleCellChangeB(i, j, Math.min(255, val + 5));
+                                  } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
+                                    e.preventDefault();
+                                    handleCellChangeB(i, j, Math.max(0, val - 5));
+                                  }
+                                }}
+                                className="matrix-cell-input compact-input"
+                                style={{ color: '#F59E0B' }}
+                              />
+                              <div className="stepper-arrow-buttons compact-steppers">
+                                <button
+                                  type="button"
+                                  className="stepper-arrow-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCellChangeB(i, j, Math.min(255, val + 10));
+                                  }}
+                                  title="+10"
+                                >
+                                  ▲
+                                </button>
+                                <button
+                                  type="button"
+                                  className="stepper-arrow-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCellChangeB(i, j, Math.max(0, val - 10));
+                                  }}
+                                  title="-10"
+                                >
+                                  ▼
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
               </div>
+              <div className="matrix-right-bracket" style={{ borderColor: '#F59E0B' }} />
             </div>
           </div>
         </div>
@@ -1233,64 +1210,80 @@ export default function Step8MatrixAddition({ onSelectStep }) {
             </div>
 
             {/* Read-Only Resulting 4x4 Matrix Grid */}
-            <div className="matrix-bracket-container compact-bracket">
-              <div 
-                className="matrix-grid compact-grid"
-                style={{ gridTemplateColumns: `repeat(${matrixC[0].length}, 1fr)` }}
-                onMouseLeave={() => setHoveredCell(null)}
-              >
-                {matrixC.map((row, i) =>
-                  row.map((val, j) => {
-                    const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                    const valA = matrixA[i][j];
-                    const valB = matrixB[i][j];
+            <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': 'var(--accent-emerald)' }}>
+              <div className="matrix-left-bracket" style={{ borderColor: 'var(--accent-emerald)' }} />
+              <div className="matrix-with-indices">
+                <div className="matrix-col-indices-row">
+                  {matrixC[0].map((_, cIdx) => (
+                    <span key={`col-c-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
+                  ))}
+                </div>
+                <div className="matrix-body-row">
+                  <div className="matrix-row-indices-col">
+                    {matrixC.map((_, rIdx) => (
+                      <span key={`row-c-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
+                    ))}
+                  </div>
+                  <div 
+                    className="matrix-grid compact-grid"
+                    style={{ gridTemplateColumns: `repeat(${matrixC[0].length}, 1fr)` }}
+                    onMouseLeave={() => setHoveredCell(null)}
+                  >
+                    {matrixC.map((row, i) =>
+                      row.map((val, j) => {
+                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                        const valA = matrixA[i][j];
+                        const valB = matrixB[i][j];
 
-                    const rawDirectAdd = valA + valB;
-                    const isOverflow = operation === 'add' && mode === 'direct' && rawDirectAdd > 255;
+                        const rawDirectAdd = valA + valB;
+                        const isOverflow = operation === 'add' && mode === 'direct' && rawDirectAdd > 255;
 
-                    const rawDirectSub = valA - valB;
-                    const rawWeightedSub = valA - alpha * valB;
-                    const isUnderflow = operation === 'sub' && (
-                      (subMode === 'direct' && rawDirectSub < 0) ||
-                      (subMode === 'weighted' && rawWeightedSub < 0)
-                    );
+                        const rawDirectSub = valA - valB;
+                        const rawWeightedSub = valA - alpha * valB;
+                        const isUnderflow = operation === 'sub' && (
+                          (subMode === 'direct' && rawDirectSub < 0) ||
+                          (subMode === 'weighted' && rawWeightedSub < 0)
+                        );
 
-                    return (
-                      <div
-                        key={`c-${i}-${j}`}
-                        className={`matrix-cell result-cell compact-cell ${isHovered ? 'hovered' : ''} ${isOverflow ? 'clipped-cell' : ''} ${isUnderflow ? 'underflow-cell' : ''}`}
-                        style={{
-                          '--cell-accent': 'var(--accent-emerald)',
-                          borderColor: isHovered ? 'var(--accent-emerald)' : undefined,
-                          background: `linear-gradient(135deg, rgba(${val},${val},${val},0.18) 0%, var(--bg-secondary) 100%)`
-                        }}
-                        onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                        onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                      >
-                        <span 
-                          className="matrix-cell-val compact-val" 
-                          style={{ 
-                            color: isOverflow ? '#EF4444' : isUnderflow ? '#F59E0B' : isHovered ? '#FFFFFF' : 'var(--accent-emerald)',
-                            fontWeight: '800'
-                          }}
-                        >
-                          {val}
-                        </span>
-                        {isOverflow && (
-                          <span className="clipped-corner-tag" title={`Unclipped sum was ${rawDirectAdd}`}>
-                            MAX
-                          </span>
-                        )}
-                        {isUnderflow && (
-                          <span className="clipped-corner-tag underflow-corner-tag" title={`Raw negative difference was ${subMode === 'weighted' ? Math.round(rawWeightedSub) : rawDirectSub}`}>
-                            MIN
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
+                        return (
+                          <div
+                            key={`c-${i}-${j}`}
+                            className={`matrix-cell result-cell compact-cell ${isHovered ? 'hovered' : ''} ${isOverflow ? 'clipped-cell' : ''} ${isUnderflow ? 'underflow-cell' : ''}`}
+                            style={{
+                              '--cell-accent': 'var(--accent-emerald)',
+                              borderColor: isHovered ? 'var(--accent-emerald)' : undefined,
+                              background: `linear-gradient(135deg, rgba(${val},${val},${val},0.18) 0%, var(--bg-secondary) 100%)`
+                            }}
+                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                          >
+                            <span 
+                              className="matrix-cell-val compact-val" 
+                              style={{ 
+                                color: isOverflow ? '#EF4444' : isUnderflow ? '#F59E0B' : isHovered ? '#FFFFFF' : 'var(--accent-emerald)',
+                                fontWeight: '800'
+                              }}
+                            >
+                              {val}
+                            </span>
+                            {isOverflow && (
+                              <span className="clipped-corner-tag" title={`Unclipped sum was ${rawDirectAdd}`}>
+                                MAX
+                              </span>
+                            )}
+                            {isUnderflow && (
+                              <span className="clipped-corner-tag underflow-corner-tag" title={`Raw negative difference was ${subMode === 'weighted' ? Math.round(rawWeightedSub) : rawDirectSub}`}>
+                                MIN
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
               </div>
+              <div className="matrix-right-bracket" style={{ borderColor: 'var(--accent-emerald)' }} />
             </div>
           </div>
         </div>
@@ -1341,6 +1334,8 @@ export default function Step8MatrixAddition({ onSelectStep }) {
           </div>
         );
       })()}
+
+      <StepFooter stepNumber={8} onSelectStep={onSelectStep} />
     </motion.div>
   );
 }

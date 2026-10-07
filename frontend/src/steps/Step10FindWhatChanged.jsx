@@ -33,6 +33,8 @@ import {
   ZoomIn
 } from 'lucide-react';
 import { clampPixel, createEmptyMatrix, subtractMatrices, thresholdMatrix } from '../core/mathEngine';
+import VisualLabsNav from '../components/navigation/VisualLabsNav';
+import StepFooter from '../components/layout/StepFooter';
 
 // Presets representing 3 core scenarios: Added, Removed, Moved
 const CHANGE_PRESETS = {
@@ -686,74 +688,17 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.45rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
             <span className="modal-badge-tag" style={{ margin: 0, background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', borderColor: 'rgba(56, 189, 248, 0.35)' }}>
-              Chapter 8.3
+              Visual Lab 10
             </span>
             <span style={{ fontSize: '0.85rem', color: '#38BDF8', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-              Change & Motion Detection Pipeline
+              Change Detection Pipeline: D = |A − B|
             </span>
           </div>
 
-          {/* Sub-Chapter Switcher with all 3 chapters */}
-          <div className="sub-chapter-nav">
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(8) : (window.location.hash = '#step8')}
-              title="8.1 Matrix Addition (Image Blending)"
-            >
-              <Blend size={13} />
-              <span>8.1 Blend</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(9) : (window.location.hash = '#step9')}
-              title="8.2 Matrix Subtraction (Background Removal)"
-            >
-              <Scissors size={13} />
-              <span>8.2 Remove BG</span>
-            </button>
-            <button 
-              className="sub-chapter-pill active"
-              title="Current: 8.3 Matrix Subtraction (Find What Changed)"
-            >
-              <Scan size={13} />
-              <span>8.3 What Changed</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(11) : (window.location.hash = '#step11')}
-              title="Jump to 8.4 Image Inversion & X-Ray Effect"
-            >
-              <Activity size={13} />
-              <span>8.4 Invert &amp; X-Ray</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(12) : (window.location.hash = '#step12')}
-              title="Jump to 8.5 Determinant: Stretch, Shrink, Flip or Collapse"
-            >
-              <Maximize2 size={13} />
-              <span>8.5 Determinant</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(13) : (window.location.hash = '#step13')}
-              title="Jump to 8.6 Matrix Inverse: Undo the Transformation"
-            >
-              <Undo2 size={13} />
-              <span>8.6 Matrix Inverse</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(14) : (window.location.hash = '#step14')}
-              title="Jump to 8.7 Matrix Inverse: Zoom In and Zoom Out"
-            >
-              <ZoomIn size={13} />
-              <span>8.7 Zoom In &amp; Out</span>
-            </button>
-          </div>
+          <VisualLabsNav activeStep={10} onSelectStep={onSelectStep} />
         </div>
 
-        <h2 className="step-heading">8.3 Matrix Subtraction: Find What Changed</h2>
+        <h2 className="step-heading">Visual Lab 10: Change Detection</h2>
         <p className="step-description">
           Take two photographs of the same scene where an object has been <strong>added</strong>, <strong>removed</strong>, or <strong>moved</strong>. Represent them as matrices <strong>A</strong> and <strong>B</strong>, and calculate the absolute difference <code>D = |A − B|</code>. Pixels that stayed the same yield values near zero, while altered regions produce large differences. You can also upload or take your own two photographs!
         </p>
@@ -975,85 +920,101 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
                 </div>
 
                 {/* 4x4 Grid for A */}
-                <div className="matrix-bracket-container compact-bracket">
-                  <div 
-                    className="matrix-grid compact-grid"
-                    style={{ gridTemplateColumns: `repeat(${matrixA[0].length}, 1fr)` }}
-                    onMouseLeave={() => setHoveredCell(null)}
-                  >
-                    {matrixA.map((row, i) =>
-                      row.map((val, j) => {
-                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                        return (
-                          <div
-                            key={`a-${i}-${j}`}
-                            className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                            style={{
-                              '--cell-accent': 'var(--accent-purple)',
-                              borderColor: isHovered ? 'var(--accent-purple)' : undefined,
-                              background: `linear-gradient(135deg, rgba(${val},${val},${val},0.16) 0%, var(--bg-secondary) 100%)`
-                            }}
-                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onWheel={(e) => {
-                              e.preventDefault();
-                              const delta = e.deltaY < 0 ? 5 : -5;
-                              handleCellChangeA(i, j, Math.min(255, Math.max(0, val + delta)));
-                            }}
-                          >
-                            <div className="editable-cell-inner compact-inner">
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={val}
-                                onFocus={(e) => e.target.select()}
-                                onChange={(e) => {
-                                  const parsed = parseInt(e.target.value);
-                                  const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
-                                  handleCellChangeA(i, j, valid);
+                <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': 'var(--accent-purple)' }}>
+                  <div className="matrix-left-bracket" style={{ borderColor: 'var(--accent-purple)' }} />
+                  <div className="matrix-with-indices">
+                    <div className="matrix-col-indices-row">
+                      {matrixA[0].map((_, cIdx) => (
+                        <span key={`col-a-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
+                      ))}
+                    </div>
+                    <div className="matrix-body-row">
+                      <div className="matrix-row-indices-col">
+                        {matrixA.map((_, rIdx) => (
+                          <span key={`row-a-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
+                        ))}
+                      </div>
+                      <div 
+                        className="matrix-grid compact-grid"
+                        style={{ gridTemplateColumns: `repeat(${matrixA[0].length}, 1fr)` }}
+                        onMouseLeave={() => setHoveredCell(null)}
+                      >
+                        {matrixA.map((row, i) =>
+                          row.map((val, j) => {
+                            const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                            return (
+                              <div
+                                key={`a-${i}-${j}`}
+                                className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
+                                style={{
+                                  '--cell-accent': 'var(--accent-purple)',
+                                  borderColor: isHovered ? 'var(--accent-purple)' : undefined,
+                                  background: `linear-gradient(135deg, rgba(${val},${val},${val},0.16) 0%, var(--bg-secondary) 100%)`
                                 }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-                                    e.preventDefault();
-                                    handleCellChangeA(i, j, Math.min(255, val + 5));
-                                  } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-                                    e.preventDefault();
-                                    handleCellChangeA(i, j, Math.max(0, val - 5));
-                                  }
+                                onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                                onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                                onWheel={(e) => {
+                                  e.preventDefault();
+                                  const delta = e.deltaY < 0 ? 5 : -5;
+                                  handleCellChangeA(i, j, Math.min(255, Math.max(0, val + delta)));
                                 }}
-                                className="matrix-cell-input compact-input"
-                                style={{ color: 'var(--accent-purple)' }}
-                              />
-                              <div className="stepper-arrow-buttons compact-steppers">
-                                <button
-                                  type="button"
-                                  className="stepper-arrow-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCellChangeA(i, j, Math.min(255, val + 10));
-                                  }}
-                                  title="+10"
-                                >
-                                  ▲
-                                </button>
-                                <button
-                                  type="button"
-                                  className="stepper-arrow-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCellChangeA(i, j, Math.max(0, val - 10));
-                                  }}
-                                  title="-10"
-                                >
-                                  ▼
-                                </button>
+                              >
+                                <div className="editable-cell-inner compact-inner">
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={val}
+                                    onFocus={(e) => e.target.select()}
+                                    onChange={(e) => {
+                                      const parsed = parseInt(e.target.value);
+                                      const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
+                                      handleCellChangeA(i, j, valid);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+                                        e.preventDefault();
+                                        handleCellChangeA(i, j, Math.min(255, val + 5));
+                                      } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
+                                        e.preventDefault();
+                                        handleCellChangeA(i, j, Math.max(0, val - 5));
+                                      }
+                                    }}
+                                    className="matrix-cell-input compact-input"
+                                    style={{ color: 'var(--accent-purple)' }}
+                                  />
+                                  <div className="stepper-arrow-buttons compact-steppers">
+                                    <button
+                                      type="button"
+                                      className="stepper-arrow-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCellChangeA(i, j, Math.min(255, val + 10));
+                                      }}
+                                      title="+10"
+                                    >
+                                      ▲
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="stepper-arrow-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCellChangeA(i, j, Math.max(0, val - 10));
+                                      }}
+                                      title="-10"
+                                    >
+                                      ▼
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
                   </div>
+                  <div className="matrix-right-bracket" style={{ borderColor: 'var(--accent-purple)' }} />
                 </div>
               </div>
             </div>
@@ -1105,85 +1066,101 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
                 </div>
 
                 {/* 4x4 Grid for B */}
-                <div className="matrix-bracket-container compact-bracket">
-                  <div 
-                    className="matrix-grid compact-grid"
-                    style={{ gridTemplateColumns: `repeat(${matrixB[0].length}, 1fr)` }}
-                    onMouseLeave={() => setHoveredCell(null)}
-                  >
-                    {noisyMatrixB.map((row, i) =>
-                      row.map((val, j) => {
-                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                        return (
-                          <div
-                            key={`b-${i}-${j}`}
-                            className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                            style={{
-                              '--cell-accent': '#F59E0B',
-                              borderColor: isHovered ? '#F59E0B' : undefined,
-                              background: `linear-gradient(135deg, rgba(${val},${val},${val},0.16) 0%, var(--bg-secondary) 100%)`
-                            }}
-                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onWheel={(e) => {
-                              e.preventDefault();
-                              const delta = e.deltaY < 0 ? 5 : -5;
-                              handleCellChangeB(i, j, Math.min(255, Math.max(0, val + delta)));
-                            }}
-                          >
-                            <div className="editable-cell-inner compact-inner">
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={val}
-                                onFocus={(e) => e.target.select()}
-                                onChange={(e) => {
-                                  const parsed = parseInt(e.target.value);
-                                  const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
-                                  handleCellChangeB(i, j, valid);
+                <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': '#F59E0B' }}>
+                  <div className="matrix-left-bracket" style={{ borderColor: '#F59E0B' }} />
+                  <div className="matrix-with-indices">
+                    <div className="matrix-col-indices-row">
+                      {matrixB[0].map((_, cIdx) => (
+                        <span key={`col-b-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
+                      ))}
+                    </div>
+                    <div className="matrix-body-row">
+                      <div className="matrix-row-indices-col">
+                        {matrixB.map((_, rIdx) => (
+                          <span key={`row-b-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
+                        ))}
+                      </div>
+                      <div 
+                        className="matrix-grid compact-grid"
+                        style={{ gridTemplateColumns: `repeat(${matrixB[0].length}, 1fr)` }}
+                        onMouseLeave={() => setHoveredCell(null)}
+                      >
+                        {noisyMatrixB.map((row, i) =>
+                          row.map((val, j) => {
+                            const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                            return (
+                              <div
+                                key={`b-${i}-${j}`}
+                                className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
+                                style={{
+                                  '--cell-accent': '#F59E0B',
+                                  borderColor: isHovered ? '#F59E0B' : undefined,
+                                  background: `linear-gradient(135deg, rgba(${val},${val},${val},0.16) 0%, var(--bg-secondary) 100%)`
                                 }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-                                    e.preventDefault();
-                                    handleCellChangeB(i, j, Math.min(255, val + 5));
-                                  } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-                                    e.preventDefault();
-                                    handleCellChangeB(i, j, Math.max(0, val - 5));
-                                  }
+                                onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                                onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                                onWheel={(e) => {
+                                  e.preventDefault();
+                                  const delta = e.deltaY < 0 ? 5 : -5;
+                                  handleCellChangeB(i, j, Math.min(255, Math.max(0, val + delta)));
                                 }}
-                                className="matrix-cell-input compact-input"
-                                style={{ color: '#F59E0B' }}
-                              />
-                              <div className="stepper-arrow-buttons compact-steppers">
-                                <button
-                                  type="button"
-                                  className="stepper-arrow-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCellChangeB(i, j, Math.min(255, val + 10));
-                                  }}
-                                  title="+10"
-                                >
-                                  ▲
-                                </button>
-                                <button
-                                  type="button"
-                                  className="stepper-arrow-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCellChangeB(i, j, Math.max(0, val - 10));
-                                  }}
-                                  title="-10"
-                                >
-                                  ▼
-                                </button>
+                              >
+                                <div className="editable-cell-inner compact-inner">
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={val}
+                                    onFocus={(e) => e.target.select()}
+                                    onChange={(e) => {
+                                      const parsed = parseInt(e.target.value);
+                                      const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
+                                      handleCellChangeB(i, j, valid);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+                                        e.preventDefault();
+                                        handleCellChangeB(i, j, Math.min(255, val + 5));
+                                      } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
+                                        e.preventDefault();
+                                        handleCellChangeB(i, j, Math.max(0, val - 5));
+                                      }
+                                    }}
+                                    className="matrix-cell-input compact-input"
+                                    style={{ color: '#F59E0B' }}
+                                  />
+                                  <div className="stepper-arrow-buttons compact-steppers">
+                                    <button
+                                      type="button"
+                                      className="stepper-arrow-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCellChangeB(i, j, Math.min(255, val + 10));
+                                      }}
+                                      title="+10"
+                                    >
+                                      ▲
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="stepper-arrow-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCellChangeB(i, j, Math.max(0, val - 10));
+                                      }}
+                                      title="-10"
+                                    >
+                                      ▼
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
                   </div>
+                  <div className="matrix-right-bracket" style={{ borderColor: '#F59E0B' }} />
                 </div>
               </div>
             </div>
@@ -1239,49 +1216,65 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
                 </div>
 
                 {/* 4x4 Grid for D */}
-                <div className="matrix-bracket-container compact-bracket">
-                  <div 
-                    className="matrix-grid compact-grid"
-                    style={{ gridTemplateColumns: `repeat(${matrixD[0].length}, 1fr)` }}
-                    onMouseLeave={() => setHoveredCell(null)}
-                  >
-                    {matrixD.map((row, i) =>
-                      row.map((val, j) => {
-                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                        const exceedsT = val > threshold;
-                        return (
-                          <div
-                            key={`d-${i}-${j}`}
-                            className={`matrix-cell result-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                            style={{
-                              '--cell-accent': 'var(--accent-cyan)',
-                              borderColor: isHovered ? 'var(--accent-cyan)' : undefined,
-                              background: exceedsT 
-                                ? `linear-gradient(135deg, rgba(6, 182, 212, 0.28) 0%, var(--bg-secondary) 100%)`
-                                : `linear-gradient(135deg, rgba(0, 0, 0, 0.2) 0%, var(--bg-secondary) 100%)`
-                            }}
-                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                          >
-                            <span 
-                              className="matrix-cell-val compact-val" 
-                              style={{ 
-                                color: exceedsT ? '#38BDF8' : 'var(--text-muted)',
-                                fontWeight: exceedsT ? '800' : '600'
-                              }}
-                            >
-                              {val}
-                            </span>
-                            {exceedsT && (
-                              <span className="delta-fg-indicator" title={`Delta ${val} > T (${threshold})`}>
-                                Δ
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
+                <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': 'var(--accent-cyan)' }}>
+                  <div className="matrix-left-bracket" style={{ borderColor: 'var(--accent-cyan)' }} />
+                  <div className="matrix-with-indices">
+                    <div className="matrix-col-indices-row">
+                      {matrixD[0].map((_, cIdx) => (
+                        <span key={`col-d-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
+                      ))}
+                    </div>
+                    <div className="matrix-body-row">
+                      <div className="matrix-row-indices-col">
+                        {matrixD.map((_, rIdx) => (
+                          <span key={`row-d-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
+                        ))}
+                      </div>
+                      <div 
+                        className="matrix-grid compact-grid"
+                        style={{ gridTemplateColumns: `repeat(${matrixD[0].length}, 1fr)` }}
+                        onMouseLeave={() => setHoveredCell(null)}
+                      >
+                        {matrixD.map((row, i) =>
+                          row.map((val, j) => {
+                            const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                            const exceedsT = val > threshold;
+                            return (
+                              <div
+                                key={`d-${i}-${j}`}
+                                className={`matrix-cell result-cell compact-cell ${isHovered ? 'hovered' : ''}`}
+                                style={{
+                                  '--cell-accent': 'var(--accent-cyan)',
+                                  borderColor: isHovered ? 'var(--accent-cyan)' : undefined,
+                                  background: exceedsT 
+                                    ? `linear-gradient(135deg, rgba(6, 182, 212, 0.28) 0%, var(--bg-secondary) 100%)`
+                                    : `linear-gradient(135deg, rgba(0, 0, 0, 0.2) 0%, var(--bg-secondary) 100%)`
+                                }}
+                                onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                                onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                              >
+                                <span 
+                                  className="matrix-cell-val compact-val" 
+                                  style={{ 
+                                    color: exceedsT ? '#38BDF8' : 'var(--text-muted)',
+                                    fontWeight: exceedsT ? '800' : '600'
+                                  }}
+                                >
+                                  {val}
+                                </span>
+                                {exceedsT && (
+                                  <span className="delta-fg-indicator" title={`Delta ${val} > T (${threshold})`}>
+                                    Δ
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
                   </div>
+                  <div className="matrix-right-bracket" style={{ borderColor: 'var(--accent-cyan)' }} />
                 </div>
               </div>
             </div>
@@ -1376,48 +1369,64 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
                 </div>
 
                 {/* 4x4 Grid for Card 4 */}
-                <div className="matrix-bracket-container compact-bracket">
-                  <div 
-                    className="matrix-grid compact-grid"
-                    style={{ gridTemplateColumns: `repeat(${matrixM[0].length}, 1fr)` }}
-                    onMouseLeave={() => setHoveredCell(null)}
-                  >
-                    {matrixM.map((row, i) =>
-                      row.map((val, j) => {
-                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                        const isChanged = val === 1;
-                        const signedVal = noisyMatrixB[i][j] - matrixA[i][j];
+                <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': '#10B981' }}>
+                  <div className="matrix-left-bracket" style={{ borderColor: '#10B981' }} />
+                  <div className="matrix-with-indices">
+                    <div className="matrix-col-indices-row">
+                      {matrixM[0].map((_, cIdx) => (
+                        <span key={`col-m-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
+                      ))}
+                    </div>
+                    <div className="matrix-body-row">
+                      <div className="matrix-row-indices-col">
+                        {matrixM.map((_, rIdx) => (
+                          <span key={`row-m-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
+                        ))}
+                      </div>
+                      <div 
+                        className="matrix-grid compact-grid"
+                        style={{ gridTemplateColumns: `repeat(${matrixM[0].length}, 1fr)` }}
+                        onMouseLeave={() => setHoveredCell(null)}
+                      >
+                        {matrixM.map((row, i) =>
+                          row.map((val, j) => {
+                            const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                            const isChanged = val === 1;
+                            const signedVal = noisyMatrixB[i][j] - matrixA[i][j];
 
-                        return (
-                          <div
-                            key={`c4-${i}-${j}`}
-                            className={`matrix-cell result-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                            style={{
-                              '--cell-accent': '#10B981',
-                              borderColor: isHovered ? '#10B981' : isChanged ? 'rgba(16, 185, 129, 0.5)' : undefined,
-                              background: isChanged 
-                                ? (signedVal > 0 
-                                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, var(--bg-secondary) 100%)' 
-                                    : 'linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, var(--bg-secondary) 100%)')
-                                : 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, var(--bg-secondary) 100%)'
-                            }}
-                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                          >
-                            <span 
-                              className="matrix-cell-val compact-val"
-                              style={{ 
-                                color: isChanged ? (signedVal > 0 ? '#10B981' : '#EF4444') : 'var(--text-muted)',
-                                fontWeight: isChanged ? '800' : '600'
-                              }}
-                            >
-                              {card4View === 'diffMask' ? val : card4View === 'signed' ? (signedVal > 0 ? `+${signedVal}` : `${signedVal}`) : (isChanged ? 'Δ' : '·')}
-                            </span>
-                          </div>
-                        );
-                      })
-                    )}
+                            return (
+                              <div
+                                key={`c4-${i}-${j}`}
+                                className={`matrix-cell result-cell compact-cell ${isHovered ? 'hovered' : ''}`}
+                                style={{
+                                  '--cell-accent': '#10B981',
+                                  borderColor: isHovered ? '#10B981' : isChanged ? 'rgba(16, 185, 129, 0.5)' : undefined,
+                                  background: isChanged 
+                                    ? (signedVal > 0 
+                                        ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, var(--bg-secondary) 100%)' 
+                                        : 'linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, var(--bg-secondary) 100%)')
+                                    : 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, var(--bg-secondary) 100%)'
+                                }}
+                                onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                                onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
+                              >
+                                <span 
+                                  className="matrix-cell-val compact-val"
+                                  style={{ 
+                                    color: isChanged ? (signedVal > 0 ? '#10B981' : '#EF4444') : 'var(--text-muted)',
+                                    fontWeight: isChanged ? '800' : '600'
+                                  }}
+                                >
+                                  {card4View === 'diffMask' ? val : card4View === 'signed' ? (signedVal > 0 ? `+${signedVal}` : `${signedVal}`) : (isChanged ? 'Δ' : '·')}
+                                </span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
                   </div>
+                  <div className="matrix-right-bracket" style={{ borderColor: '#10B981' }} />
                 </div>
               </div>
             </div>
@@ -1804,6 +1813,8 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
           </div>
         </div>
       </div>
+
+      <StepFooter stepNumber={10} onSelectStep={onSelectStep} />
     </motion.div>
   );
 }

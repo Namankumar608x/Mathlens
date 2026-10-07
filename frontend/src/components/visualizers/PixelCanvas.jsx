@@ -1,4 +1,5 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
+import { ZoomIn, ZoomOut, RotateCcw, Download, Grid, Eye } from 'lucide-react';
 
 export default function PixelCanvas({
   matrix,
@@ -6,14 +7,20 @@ export default function PixelCanvas({
   hoveredCell,
   onHoverCell,
   onClickCell,
-  highlightColor = '#3B82F6',
+  highlightColor = '#22D3EE',
   pixelSize = 72,
   title = "Digital Image Canvas"
 }) {
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [showGrid, setShowGrid] = useState(true);
 
   const rows = matrix ? matrix.length : colorGrid ? colorGrid.length : 0;
   const cols = matrix ? matrix[0].length : colorGrid ? colorGrid[0].length : 0;
+
+  // Responsive pixel sizing based on available space
+  const effectivePixelSize = Math.max(24, Math.round(pixelSize * zoomScale));
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -21,8 +28,8 @@ export default function PixelCanvas({
     const ctx = canvas.getContext('2d');
 
     const dpr = window.devicePixelRatio || 1;
-    const width = cols * pixelSize;
-    const height = rows * pixelSize;
+    const width = cols * effectivePixelSize;
+    const height = rows * effectivePixelSize;
 
     canvas.width = width * dpr;
     canvas.height = height * dpr;
@@ -47,55 +54,57 @@ export default function PixelCanvas({
         }
 
         ctx.fillStyle = fillStyle;
-        ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
+        ctx.fillRect(c * effectivePixelSize, r * effectivePixelSize, effectivePixelSize, effectivePixelSize);
       }
     }
 
-    // 2. Draw sharp adaptive grid lines on top of all pixels
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        let brightness = 0;
-        if (matrix) {
-          brightness = matrix[r][c];
-        } else if (colorGrid) {
-          const pixel = colorGrid[r][c];
-          brightness = 0.299 * pixel.r + 0.587 * pixel.g + 0.114 * pixel.b;
-        }
+    // 2. Draw adaptive grid lines on top of pixels
+    if (showGrid) {
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          let brightness = 0;
+          if (matrix) {
+            brightness = matrix[r][c];
+          } else if (colorGrid) {
+            const pixel = colorGrid[r][c];
+            brightness = 0.299 * pixel.r + 0.587 * pixel.g + 0.114 * pixel.b;
+          }
 
-        // Adaptive high contrast grid stroke for both black (0) and white (255) pixels
-        if (brightness < 75) {
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.38)'; // High visibility light line on black/dark
-        } else if (brightness > 180) {
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)'; // High visibility dark line on white/light
-        } else {
-          ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.28)' : 'rgba(255, 255, 255, 0.32)';
-        }
+          if (brightness < 75) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+          } else if (brightness > 180) {
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.32)';
+          } else {
+            ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.30)';
+          }
 
-        ctx.lineWidth = 1;
-        // Inset by 0.5px so outer edge lines are strictly inside canvas bounds and never clipped
-        ctx.strokeRect(c * pixelSize + 0.5, r * pixelSize + 0.5, pixelSize - 1, pixelSize - 1);
-
-        // Highlight hovered or selected cell
-        if (hoveredCell && hoveredCell.row === r && hoveredCell.col === c) {
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = highlightColor;
-          ctx.strokeRect(c * pixelSize + 1.5, r * pixelSize + 1.5, pixelSize - 3, pixelSize - 3);
-          ctx.fillStyle = 'rgba(59, 130, 246, 0.22)';
-          ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
+          ctx.lineWidth = 1;
+          ctx.strokeRect(c * effectivePixelSize + 0.5, r * effectivePixelSize + 0.5, effectivePixelSize - 1, effectivePixelSize - 1);
         }
       }
+    }
+
+    // 3. Highlight hovered or selected cell
+    if (hoveredCell && hoveredCell.row >= 0 && hoveredCell.row < rows && hoveredCell.col >= 0 && hoveredCell.col < cols) {
+      const r = hoveredCell.row;
+      const c = hoveredCell.col;
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = highlightColor;
+      ctx.strokeRect(c * effectivePixelSize + 1.5, r * effectivePixelSize + 1.5, effectivePixelSize - 3, effectivePixelSize - 3);
+      ctx.fillStyle = 'rgba(34, 211, 238, 0.22)';
+      ctx.fillRect(c * effectivePixelSize, r * effectivePixelSize, effectivePixelSize, effectivePixelSize);
     }
 
     ctx.restore();
-  }, [matrix, colorGrid, hoveredCell, rows, cols, pixelSize, highlightColor]);
+  }, [matrix, colorGrid, hoveredCell, rows, cols, effectivePixelSize, highlightColor, showGrid]);
 
   const getCellFromEvent = (e) => {
     if (!canvasRef.current) return null;
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const col = Math.floor(x / pixelSize);
-    const row = Math.floor(y / pixelSize);
+    const col = Math.floor(x / effectivePixelSize);
+    const row = Math.floor(y / effectivePixelSize);
 
     if (row >= 0 && row < rows && col >= 0 && col < cols) {
       return { row, col, x: e.clientX, y: e.clientY };
@@ -120,39 +129,108 @@ export default function PixelCanvas({
     if (onHoverCell) onHoverCell(null);
   };
 
+  const handleExportPNG = () => {
+    if (!canvasRef.current) return;
+    const link = document.createElement('a');
+    link.download = `mathlens-${title.toLowerCase().replace(/\s+/g, '-')}.png`;
+    link.href = canvasRef.current.toDataURL('image/png');
+    link.click();
+  };
+
   return (
-    <div className="canvas-card" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-        <div className="canvas-header" style={{ marginBottom: '1rem' }}>
-          <h3>{title}</h3>
+    <div className="canvas-card glass-level-2" ref={containerRef}>
+      {/* Header with Title and Viewport Controls */}
+      <div className="canvas-header-bar">
+        <div className="canvas-title-group">
+          <Eye size={15} className="text-cyan-400" />
+          <h3 className="canvas-title-text">{title}</h3>
+          <span className="canvas-dims-tag">{cols} × {rows} px</span>
         </div>
-        <div 
-          className="canvas-wrapper" 
-          style={{ 
-            flex: 1, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justify: 'center', 
-            width: '100%', 
-            margin: 'auto 0', 
-            padding: 0,
-            cursor: 'pointer' 
-          }}
-        >
+
+        <div className="canvas-tools-group">
+          <button
+            className={`canvas-tool-btn ${showGrid ? 'active' : ''}`}
+            onClick={() => setShowGrid(!showGrid)}
+            title="Toggle pixel grid lines"
+            type="button"
+          >
+            <Grid size={13} />
+          </button>
+
+          <button
+            className="canvas-tool-btn"
+            onClick={() => setZoomScale(prev => Math.min(1.75, prev + 0.15))}
+            title="Zoom in (+)"
+            type="button"
+          >
+            <ZoomIn size={13} />
+          </button>
+
+          <button
+            className="canvas-tool-btn"
+            onClick={() => setZoomScale(prev => Math.max(0.65, prev - 0.15))}
+            title="Zoom out (-)"
+            type="button"
+          >
+            <ZoomOut size={13} />
+          </button>
+
+          {zoomScale !== 1 && (
+            <button
+              className="canvas-tool-btn"
+              onClick={() => setZoomScale(1)}
+              title="Reset Zoom"
+              type="button"
+            >
+              <RotateCcw size={13} />
+            </button>
+          )}
+
+          <button
+            className="canvas-tool-btn"
+            onClick={handleExportPNG}
+            title="Export canvas as PNG"
+            type="button"
+          >
+            <Download size={13} />
+          </button>
+        </div>
+      </div>
+
+      {/* Canvas Viewport Stage */}
+      <div className="canvas-viewport-stage">
+        <div className="canvas-wrapper">
           <canvas
             ref={canvasRef}
             onMouseMove={handleMouseMove}
             onClick={handleClick}
             onMouseLeave={handleMouseLeave}
             className="pixel-canvas"
-            style={{
-              borderRadius: '12px',
-              border: '1px solid var(--border-color)',
-              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
-              display: 'block'
-            }}
           />
         </div>
+      </div>
+
+      {/* Coordinate & Value Inspector Footer */}
+      <div className="canvas-footer-hud">
+        {hoveredCell ? (
+          <div className="canvas-hud-active">
+            <span className="hud-coord-pill">Coord: ({hoveredCell.col}, {hoveredCell.row})</span>
+            {matrix && (
+              <span className="hud-val-pill">
+                Intensity: <strong>{matrix[hoveredCell.row]?.[hoveredCell.col] ?? '—'}</strong> / 255
+              </span>
+            )}
+            {colorGrid && colorGrid[hoveredCell.row]?.[hoveredCell.col] && (
+              <span className="hud-rgb-pill">
+                RGB: [{colorGrid[hoveredCell.row][hoveredCell.col].r}, {colorGrid[hoveredCell.row][hoveredCell.col].g}, {colorGrid[hoveredCell.row][hoveredCell.col].b}]
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="canvas-hud-idle">
+            <span>Hover pixel to inspect numerical array coordinates</span>
+          </div>
+        )}
       </div>
     </div>
   );

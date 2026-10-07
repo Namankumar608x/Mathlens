@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import CoordinateTransformCanvas from '../components/visualizers/CoordinateTransformCanvas';
+import StepWrapper from '../components/layout/StepWrapper';
+import MathInspectorHUD from '../components/ui/MathInspectorHUD';
 import { getRotationMatrix, getScalingMatrix, getShearMatrix } from '../core/transformEngine';
 
-export default function Step7ImageTransforms() {
+export default function Step7ImageTransforms({ onSelectStep }) {
   const [matrix2x2, setMatrix2x2] = useState({ a: 1, b: 0, c: 0, d: 1 });
   const [matrixInputs, setMatrixInputs] = useState({ a: "1.00", b: "0.00", c: "0.00", d: "1.00" });
   const [transformType, setTransformType] = useState('identity');
@@ -86,12 +87,39 @@ export default function Step7ImageTransforms() {
     }
   };
 
-  const renderCellInput = (key, labelName) => (
-    <div className="matrix-cell-card">
-      <div className="matrix-cell-header">
-        <span className="matrix-cell-tag">{labelName}</span>
+  const det = (matrix2x2.a * matrix2x2.d - matrix2x2.b * matrix2x2.c).toFixed(2);
+  const trace = (matrix2x2.a + matrix2x2.d).toFixed(2);
+
+  const controls = (
+    <div className="control-bar-inner">
+      <span className="control-bar-label">Geometric Presets:</span>
+      <div className="preset-pills-row">
+        <button className={`preset-pill-btn ${transformType === 'identity' ? 'active' : ''}`} onClick={() => handleSelectPreset('identity')} type="button">
+          ↺ Identity (I)
+        </button>
+        <button className={`preset-pill-btn ${transformType === 'rotate45' ? 'active' : ''}`} onClick={() => handleSelectPreset('rotate45')} type="button">
+          🔄 Rotate 45°
+        </button>
+        <button className={`preset-pill-btn ${transformType === 'rotate90' ? 'active' : ''}`} onClick={() => handleSelectPreset('rotate90')} type="button">
+          🔄 Rotate 90°
+        </button>
+        <button className={`preset-pill-btn ${transformType === 'scaleDouble' ? 'active' : ''}`} onClick={() => handleSelectPreset('scaleDouble')} type="button">
+          🔍 Scale 1.5×
+        </button>
+        <button className={`preset-pill-btn ${transformType === 'shearX' ? 'active' : ''}`} onClick={() => handleSelectPreset('shearX')} type="button">
+          📐 Shear along X
+        </button>
+        <button className={`preset-pill-btn ${transformType === 'reflectX' ? 'active' : ''}`} onClick={() => handleSelectPreset('reflectX')} type="button">
+          🪞 Reflect Y-Axis
+        </button>
       </div>
-      <div className="matrix-cell-input-row">
+    </div>
+  );
+
+  const renderCellInput = (key, labelName) => (
+    <div className="transform-cell-box">
+      <span className="transform-cell-tag">{labelName}</span>
+      <div className="transform-cell-input-row">
         <input 
           type="text" 
           inputMode="decimal"
@@ -100,6 +128,7 @@ export default function Step7ImageTransforms() {
           onChange={(e) => handleInputChange(key, e.target.value)} 
           onBlur={() => handleInputBlur(key)}
           onKeyDown={(e) => handleKeyDown(key, e)}
+          className="transform-cell-input"
         />
         <div className="stepper-arrow-buttons">
           <button 
@@ -123,75 +152,63 @@ export default function Step7ImageTransforms() {
     </div>
   );
 
-  const det = (matrix2x2.a * matrix2x2.d - matrix2x2.b * matrix2x2.c).toFixed(2);
-  const trace = (matrix2x2.a + matrix2x2.d).toFixed(2);
-
   return (
-    <motion.div 
-      className="step-module"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+    <StepWrapper
+      stepNumber={7}
+      title="2D Coordinate Geometric Transformations"
+      subtitle="Transform spatial 2D coordinates of digital vectors and images via matrix-vector multiplication: X' = AX. The columns of matrix A dictate where the standard basis vectors î = [1, 0]ᵀ and ĵ = [0, 1]ᵀ land."
+      formula="\begin{bmatrix} x' \\ y' \end{bmatrix} = \begin{bmatrix} a & b \\ c & d \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} = x \begin{bmatrix} a \\ c \end{bmatrix} + y \begin{bmatrix} b \\ d \end{bmatrix}"
+      basicHint="Moving pixel positions according to a matrix formula allows you to rotate, stretch, shear, and reflect entire pictures!"
+      advancedFormula="\vec{v}' = A \vec{v}, \quad A = [\vec{T}(\hat{e}_1) \; \vec{T}(\hat{e}_2)], \quad \det(A) = ad - bc"
+      controls={controls}
+      onPrev={() => onSelectStep && onSelectStep(6)}
+      onNext={() => onSelectStep && onSelectStep(8)}
+      onReset={() => handleSelectPreset('identity')}
+      insightTitle="Basis Vector Mapping"
+      insightBody="The first column [a, c]ᵀ is the transformed destination of the X-axis unit vector î = [1, 0]ᵀ. The second column [b, d]ᵀ is the destination of the Y-axis unit vector ĵ = [0, 1]ᵀ. By tracking only these two unit vectors, you know the destination of every point in the 2D plane!"
     >
-      <div className="step-header-box">
-        <h2 className="step-heading">2D Image Transformation Lab</h2>
-        <p className="step-description">
-          Transform spatial coordinates of pixels directly via matrix-vector multiplication: <code>P' = AP</code> where <strong>A</strong> is a 2×2 transformation matrix. Use the <strong>▲/▼ buttons</strong>, <strong>Arrow keys</strong>, or <strong>Presets</strong> below to explore linear transformations.
-        </p>
-      </div>
-
-      <div className="preset-buttons">
-        <button className={`preset-btn ${transformType === 'identity' ? 'active' : ''}`} onClick={() => handleSelectPreset('identity')}>
-          ↺ Identity
-        </button>
-        <button className={`preset-btn ${transformType === 'rotate45' ? 'active' : ''}`} onClick={() => handleSelectPreset('rotate45')}>
-          🔄 Rotate 45°
-        </button>
-        <button className={`preset-btn ${transformType === 'rotate90' ? 'active' : ''}`} onClick={() => handleSelectPreset('rotate90')}>
-          🔄 Rotate 90°
-        </button>
-        <button className={`preset-btn ${transformType === 'scaleDouble' ? 'active' : ''}`} onClick={() => handleSelectPreset('scaleDouble')}>
-          🔍 Scale 1.5×
-        </button>
-        <button className={`preset-btn ${transformType === 'shearX' ? 'active' : ''}`} onClick={() => handleSelectPreset('shearX')}>
-          📐 Shear X
-        </button>
-        <button className={`preset-btn ${transformType === 'reflectX' ? 'active' : ''}`} onClick={() => handleSelectPreset('reflectX')}>
-          🪞 Reflect Y
-        </button>
-      </div>
-
-      <div className="step-7-layout">
-        <div className="transform-matrix-input-card">
+      <div className="workspace-duo-stage">
+        {/* 2x2 Matrix Input Card */}
+        <div className="transform-matrix-card glass-level-2">
           <div className="matrix-header">
-            <h3 className="card-title">Transformation Matrix A</h3>
-            <span className="matrix-dims" style={{ borderColor: 'var(--border-violet)', color: 'var(--accent-purple)', background: 'rgba(139, 92, 246, 0.14)' }}>
-              2 × 2
-            </span>
+            <h3 className="matrix-title-text">Transformation Matrix A</h3>
+            <span className="matrix-dims-badge text-purple-400">2 × 2</span>
           </div>
 
-          <div className="matrix-input-container">
-            {/* Mathematical Bracket Frame */}
-            <div className="matrix-bracket-frame">
-              <div className="matrix-input-grid">
-                {renderCellInput('a', 'a₁₁')}
-                {renderCellInput('b', 'a₁₂')}
-                {renderCellInput('c', 'a₂₁')}
-                {renderCellInput('d', 'a₂₂')}
-              </div>
+          <div className="transform-grid-bracket-wrap">
+            <div className="matrix-left-bracket" />
+            <div className="transform-2x2-grid">
+              {renderCellInput('a', 'a₁₁ (x → x)')}
+              {renderCellInput('b', 'a₁₂ (y → x)')}
+              {renderCellInput('c', 'a₂₁ (x → y)')}
+              {renderCellInput('d', 'a₂₂ (y → y)')}
             </div>
+            <div className="matrix-right-bracket" />
+          </div>
 
-            {/* Matrix Properties Banner */}
-            <div className="matrix-formula-banner">
-              <span>det(A) = <strong style={{ color: 'var(--accent-purple)' }}>{det}</strong></span>
-              <span style={{ opacity: 0.3 }}>|</span>
-              <span>Tr(A) = <strong style={{ color: 'var(--accent-purple)' }}>{trace}</strong></span>
+          <div className="matrix-invariants-banner">
+            <div className="invariant-pill">
+              <span>Determinant:</span>
+              <strong className="text-cyan-400 font-mono font-bold">det(A) = {det}</strong>
+            </div>
+            <div className="invariant-pill">
+              <span>Trace:</span>
+              <strong className="text-purple-400 font-mono font-bold">Tr(A) = {trace}</strong>
             </div>
           </div>
         </div>
 
-        <CoordinateTransformCanvas matrix2x2={matrix2x2} />
+        {/* 2D Coordinate Transformation Canvas */}
+        <div className="transform-canvas-card glass-level-2">
+          <CoordinateTransformCanvas matrix2x2={matrix2x2} />
+        </div>
       </div>
-    </motion.div>
+
+      <MathInspectorHUD
+        title="2D Linear Map"
+        formula={`A = [${matrix2x2.a.toFixed(2)}, ${matrix2x2.b.toFixed(2)}; ${matrix2x2.c.toFixed(2)}, ${matrix2x2.d.toFixed(2)}]`}
+        result={`det(A) = ${det} (${parseFloat(det) === 0 ? 'Space collapses into 1D line' : parseFloat(det) < 0 ? 'Orientation inverted (reflection)' : 'Preserves orientation'})`}
+      />
+    </StepWrapper>
   );
 }

@@ -1,68 +1,65 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { BookOpen, Compass, Layers, GraduationCap } from 'lucide-react';
+import { Sparkles, Heart, Code2, BookOpen, Layers } from 'lucide-react';
 
-export default function Footer({ currentStep, onSelectStep, onOpenLevelModal, onOpenCredits }) {
+export default function Footer({ onSelectStep, onSelectView }) {
   return (
-    <footer className="app-footer">
-      <div className="footer-content">
-        <div className="footer-brand">
-          <div className="footer-title-row">
-            <BookOpen size={20} className="footer-icon" />
-            <span className="footer-brand-title">MathLens</span>
+    <footer className="mathlens-footer" aria-label="Site footer">
+      <div className="footer-inner-container">
+        {/* Top Row: Brand & Philosophy */}
+        <div className="footer-top-row">
+          <div className="footer-brand-col">
+            <div className="footer-logo-row">
+              <span className="footer-lambda">λ</span>
+              <span className="footer-title">MathLens</span>
+            </div>
+            <p className="footer-motto">
+              "Don't just calculate mathematics. See it. Manipulate it. Understand it."
+            </p>
+            <div className="footer-inst-tag">
+              <span>IIIT Vadodara • Academic Research &amp; Education</span>
+            </div>
           </div>
-          <p className="footer-quote">
-            An interactive mathematics laboratory exploring matrix representations, spatial transformations, and digital image processing.
-          </p>
-          <div className="footer-inst-tag">
-            <span>IIIT Vadodara • Academic Research &amp; Education</span>
+
+          <div className="footer-nav-col">
+            <h4 className="footer-heading">Foundations</h4>
+            <ul className="footer-links-list">
+              <li><button onClick={() => { onSelectStep(1); onSelectView('module'); }}>Grayscale Matrix</button></li>
+              <li><button onClick={() => { onSelectStep(3); onSelectView('module'); }}>Scalar Brightness</button></li>
+              <li><button onClick={() => { onSelectStep(4); onSelectView('module'); }}>RGB Vector</button></li>
+              <li><button onClick={() => { onSelectStep(5); onSelectView('module'); }}>Channel Matrices</button></li>
+            </ul>
+          </div>
+
+          <div className="footer-nav-col">
+            <h4 className="footer-heading">Advanced Labs</h4>
+            <ul className="footer-links-list">
+              <li><button onClick={() => { onSelectStep(7); onSelectView('module'); }}>2D Transforms</button></li>
+              <li><button onClick={() => { onSelectStep(8); onSelectView('module'); }}>Addition & Blending</button></li>
+              <li><button onClick={() => { onSelectStep(12); onSelectView('module'); }}>Determinant Visualizer</button></li>
+              <li><button onClick={() => { onSelectStep(14); onSelectView('module'); }}>Matrix Inverse Zoom</button></li>
+            </ul>
+          </div>
+
+          <div className="footer-nav-col">
+            <h4 className="footer-heading">Platform</h4>
+            <ul className="footer-links-list">
+              <li><button onClick={() => onSelectView('home')}>Overview</button></li>
+              <li><button onClick={() => onSelectView('learn')}>Curriculum</button></li>
+              <li><button onClick={() => onSelectView('about')}>Architecture</button></li>
+            </ul>
           </div>
         </div>
 
-        <div className="footer-links-group">
-          <div className="footer-column">
-            <h4>Laboratory Steps</h4>
-            <div className="footer-step-links">
-              <button onClick={() => onSelectStep(1)} className={currentStep === 1 ? 'active' : ''}>
-                01. Grayscale Matrices
-              </button>
-              <button onClick={() => onSelectStep(2)} className={currentStep === 2 ? 'active' : ''}>
-                02. Cell Editing
-              </button>
-              <button onClick={() => onSelectStep(3)} className={currentStep === 3 ? 'active' : ''}>
-                03. Scalar Multiplications
-              </button>
-              <button onClick={() => onSelectStep(4)} className={currentStep === 4 ? 'active' : ''}>
-                04. RGB Pixel Tensors
-              </button>
-              <button onClick={() => onSelectStep(5)} className={currentStep === 5 ? 'active' : ''}>
-                05. Channel Decomposition
-              </button>
-              <button onClick={() => onSelectStep(6)} className={currentStep === 6 ? 'active' : ''}>
-                06. Channel Multipliers
-              </button>
-              <button onClick={() => onSelectStep(7)} className={currentStep === 7 ? 'active' : ''}>
-                07. 2D Image Transforms
-              </button>
-              <button onClick={() => onSelectStep(8)} className={currentStep === 8 ? 'active' : ''}>
-                08. Addition &amp; Blending
-              </button>
-              <button onClick={() => onSelectStep(9)} className={currentStep === 9 ? 'active' : ''}>
-                09. Background Subtraction
-              </button>
-            </div>
-          </div>
+        <div className="footer-divider-line" />
 
-          <div className="footer-column">
-            <h4>Learning Tracks</h4>
-            <div className="footer-track-badge" onClick={onOpenLevelModal}>
-              <Layers size={14} />
-              <span>Basic Intuition Track</span>
-              <span className="badge-active">Active</span>
-            </div>
-            <p className="footer-small-text">
-              Designed for visual intuition in linear algebra and digital image processing.
-            </p>
+        {/* Bottom Row */}
+        <div className="footer-bottom-row">
+          <div className="footer-copy">
+            © {new Date().getFullYear()} MathLens • Open-Source Interactive Mathematics Laboratory
+          </div>
+          <div className="footer-shortcuts-hint">
+            <span>Shortcuts:</span>
+            <kbd>⌘K</kbd> Search • <kbd>←</kbd> <kbd>→</kbd> Steps • <kbd>T</kbd> Theme
           </div>
 
           <div className="footer-column">
@@ -77,20 +74,15 @@ export default function Footer({ currentStep, onSelectStep, onOpenLevelModal, on
               <p className="footer-inst-line">
                 Indian Institute of Information Technology Vadodara
               </p>
-              {onOpenCredits && (
+              {/* {onOpenCredits && (
                 <button onClick={onOpenCredits} className="footer-credits-link">
                   <GraduationCap size={14} />
                   <span>View Developer Details</span>
                 </button>
-              )}
+              )} */}
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="footer-bottom">
-        <span>© MathLens Matrix Laboratory — IIIT Vadodara</span>
-        <span className="footer-math-symbol">A · x = λ · x</span>
       </div>
     </footer>
   );

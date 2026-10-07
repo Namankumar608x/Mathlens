@@ -15,6 +15,9 @@ export default function Footer({ onSelectStep, onSelectView }) {
             <p className="footer-motto">
               "Don't just calculate mathematics. See it. Manipulate it. Understand it."
             </p>
+            <div className="footer-inst-tag">
+              <span>IIIT Vadodara • Academic Research &amp; Education</span>
+            </div>
           </div>
 
           <div className="footer-nav-col">
@@ -57,6 +60,27 @@ export default function Footer({ onSelectStep, onSelectView }) {
           <div className="footer-shortcuts-hint">
             <span>Shortcuts:</span>
             <kbd>⌘K</kbd> Search • <kbd>←</kbd> <kbd>→</kbd> Steps • <kbd>T</kbd> Theme
+          </div>
+
+          <div className="footer-column">
+            <h4>Development &amp; Supervision</h4>
+            <div className="footer-team-info">
+              <p className="footer-supervisor-line">
+                <span className="footer-label">Supervisor:</span> <strong>Prof. Payal Wadhwa</strong>
+              </p>
+              <p className="footer-devs-line">
+                <span className="footer-label">Developers:</span> Naman Kumar, Mayank Soni, Krishana Yadav
+              </p>
+              <p className="footer-inst-line">
+                Indian Institute of Information Technology Vadodara
+              </p>
+              {onOpenCredits && (
+                <button onClick={onOpenCredits} className="footer-credits-link">
+                  <GraduationCap size={14} />
+                  <span>View Developer Details</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

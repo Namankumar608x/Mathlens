@@ -27,7 +27,7 @@ export default function RGBExplodedView({
         <span className="font-serif" style={{ fontSize: isCompact ? '0.95rem' : '1.15rem', fontWeight: 700, color }}>{title}</span>
         <span className="matrix-dims" style={{ borderColor: `${color}60`, color, background: `${color}15`, fontSize: isCompact ? '0.68rem' : '0.78rem' }}>4 × 4</span>
       </div>
-      
+
       {/* Column indices */}
       <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%', maxWidth: isCompact ? '240px' : '360px', marginBottom: '2px', paddingLeft: isCompact ? '18px' : '24px', paddingRight: isCompact ? '18px' : '24px' }}>
         {[0, 1, 2, 3].map(colIdx => (
@@ -49,12 +49,12 @@ export default function RGBExplodedView({
 
         <div className="matrix-bracket-container" style={{ width: 'fit-content', margin: 0, '--bracket-color': color }}>
           <div className="matrix-left-bracket" style={{ borderColor: color }} />
-          <div 
+          <div
             className="matrix-grid"
-            style={{ 
+            style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)', 
-              gap: isCompact ? '5px' : '8px', 
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: isCompact ? '5px' : '8px',
               width: 'fit-content'
             }}
           >
@@ -69,6 +69,7 @@ export default function RGBExplodedView({
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onMouseEnter={() => onHoverCell && onHoverCell({ row: i, col: j })}
+                    onTouchStart={() => onHoverCell && onHoverCell({ row: i, col: j })}
                     style={{
                       '--cell-accent': color,
                       borderColor: isSelected ? color : 'var(--border-color)',
@@ -129,29 +130,29 @@ export default function RGBExplodedView({
         </div>
 
         <div className="channel-tab-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.45rem', marginBottom: '1.1rem', width: '100%' }}>
-          <button 
-            className={`channel-tab-btn ${activeTab === 'r' ? 'active-r' : ''}`} 
+          <button
+            className={`channel-tab-btn ${activeTab === 'r' ? 'active-r' : ''}`}
             onClick={() => handleTabClick('r')}
           >
             <CircleDot size={15} />
             <span>Red (M_R)</span>
           </button>
-          <button 
-            className={`channel-tab-btn ${activeTab === 'g' ? 'active-g' : ''}`} 
+          <button
+            className={`channel-tab-btn ${activeTab === 'g' ? 'active-g' : ''}`}
             onClick={() => handleTabClick('g')}
           >
             <CircleDot size={15} />
             <span>Green (M_G)</span>
           </button>
-          <button 
-            className={`channel-tab-btn ${activeTab === 'b' ? 'active-b' : ''}`} 
+          <button
+            className={`channel-tab-btn ${activeTab === 'b' ? 'active-b' : ''}`}
             onClick={() => handleTabClick('b')}
           >
             <CircleDot size={15} />
             <span>Blue (M_B)</span>
           </button>
-          <button 
-            className={`channel-tab-btn ${activeTab === 'all' ? 'active-all' : ''}`} 
+          <button
+            className={`channel-tab-btn ${activeTab === 'all' ? 'active-all' : ''}`}
             onClick={() => handleTabClick('all')}
           >
             <Layers size={15} />

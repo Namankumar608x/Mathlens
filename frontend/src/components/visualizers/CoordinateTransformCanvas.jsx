@@ -366,15 +366,18 @@ export default function CoordinateTransformCanvas({
 
   }, [safeMatrix.a, safeMatrix.b, safeMatrix.c, safeMatrix.d, subjectType, customImage, showImage, showParallelogram, showBasisVectors, showGhostOutline, showGrid, showOrientationArc]);
 
-  // Handle canvas mouse move for interactive coordinate probing
-  const handleMouseMove = (e) => {
+  // Handle canvas mouse and touch move for interactive coordinate probing
+  const handlePointerMove = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
     const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const canvasX = (e.clientX - rect.left) * scaleX;
-    const canvasY = (e.clientY - rect.top) * scaleY;
+    const canvasX = (clientX - rect.left) * scaleX;
+    const canvasY = (clientY - rect.top) * scaleY;
 
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
@@ -394,14 +397,14 @@ export default function CoordinateTransformCanvas({
     if (onHoverCoords) onHoverCoords(probe);
   };
 
-  const handleMouseLeave = () => {
+  const handlePointerLeave = () => {
     setHoverInfo(null);
     if (onHoverCoords) onHoverCoords(null);
   };
 
   return (
     <div className="transform-canvas-card" style={{ width: '100%', position: 'relative' }}>
-      <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
         <span>{title}</span>
         <span className="font-mono" style={{ fontSize: '0.82rem', color: 'var(--accent-cyan)' }}>{subtitle}</span>
       </div>
@@ -409,8 +412,10 @@ export default function CoordinateTransformCanvas({
       <div style={{ position: 'relative', width: '100%', marginTop: '0.75rem' }}>
         <canvas
           ref={canvasRef}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
+          onMouseMove={handlePointerMove}
+          onTouchStart={handlePointerMove}
+          onTouchMove={handlePointerMove}
+          onMouseLeave={handlePointerLeave}
           style={{
             width: '100%',
             height: 'auto',
@@ -418,7 +423,8 @@ export default function CoordinateTransformCanvas({
             borderRadius: '14px',
             border: '1px solid var(--border-color)',
             background: 'var(--bg-primary)',
-            cursor: 'crosshair'
+            cursor: 'crosshair',
+            touchAction: 'none'
           }}
         />
 
@@ -432,11 +438,13 @@ export default function CoordinateTransformCanvas({
           WebkitBackdropFilter: 'blur(12px)',
           border: `1px solid ${detAnalysis.borderColor}`,
           borderRadius: '10px',
-          padding: '0.5rem 0.85rem',
+          padding: '0.4rem 0.75rem',
           display: 'flex',
           alignItems: 'center',
-          gap: '0.75rem',
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)'
+          gap: '0.5rem',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+          maxWidth: 'calc(100% - 24px)',
+          flexWrap: 'wrap'
         }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
             det(A) = <strong style={{ color: detAnalysis.color }}>{rawDet.toFixed(2)}</strong>

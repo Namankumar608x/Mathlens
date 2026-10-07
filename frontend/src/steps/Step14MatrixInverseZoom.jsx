@@ -350,7 +350,7 @@ export default function Step14MatrixInverseZoom({ onSelectStep }) {
         <div style={{
           marginTop: '1.25rem',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
           gap: '1rem'
         }}>
           {/* Pipeline 1: Zoom In 2x -> Apply Inverse -> Original */}
@@ -544,14 +544,14 @@ export default function Step14MatrixInverseZoom({ onSelectStep }) {
       </div>
 
       {/* MAIN TWO-COLUMN LAB WORKBENCH */}
-      <div className="interactive-lab-grid" style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="interactive-lab-grid" style={{ marginTop: '1.5rem', alignItems: 'start' }}>
         
         {/* LEFT COLUMN: Zoom Slider, Matrices, Presets */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
           
           {/* 1. DYNAMIC ZOOM FACTOR SLIDER */}
           <div className="control-panel-card">
-            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Sliders size={16} style={{ color: 'var(--accent-cyan)' }} />
                 <span>Zoom Factor (k)</span>
@@ -588,7 +588,7 @@ export default function Step14MatrixInverseZoom({ onSelectStep }) {
             <div style={{
               marginTop: '1.25rem',
               display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 110px), 1fr))',
               gap: '0.65rem'
             }}>
               <div className="stat-pill" style={{ flexDirection: 'column', alignItems: 'center', padding: '0.6rem 0.4rem', textAlign: 'center' }}>
@@ -624,7 +624,7 @@ export default function Step14MatrixInverseZoom({ onSelectStep }) {
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem', marginTop: '1rem' }}>
               
               {/* Matrix S */}
               <div style={{

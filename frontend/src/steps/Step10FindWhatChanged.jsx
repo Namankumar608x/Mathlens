@@ -1595,7 +1595,7 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
           )}
 
           {/* PHOTO SLOTS: PHOTO 1 & PHOTO 2 UPLOAD TILES */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
             
             {/* Slot A: Photo 1 */}
             <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
@@ -1689,7 +1689,7 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
               </div>
 
               {/* 4 Pipeline Canvases for Photos */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '1rem', alignItems: 'center' }}>
                 
                 {/* Canvas 1: Photo Matrix A */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
@@ -1783,7 +1783,7 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
           <span>Real-World Mathematics: How Difference Matrices Detect Changes</span>
         </h3>
         
-        <div className="math-concept-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginTop: '0.85rem' }}>
+        <div className="math-concept-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1.25rem', marginTop: '0.85rem' }}>
           
           <div className="math-concept-box">
             <h4 style={{ color: 'var(--accent-purple)', fontSize: '0.92rem', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

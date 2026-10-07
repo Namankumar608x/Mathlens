@@ -1,13 +1,13 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, 
-  RotateCcw, 
-  Blend, 
-  Scissors, 
-  Scan, 
-  Activity, 
-  Maximize2, 
+import {
+  Sparkles,
+  RotateCcw,
+  Blend,
+  Scissors,
+  Scan,
+  Activity,
+  Maximize2,
   Minimize2,
   FlipHorizontal,
   AlertTriangle,
@@ -192,10 +192,10 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
     const val = matrix[key];
     const isDiagonal = key === 'a' || key === 'd';
     return (
-      <div 
-        className="det-matrix-cell" 
+      <div
+        className="det-matrix-cell"
         key={key}
-        style={{ 
+        style={{
           '--cell-accent': accentColor,
           '--cell-accent-glow': `${accentColor}30`
         }}
@@ -215,7 +215,7 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
             {val.toFixed(2)}
           </span>
           <div style={{ display: 'flex', gap: '0.3rem' }}>
-            <button 
+            <button
               type="button"
               className="det-cell-step-btn"
               onClick={() => handleStepValue(key, -0.1)}
@@ -223,7 +223,7 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
             >
               -0.1
             </button>
-            <button 
+            <button
               type="button"
               className="det-cell-step-btn"
               onClick={() => handleStepValue(key, 0.1)}
@@ -231,7 +231,7 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
             >
               +0.1
             </button>
-            <button 
+            <button
               type="button"
               className="det-cell-step-btn"
               onClick={() => handleSliderChange(key, isDiagonal ? 1.0 : 0.0)}
@@ -260,7 +260,7 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="step-module"
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
@@ -285,17 +285,17 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
           Visual Lab 12: Determinant Lab
         </h2>
         <p className="step-description">
-          Transform an image using <code>x′ = Ax</code> with matrix <code>A = [a b; c d]</code>. 
-          The determinant <code>det(A) = ad − bc</code> is not merely a numerical formula—it is a 
-          <strong> visual measure of how linear transformations scale area and orient space</strong>. 
-          Modify the sliders below to explore how <strong>|det(A)| &gt; 1</strong> stretches area, 
-          <strong>0 &lt; |det(A)| &lt; 1</strong> compresses area, 
-          <strong>det(A) = 0</strong> collapses 2D planar space into a line or point, 
+          Transform an image using <code>x′ = Ax</code> with matrix <code>A = [a b; c d]</code>.
+          The determinant <code>det(A) = ad − bc</code> is not merely a numerical formula—it is a
+          <strong> visual measure of how linear transformations scale area and orient space</strong>.
+          Modify the sliders below to explore how <strong>|det(A)| &gt; 1</strong> stretches area,
+          <strong>0 &lt; |det(A)| &lt; 1</strong> compresses area,
+          <strong>det(A) = 0</strong> collapses 2D planar space into a line or point,
           and <strong>det(A) &lt; 0</strong> flips orientation inside-out!
         </p>
 
         {/* REAL-TIME DETERMINANT FORMULA & STATUS HUD */}
-        <div 
+        <div
           className="determinant-hero-hud"
           style={{
             marginTop: '1.25rem',
@@ -379,14 +379,14 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
       </div>
 
       {/* MAIN TWO-COLUMN LAB WORKBENCH */}
-      <div className="interactive-lab-grid" style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
-        
+      <div className="interactive-lab-grid" style={{ marginTop: '1.5rem', alignItems: 'start' }}>
+
         {/* LEFT COLUMN: Controls, Presets, Image Picker */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
+
           {/* 1. HERO 2x2 TRANSFORMATION MATRIX */}
           <div className="control-panel-card">
-            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Sliders size={16} style={{ color: 'var(--accent-purple)' }} />
                 <span>Transformation Matrix A &isin; ℝ<sup>2×2</sup></span>
@@ -505,11 +505,11 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
                       </span>
                       <Icon size={14} style={{ color: preset.color }} />
                     </div>
-                    <span 
+                    <span
                       className="font-mono"
-                      style={{ 
-                        fontSize: '0.72rem', 
-                        color: preset.color, 
+                      style={{
+                        fontSize: '0.72rem',
+                        color: preset.color,
                         fontWeight: 700,
                         background: `${preset.color}15`,
                         padding: '0.1rem 0.4rem',
@@ -579,9 +579,9 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
             {/* Custom Image Info if Loaded */}
             {customImagePreview && subjectType === 'custom' && (
               <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem', background: 'var(--bg-primary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                <img 
-                  src={customImagePreview} 
-                  alt="Custom uploaded preview" 
+                <img
+                  src={customImagePreview}
+                  alt="Custom uploaded preview"
                   style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px' }}
                 />
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>
@@ -603,34 +603,34 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
               color: 'var(--text-secondary)'
             }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}>
-                <input 
-                  type="checkbox" 
-                  checked={showImage} 
-                  onChange={(e) => setShowImage(e.target.checked)} 
+                <input
+                  type="checkbox"
+                  checked={showImage}
+                  onChange={(e) => setShowImage(e.target.checked)}
                 />
                 <span>Show Transformed Image</span>
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}>
-                <input 
-                  type="checkbox" 
-                  checked={showParallelogram} 
-                  onChange={(e) => setShowParallelogram(e.target.checked)} 
+                <input
+                  type="checkbox"
+                  checked={showParallelogram}
+                  onChange={(e) => setShowParallelogram(e.target.checked)}
                 />
                 <span>Show det(A) Parallelogram</span>
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}>
-                <input 
-                  type="checkbox" 
-                  checked={showBasisVectors} 
-                  onChange={(e) => setShowBasisVectors(e.target.checked)} 
+                <input
+                  type="checkbox"
+                  checked={showBasisVectors}
+                  onChange={(e) => setShowBasisVectors(e.target.checked)}
                 />
                 <span>Show Basis Vectors (i', j')</span>
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}>
-                <input 
-                  type="checkbox" 
-                  checked={showGhostOutline} 
-                  onChange={(e) => setShowGhostOutline(e.target.checked)} 
+                <input
+                  type="checkbox"
+                  checked={showGhostOutline}
+                  onChange={(e) => setShowGhostOutline(e.target.checked)}
                 />
                 <span>Show Original Boundary</span>
               </label>
@@ -640,7 +640,7 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
 
         {/* RIGHT COLUMN: Interactive Transformation Canvas & Live Readouts */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
+
           <CoordinateTransformCanvas
             matrix2x2={matrix}
             subjectType={subjectType}
@@ -657,10 +657,10 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
           />
 
           {/* DYNAMIC CASE COMPARISON CARDS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
-            
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.85rem' }}>
+
             {/* Case 1: Stretch */}
-            <div 
+            <div
               className={`case-callout-card ${Math.abs(rawDet) > 1.0001 ? 'active' : ''}`}
               style={{
                 padding: '0.85rem 1rem',
@@ -680,7 +680,7 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
             </div>
 
             {/* Case 2: Shrink */}
-            <div 
+            <div
               className={`case-callout-card ${Math.abs(rawDet) < 0.9999 && Math.abs(rawDet) > 0.0001 ? 'active' : ''}`}
               style={{
                 padding: '0.85rem 1rem',
@@ -700,7 +700,7 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
             </div>
 
             {/* Case 3: Collapse */}
-            <div 
+            <div
               className={`case-callout-card ${Math.abs(rawDet) <= 0.0001 ? 'active' : ''}`}
               style={{
                 padding: '0.85rem 1rem',
@@ -720,7 +720,7 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
             </div>
 
             {/* Case 4: Orientation Reversal (Flip) */}
-            <div 
+            <div
               className={`case-callout-card ${rawDet < -0.0001 ? 'active' : ''}`}
               style={{
                 padding: '0.85rem 1rem',
@@ -749,15 +749,15 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
           <span>Mathematical Intuition: The Determinant as an Area Scaling Factor</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginTop: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1.25rem', marginTop: '1rem' }}>
           <div className="theory-sub-block">
             <h4 style={{ color: 'var(--accent-cyan)', fontSize: '0.92rem', marginBottom: '0.4rem' }}>
               1. Why det(A) = ad − bc measures Area
             </h4>
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-              Consider the unit square spanned by basis vectors <code>i = [1, 0]ᵀ</code> and <code>j = [0, 1]ᵀ</code> with area <code>1 × 1 = 1</code>. 
-              The matrix maps these vectors to <code>i' = [a, c]ᵀ</code> and <code>j' = [b, d]ᵀ</code>. 
-              By cross-product geometry, the area of the resulting parallelogram is exactly <code>|a·d − b·c|</code>! 
+              Consider the unit square spanned by basis vectors <code>i = [1, 0]ᵀ</code> and <code>j = [0, 1]ᵀ</code> with area <code>1 × 1 = 1</code>.
+              The matrix maps these vectors to <code>i' = [a, c]ᵀ</code> and <code>j' = [b, d]ᵀ</code>.
+              By cross-product geometry, the area of the resulting parallelogram is exactly <code>|a·d − b·c|</code>!
               Since any complex 2D image is built from infinitesimal square tiles, <strong>every tiny area element scales by |det(A)|</strong>.
             </p>
           </div>
@@ -767,8 +767,8 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
               2. The Geometry of Collapse: det(A) = 0
             </h4>
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-              When <code>ad − bc = 0</code>, the two column vectors <code>[a, c]ᵀ</code> and <code>[b, d]ᵀ</code> are parallel (linearly dependent). 
-              Instead of spanning a 2D surface, every pixel in the entire image is forced onto the 1D line defined by their common span. 
+              When <code>ad − bc = 0</code>, the two column vectors <code>[a, c]ᵀ</code> and <code>[b, d]ᵀ</code> are parallel (linearly dependent).
+              Instead of spanning a 2D surface, every pixel in the entire image is forced onto the 1D line defined by their common span.
               Because infinitely many 2D input points land on the exact same 1D coordinate, <strong>information is irreversibly lost</strong>, which is why matrices with <code>det(A) = 0</code> are non-invertible (singular).
             </p>
           </div>
@@ -778,9 +778,9 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
               3. The Meaning of Negative Determinants: Orientation Flip
             </h4>
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-              Why would area ever be "negative"? In linear algebra, the sign indicates <strong>spatial chirality (handedness)</strong>. 
-              In the standard coordinate system, rotating from <code>i</code> to <code>j</code> takes a 90° counter-clockwise path. 
-              When a matrix performs a reflection across an axis, that rotation becomes clockwise. 
+              Why would area ever be "negative"? In linear algebra, the sign indicates <strong>spatial chirality (handedness)</strong>.
+              In the standard coordinate system, rotating from <code>i</code> to <code>j</code> takes a 90° counter-clockwise path.
+              When a matrix performs a reflection across an axis, that rotation becomes clockwise.
               A negative determinant alerts you that the image has been flipped inside out—like looking at a transparent slide from the reverse side!
             </p>
           </div>

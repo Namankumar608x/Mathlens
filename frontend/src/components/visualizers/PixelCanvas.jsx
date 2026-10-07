@@ -100,6 +100,8 @@ export default function PixelCanvas({
 
   const getCellFromEvent = (e) => {
     if (!canvasRef.current) return null;
+    const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -107,7 +109,7 @@ export default function PixelCanvas({
     const row = Math.floor(y / effectivePixelSize);
 
     if (row >= 0 && row < rows && col >= 0 && col < cols) {
-      return { row, col, x: e.clientX, y: e.clientY };
+      return { row, col, x: clientX, y: clientY };
     }
     return null;
   };
@@ -122,6 +124,14 @@ export default function PixelCanvas({
     const cell = getCellFromEvent(e);
     if (cell && onClickCell) {
       onClickCell(cell);
+    }
+  };
+
+  const handleTouch = (e) => {
+    const cell = getCellFromEvent(e);
+    if (cell) {
+      if (onHoverCell) onHoverCell(cell);
+      if (onClickCell) onClickCell(cell);
     }
   };
 
@@ -204,6 +214,8 @@ export default function PixelCanvas({
             ref={canvasRef}
             onMouseMove={handleMouseMove}
             onClick={handleClick}
+            onTouchStart={handleTouch}
+            onTouchMove={handleTouch}
             onMouseLeave={handleMouseLeave}
             className="pixel-canvas"
           />

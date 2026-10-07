@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/common/Header';
+import Footer from './components/common/Footer';
 import LevelSelectorModal from './components/common/LevelSelectorModal';
 import Sidebar from './components/layout/Sidebar';
 import FloatingDock from './components/layout/FloatingDock';
@@ -292,6 +293,11 @@ export default function App() {
         currentLevel={currentLevel}
         onSelectLevel={setCurrentLevel}
         onClose={() => setIsLevelModalOpen(false)}
+      />
+
+      <DeveloperCreditsModal
+        isOpen={isCreditsOpen}
+        onClose={() => setIsCreditsOpen(false)}
       />
     </div>
   );

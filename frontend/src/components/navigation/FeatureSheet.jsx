@@ -40,7 +40,7 @@ export default function FeatureSheet({
             <div className="mobile-sheet-header">
               <div>
                 <h3 className="mobile-sheet-title">All Mathematics Modules</h3>
-                <p className="mobile-sheet-sub">14 interactive visual laboratories</p>
+                <p className="mobile-sheet-sub">{FEATURES.length} interactive visual laboratories</p>
               </div>
               <button className="mobile-sheet-close-btn" onClick={onClose} aria-label="Close sheet">
                 <X size={18} />

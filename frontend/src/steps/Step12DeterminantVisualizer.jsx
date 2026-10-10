@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 import { computeDeterminant, getDeterminantAnalysis } from '../core/transformEngine';
 import CoordinateTransformCanvas from '../components/visualizers/CoordinateTransformCanvas';
-import VisualLabsNav from '../components/navigation/VisualLabsNav';
 import StepFooter from '../components/layout/StepFooter';
 
 // Curated presets specifically demonstrating the 4 core cases requested
@@ -277,8 +276,6 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
               Area Scaling Geometry: det(A) = ad − bc
             </span>
           </div>
-
-          <VisualLabsNav activeStep={12} onSelectStep={onSelectStep} />
         </div>
 
         <h2 className="step-heading">

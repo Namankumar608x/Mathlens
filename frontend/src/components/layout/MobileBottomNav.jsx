@@ -10,6 +10,7 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
+import { FEATURES } from '../../config/features';
 
 export default function MobileBottomNav({
   currentStep,
@@ -29,7 +30,7 @@ export default function MobileBottomNav({
   };
 
   const handleNext = () => {
-    if (currentStep < 14) {
+    if (currentStep < FEATURES.length) {
       onSelectStep(currentStep + 1);
       onSelectView('module');
     }
@@ -72,7 +73,7 @@ export default function MobileBottomNav({
       <button
         className="mobile-dock-btn accent-dock-btn"
         onClick={handleNext}
-        disabled={currentStep >= 14 && currentView === 'module'}
+        disabled={currentStep >= FEATURES.length && currentView === 'module'}
         title="Next Step"
       >
         <ArrowRight size={19} />

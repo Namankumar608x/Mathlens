@@ -23,7 +23,6 @@ import {
   ZoomIn
 } from 'lucide-react';
 import { clampPixel, createEmptyMatrix, subtractMatrices, thresholdMatrix } from '../core/mathEngine';
-import VisualLabsNav from '../components/navigation/VisualLabsNav';
 import StepFooter from '../components/layout/StepFooter';
 
 // Presets representing Scene with Object (I) and Empty Background (B)
@@ -357,8 +356,6 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
               Background Detection: D = |I − B|
             </span>
           </div>
-
-          <VisualLabsNav activeStep={9} onSelectStep={onSelectStep} />
         </div>
 
         <h2 className="step-heading">Visual Lab 09: Background Detection</h2>

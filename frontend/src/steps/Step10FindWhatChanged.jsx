@@ -33,7 +33,6 @@ import {
   ZoomIn
 } from 'lucide-react';
 import { clampPixel, createEmptyMatrix, subtractMatrices, thresholdMatrix } from '../core/mathEngine';
-import VisualLabsNav from '../components/navigation/VisualLabsNav';
 import StepFooter from '../components/layout/StepFooter';
 
 // Presets representing 3 core scenarios: Added, Removed, Moved
@@ -694,8 +693,6 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
               Change Detection Pipeline: D = |A − B|
             </span>
           </div>
-
-          <VisualLabsNav activeStep={10} onSelectStep={onSelectStep} />
         </div>
 
         <h2 className="step-heading">Visual Lab 10: Change Detection</h2>

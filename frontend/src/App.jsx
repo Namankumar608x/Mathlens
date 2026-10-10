@@ -29,8 +29,11 @@ import Step11ImageInversionXRay from './steps/Step11ImageInversionXRay';
 import Step12DeterminantVisualizer from './steps/Step12DeterminantVisualizer';
 import Step13MatrixInverse from './steps/Step13MatrixInverse';
 import Step14MatrixInverseZoom from './steps/Step14MatrixInverseZoom';
+import Step15MatrixMultiplicationShadows from './steps/Step15MatrixMultiplicationShadows';
+import Step16MyImageMyMatrix from './steps/Step16MyImageMyMatrix';
+import Step17RayOptics from './steps/Step17RayOptics';
 
-import { getFeatureByStep } from './config/features';
+import { getFeatureByStep, FEATURES } from './config/features';
 import './index.css';
 import './App.css';
 
@@ -58,7 +61,7 @@ export default function App() {
     const stepParam = params.get('step');
     if (stepParam) {
       const parsed = parseInt(stepParam, 10);
-      if (!isNaN(parsed) && parsed >= 1 && parsed <= 14) return parsed;
+      if (!isNaN(parsed) && parsed >= 1 && parsed <= 16) return parsed;
     }
     const saved = localStorage.getItem('mathlens_step');
     return saved ? parseInt(saved, 10) : 1;
@@ -139,7 +142,7 @@ export default function App() {
         if (e.key === 'ArrowLeft' && currentStep > 1) {
           e.preventDefault();
           handleSelectStep(currentStep - 1);
-        } else if (e.key === 'ArrowRight' && currentStep < 14) {
+        } else if (e.key === 'ArrowRight' && currentStep < FEATURES.length) {
           e.preventDefault();
           handleSelectStep(currentStep + 1);
         }
@@ -180,6 +183,12 @@ export default function App() {
         return <Step13MatrixInverse onSelectStep={handleSelectStep} />;
       case 14:
         return <Step14MatrixInverseZoom onSelectStep={handleSelectStep} />;
+      case 15:
+        return <Step15MatrixMultiplicationShadows onSelectStep={handleSelectStep} />;
+      case 16:
+        return <Step16MyImageMyMatrix onSelectStep={handleSelectStep} />;
+      case 17:
+        return <Step17RayOptics onSelectStep={handleSelectStep} />;
       default:
         return <Step1Grayscale onSelectStep={handleSelectStep} />;
     }

@@ -22,7 +22,8 @@ import {
   Cpu,
   Variable,
   FunctionSquare,
-  Network
+  Network,
+  Zap
 } from 'lucide-react';
 
 export const CATEGORIES = [
@@ -49,6 +50,14 @@ export const CATEGORIES = [
     description: 'Interactive visual experiments: blending, detection, inversion, determinants, and scaling',
     icon: Blend,
     color: '#06B6D4' // Cyan / Teal
+  },
+  {
+    id: 'ray-optics',
+    label: 'Ray Optics',
+    shortLabel: 'Optics',
+    description: 'Light rays as vectors, plane mirror reflections, angular rotations, and retroreflectors',
+    icon: Zap,
+    color: '#F59E0B' // Golden Amber
   }
 ];
 
@@ -253,8 +262,52 @@ export const FEATURES = [
     summary: 'Digital vs optical scaling: zoom in by factor k then zoom out by 1/k. Observe resolution limits, spatial aliasing, and interpolation artifacts.',
     concepts: ['Scaling Matrix', 'Inverse Zoom', 'Sampling & Interpolation', 'Area Scaling k²'],
     keywords: ['zoom scaling', 'scale', 'resolution', 'pixelation', 'interpolation', 'magnification']
+  },
+  {
+    id: 'matrix-multiplication-shadows',
+    stepNumber: 15,
+    slug: 'matrix-multiplication-shadows',
+    title: 'Matrix Multiplication & Shadows',
+    shortTitle: 'Matrix Mult & Shadows',
+    category: 'visual-labs',
+    categoryLabel: 'Visual Labs',
+    icon: Grid,
+    formula: 'C = A \\cdot B, \\quad B = A \\odot S \\implies A = B \\oslash S',
+    summary: 'What happens when two images are multiplied? Explore non-commutativity (AB ≠ BA), row-column dot products, and optical shadow creation and recovery.',
+    concepts: ['Row-Column Dot Product', 'Non-Commutativity (AB ≠ BA)', 'Display Normalization', 'Hadamard Shadow Matrix S', 'Division Recovery (B ⊘ S)', 'RGB Flower Photograph'],
+    keywords: ['matrix multiplication', 'multiply images', 'shadow', 'hadamard', 'flower shadow', 'non-commutative', 'identity matrix', 'remove shadow']
+  },
+  {
+    id: 'my-image-my-matrix',
+    stepNumber: 16,
+    slug: 'my-image-my-matrix',
+    title: 'My Image, My Matrix',
+    shortTitle: 'My Image Matrix',
+    category: 'visual-labs',
+    categoryLabel: 'Visual Labs',
+    icon: Sparkles,
+    formula: "A' = f(A) \\quad \\text{or} \\quad X' = T \\cdot X",
+    summary: 'Upload your own photo or use your camera: explore 10×10 to 100×100 resolutions, inspect pixel matrices, and apply scalar, additive, and 2D spatial transformations with prediction testing.',
+    concepts: ['User Image / Camera Capture', 'Multi-Resolution Pixelation', 'ROI Pixel Inspector', 'Intensity vs Spatial Transforms', 'Prediction Hypotheses', 'Geometric Inverse Roundtrip', 'Report Export'],
+    keywords: ['my image my matrix', 'upload image', 'camera', 'resolution', 'matrix operations', 'pixel inspector', 'predict', 'report download', 'zoom inverse', 'geometric transforms']
+  },
+  {
+    id: 'ray-optics',
+    stepNumber: 17,
+    slug: 'ray-optics',
+    title: 'Exploring Ray Optics Through Matrices',
+    shortTitle: 'Ray Optics',
+    category: 'ray-optics',
+    categoryLabel: 'Ray Optics',
+    icon: Zap,
+    formula: "d' = R \\cdot d, \\quad R_x = \\begin{bmatrix} 1 & 0 \\\\ 0 & -1 \\end{bmatrix}",
+    summary: 'Connect linear algebra with optics: represent light rays as 2D vectors, apply plane mirror reflections, angle rotations, and perpendicular retroreflectors via 2×2 transformation matrices.',
+    concepts: ['Direction Vectors [dx, dy]', 'Plane Mirror Reflection Matrix', 'Law of Reflection (θ_i = θ_r)', 'Involution (R² = I)', 'Rotation Matrix R(θ)', 'Two Successive Reflections (Retroreflector)', 'Commutativity & Matrix Product RxRy = -I'],
+    keywords: ['ray optics', 'light rays', 'reflection', 'plane mirror', 'vector', 'rotation matrix', 'corner reflector', 'retroreflector', 'successive reflections', 'matrix multiplication']
   }
 ];
+
+export const TOTAL_ACTIVE_LABS = FEATURES.length;
 
 export const COMING_SOON_TOPICS = [
   {

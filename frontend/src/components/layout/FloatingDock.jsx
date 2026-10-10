@@ -9,7 +9,8 @@ import {
   ChevronUp,
   Search,
   Check,
-  Lock
+  Lock,
+  Zap
 } from 'lucide-react';
 import { CATEGORIES, FEATURES } from '../../config/features';
 
@@ -172,13 +173,13 @@ export default function FloatingDock({
           <span className="dock-label">Transforms</span>
         </motion.button>
 
-        {/* Visual Labs (CRITICAL: Renamed from Advanced Ops) */}
+        {/* Visual Labs */}
         <motion.button
           className={`dock-item ${currentCategory === 'visual-labs' ? 'active' : ''} ${expandedCategory === 'visual-labs' ? 'open' : ''}`}
           onClick={() => handleCategoryClick('visual-labs')}
           whileHover={{ scale: 1.05, y: -2 }}
           whileTap={{ scale: 0.95 }}
-          title="Visual Labs (08–14)"
+          title="Visual Labs"
         >
           {currentCategory === 'visual-labs' && (
             <motion.div
@@ -190,6 +191,29 @@ export default function FloatingDock({
           <Blend size={17} className="dock-icon text-cyan-400" />
           <span className="dock-label">Visual Labs</span>
           <ChevronUp size={11} className={`dock-arrow ${expandedCategory === 'visual-labs' ? 'rotated' : ''}`} />
+        </motion.button>
+
+        {/* Ray Optics (Step 17) */}
+        <motion.button
+          className={`dock-item ${currentCategory === 'ray-optics' ? 'active' : ''}`}
+          onClick={() => {
+            onSelectStep(17);
+            onSelectView('module');
+            setExpandedCategory(null);
+          }}
+          whileHover={{ scale: 1.05, y: -2 }}
+          whileTap={{ scale: 0.95 }}
+          title="Ray Optics (Step 17)"
+        >
+          {currentCategory === 'ray-optics' && (
+            <motion.div
+              layoutId="activeDockIndicator"
+              className="dock-active-glow"
+              transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+            />
+          )}
+          <Zap size={17} className="dock-icon text-amber-400" />
+          <span className="dock-label">Ray Optics</span>
         </motion.button>
 
         <div className="dock-separator" />

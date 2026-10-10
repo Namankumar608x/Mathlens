@@ -13,7 +13,7 @@ import {
   Layers,
   Compass
 } from 'lucide-react';
-import { getFeatureByStep } from '../../config/features';
+import { getFeatureByStep, FEATURES } from '../../config/features';
 
 export default function Header({
   theme,
@@ -43,7 +43,7 @@ export default function Header({
   };
 
   const handleNextStep = () => {
-    if (onSelectStep && currentStep < 14) {
+    if (onSelectStep && currentStep < FEATURES.length) {
       onSelectStep(currentStep + 1);
     }
   };
@@ -134,7 +134,7 @@ export default function Header({
             <button
               className="header-step-nav-btn"
               onClick={handleNextStep}
-              disabled={currentStep >= 14}
+              disabled={currentStep >= FEATURES.length}
               title="Next Module (Right Arrow)"
               aria-label="Next Module"
             >
@@ -142,7 +142,7 @@ export default function Header({
             </button>
 
             <span className="header-step-counter-tag">
-              {currentStep < 10 ? `0${currentStep}` : currentStep}/14
+              {currentStep < 10 ? `0${currentStep}` : currentStep}/{FEATURES.length < 10 ? `0${FEATURES.length}` : FEATURES.length}
             </span>
           </div>
         ) : (

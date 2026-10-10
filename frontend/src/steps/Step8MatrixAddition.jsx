@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Blend, 
   ArrowLeftRight, 
+  ArrowRight,
   RotateCcw, 
   Shuffle, 
   Sliders, 
@@ -21,7 +22,6 @@ import {
   ZoomIn
 } from 'lucide-react';
 import { clampPixel, createEmptyMatrix } from '../core/mathEngine';
-import VisualLabsNav from '../components/navigation/VisualLabsNav';
 import StepFooter from '../components/layout/StepFooter';
 
 // Default presets for Image A and Image B (Addition & Subtraction pairings)
@@ -411,8 +411,6 @@ export default function Step8MatrixAddition({ onSelectStep }) {
               Matrix Blending: C = αA + (1 − α)B
             </span>
           </div>
-
-          <VisualLabsNav activeStep={8} onSelectStep={onSelectStep} />
         </div>
 
         <h2 className="step-heading">
@@ -429,6 +427,18 @@ export default function Step8MatrixAddition({ onSelectStep }) {
             </>
           )}
         </p>
+
+        <div style={{ marginTop: '0.75rem' }}>
+          <button
+            type="button"
+            onClick={() => onSelectStep && onSelectStep(15)}
+            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25 flex items-center gap-2 transition-all w-fit cursor-pointer shadow-sm"
+          >
+            <Sparkles size={14} className="text-cyan-400" />
+            <span>Curriculum Companion: <strong>Matrix Multiplication &amp; Shadows</strong></span>
+            <ArrowRight size={13} />
+          </button>
+        </div>
       </div>
 
       {/* TOP CONTROLS CARD */}

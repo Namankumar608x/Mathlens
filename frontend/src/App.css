@@ -5859,3 +5859,39 @@
   border: 1px solid var(--border-color);
   border-radius: 12px;
 }
+
+/* =========================================================
+   Visual Lens Step 15 & Step 16 Enhancements
+   ========================================================= */
+.visual-lens-mult-module,
+.visual-lens-my-image-module {
+  max-width: 1280px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 10;
+}
+
+.canvas-matrix-box canvas {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.canvas-matrix-box canvas:hover {
+  transform: scale(1.02);
+}
+
+.pixelated-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+@media (max-width: 640px) {
+  .visual-lens-mult-module .grid-cols-4,
+  .visual-lens-my-image-module .grid-cols-4 {
+    gap: 0.25rem;
+  }
+
+  .canvas-matrix-box canvas {
+    max-width: 100%;
+    height: auto !important;
+  }
+}

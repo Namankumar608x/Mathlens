@@ -30,7 +30,6 @@ import {
   Info
 } from 'lucide-react';
 import { clampPixel, createEmptyMatrix, invertMatrix } from '../core/mathEngine';
-import VisualLabsNav from '../components/navigation/VisualLabsNav';
 import StepFooter from '../components/layout/StepFooter';
 
 // Presets representing diverse imagery for inversion
@@ -472,8 +471,6 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
               Point Transformation: A′ = 255 − A
             </span>
           </div>
-
-          <VisualLabsNav activeStep={11} onSelectStep={onSelectStep} />
         </div>
 
         <h2 className="step-heading">Visual Lab 11: Image Inversion</h2>

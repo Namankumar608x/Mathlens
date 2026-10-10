@@ -70,7 +70,7 @@ export default function HeroSection({ onStartExploring, onSelectStep, onSelectVi
 
             {/* Subheading */}
             <p className="hero-subheading">
-              Don’t just calculate mathematics. <em>See it. Manipulate it. Understand it.</em> Bridge the gap between abstract matrix equations and tangible digital pixels through 14 real-time interactive laboratory experiments.
+              Don’t just calculate mathematics. <em>See it. Manipulate it. Understand it.</em> Bridge the gap between abstract matrix equations and tangible digital pixels through {FEATURES.length} real-time interactive laboratory experiments.
             </p>
 
             {/* CTAs */}
@@ -98,7 +98,7 @@ export default function HeroSection({ onStartExploring, onSelectStep, onSelectVi
             {/* Trust / Stats strip */}
             <div className="hero-stats-strip">
               <div className="hero-stat-item">
-                <span className="stat-value">14</span>
+                <span className="stat-value">{FEATURES.length}</span>
                 <span className="stat-label">Interactive Labs</span>
               </div>
               <div className="stat-separator" />

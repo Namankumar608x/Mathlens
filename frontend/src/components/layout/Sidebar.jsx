@@ -22,9 +22,6 @@ export default function Sidebar({
   onToggleCollapse,
   onOpenCommandPalette
 }) {
-  const pixelMatrixFeatures = FEATURES.filter(f => f.category === 'pixel-matrix');
-  const transformFeatures = FEATURES.filter(f => f.category === 'transformations');
-  const visualLabFeatures = FEATURES.filter(f => f.category === 'visual-labs');
 
   return (
     <aside className={`math-sidebar glass-level-1 ${isCollapsed ? 'collapsed' : ''}`} aria-label="Main sidebar">
@@ -90,115 +87,54 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Category 1: Pixel & Matrix (01 - 06) */}
-        <div className="sidebar-nav-group">
-          {!isCollapsed && <div className="sidebar-group-heading">Pixel &amp; Matrix</div>}
-          {pixelMatrixFeatures.map(feat => {
-            const isActive = currentView === 'module' && currentStep === feat.stepNumber;
-            const Icon = feat.icon;
-            return (
-              <button
-                key={feat.id}
-                className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => {
-                  onSelectStep(feat.stepNumber);
-                  onSelectView('module');
-                }}
-                title={`${feat.stepNumber < 10 ? `0${feat.stepNumber}` : feat.stepNumber} ${feat.title}`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeSidebarPill"
-                    className="sidebar-active-pill"
-                    transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                  />
-                )}
-                <Icon size={16} className="sidebar-item-icon" />
-                {!isCollapsed && (
-                  <div className="sidebar-item-label-wrap">
-                    <span className="sidebar-item-text">{feat.shortTitle}</span>
-                    <span className="sidebar-item-num">{feat.stepNumber < 10 ? `0${feat.stepNumber}` : feat.stepNumber}</span>
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        {/* Dynamic Category Navigation Groups */}
+        {CATEGORIES.map(cat => {
+          const catFeatures = FEATURES.filter(f => f.category === cat.id);
+          if (catFeatures.length === 0) return null;
 
-        {/* Category 2: Transformations (07) */}
-        <div className="sidebar-nav-group">
-          {!isCollapsed && <div className="sidebar-group-heading">Transformations</div>}
-          {transformFeatures.map(feat => {
-            const isActive = currentView === 'module' && currentStep === feat.stepNumber;
-            const Icon = feat.icon;
-            return (
-              <button
-                key={feat.id}
-                className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => {
-                  onSelectStep(feat.stepNumber);
-                  onSelectView('module');
-                }}
-                title={`${feat.stepNumber < 10 ? `0${feat.stepNumber}` : feat.stepNumber} ${feat.title}`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeSidebarPill"
-                    className="sidebar-active-pill"
-                    transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                  />
-                )}
-                <Icon size={16} className="sidebar-item-icon" />
-                {!isCollapsed && (
-                  <div className="sidebar-item-label-wrap">
-                    <span className="sidebar-item-text">{feat.shortTitle}</span>
-                    <span className="sidebar-item-num">0{feat.stepNumber}</span>
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Category 3: Visual Labs (08 - 14) */}
-        <div className="sidebar-nav-group">
-          {!isCollapsed && (
-            <div className="sidebar-group-heading visual-labs-heading">
-              <span>Visual Labs</span>
-              <span className="visual-labs-tag">08–14</span>
+          return (
+            <div key={cat.id} className="sidebar-nav-group">
+              {!isCollapsed && (
+                <div className="sidebar-group-heading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>{cat.label}</span>
+                  <span className="visual-labs-tag" style={{ color: cat.color }}>
+                    {catFeatures.length}
+                  </span>
+                </div>
+              )}
+              {catFeatures.map(feat => {
+                const isActive = currentView === 'module' && currentStep === feat.stepNumber;
+                const Icon = feat.icon;
+                return (
+                  <button
+                    key={feat.id}
+                    className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+                    onClick={() => {
+                      onSelectStep(feat.stepNumber);
+                      onSelectView('module');
+                    }}
+                    title={`${feat.stepNumber < 10 ? `0${feat.stepNumber}` : feat.stepNumber} ${feat.title}`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeSidebarPill"
+                        className="sidebar-active-pill"
+                        transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                      />
+                    )}
+                    <Icon size={16} className="sidebar-item-icon" />
+                    {!isCollapsed && (
+                      <div className="sidebar-item-label-wrap">
+                        <span className="sidebar-item-text">{feat.shortTitle}</span>
+                        <span className="sidebar-item-num">{feat.stepNumber < 10 ? `0${feat.stepNumber}` : feat.stepNumber}</span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          )}
-          {visualLabFeatures.map(feat => {
-            const isActive = currentView === 'module' && currentStep === feat.stepNumber;
-            const Icon = feat.icon;
-            return (
-              <button
-                key={feat.id}
-                className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => {
-                  onSelectStep(feat.stepNumber);
-                  onSelectView('module');
-                }}
-                title={`${feat.stepNumber < 10 ? `0${feat.stepNumber}` : feat.stepNumber} ${feat.title}`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeSidebarPill"
-                    className="sidebar-active-pill"
-                    transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                  />
-                )}
-                <Icon size={16} className="sidebar-item-icon" />
-                {!isCollapsed && (
-                  <div className="sidebar-item-label-wrap">
-                    <span className="sidebar-item-text">{feat.shortTitle}</span>
-                    <span className="sidebar-item-num">{feat.stepNumber < 10 ? `0${feat.stepNumber}` : feat.stepNumber}</span>
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
+          );
+        })}
 
         {/* Coming Soon: Advanced Mathematics */}
         <div className="sidebar-nav-group">
@@ -266,7 +202,7 @@ export default function Sidebar({
       {!isCollapsed && (
         <div className="sidebar-status-box">
           <div className="status-indicator-dot pulse" />
-          <span className="status-text">14 Visual Labs Active</span>
+          <span className="status-text">{FEATURES.length} Visual Labs Active</span>
         </div>
       )}
     </aside>

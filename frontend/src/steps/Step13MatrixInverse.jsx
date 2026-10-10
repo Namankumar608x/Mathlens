@@ -34,7 +34,6 @@ import {
   interpolateMatrix 
 } from '../core/transformEngine';
 import CoordinateTransformCanvas from '../components/visualizers/CoordinateTransformCanvas';
-import VisualLabsNav from '../components/navigation/VisualLabsNav';
 import StepFooter from '../components/layout/StepFooter';
 
 // Curated presets specifically designed for matrix inversion exploration
@@ -281,8 +280,6 @@ export default function Step13MatrixInverse({ onSelectStep }) {
               Reversible Geometry: x = A⁻¹x′
             </span>
           </div>
-
-          <VisualLabsNav activeStep={13} onSelectStep={onSelectStep} />
         </div>
 
         <h2 className="step-heading">

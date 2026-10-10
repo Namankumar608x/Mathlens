@@ -34,7 +34,6 @@ import {
   interpolateMatrix 
 } from '../core/transformEngine';
 import CoordinateTransformCanvas from '../components/visualizers/CoordinateTransformCanvas';
-import VisualLabsNav from '../components/navigation/VisualLabsNav';
 import StepFooter from '../components/layout/StepFooter';
 
 // Curated presets specifically fulfilling the user's scenarios
@@ -331,8 +330,6 @@ export default function Step14MatrixInverseZoom({ onSelectStep }) {
               Scaling Inversion: S = [k 0; 0 k] &amp; S⁻¹ = [1/k 0; 0 1/k]
             </span>
           </div>
-
-          <VisualLabsNav activeStep={14} onSelectStep={onSelectStep} />
         </div>
 
         <h2 className="step-heading">

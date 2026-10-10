@@ -11,7 +11,7 @@ export default function CurriculumScreen({ onSelectStep }) {
         <span className="curriculum-badge">Interactive Roadmap</span>
         <h1 className="curriculum-title">Curriculum & Pedagogical Journey</h1>
         <p className="curriculum-subtitle">
-          From elementary discrete pixel arrays to multilinear algebra and singular geometry. Follow this 14-step roadmap to master visual linear algebra.
+          From elementary discrete pixel arrays to multilinear algebra, singular geometry, and ray optics. Follow this {FEATURES.length}-step roadmap to master visual linear algebra.
         </p>
       </div>
 

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Sparkles, ArrowRight, CornerDownLeft, X, Command } from 'lucide-react';
 import { FEATURES, CATEGORIES } from '../../config/features';
 
-export default function CommandPalette({ isOpen, onClose, onSelectFeature }) {
+export default function CommandPalette({ isOpen, onClose, onSelectFeature, onTriggerSimulationLoader }) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
@@ -137,6 +137,19 @@ export default function CommandPalette({ isOpen, onClose, onSelectFeature }) {
               <div className="cmd-footer-hints">
                 <span><kbd>↑</kbd> <kbd>↓</kbd> Navigate</span>
                 <span><kbd>↵</kbd> Select</span>
+                {onTriggerSimulationLoader && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onTriggerSimulationLoader();
+                    }}
+                    className="hover:text-cyan-400 transition-colors cursor-pointer"
+                    style={{ background: 'none', border: 'none', color: 'inherit', font: 'inherit', padding: 0 }}
+                  >
+                    <span>⚡ <kbd>Simulate Fetch</kbd></span>
+                  </button>
+                )}
                 <span><kbd>ESC</kbd> Close</span>
               </div>
               <div className="cmd-footer-badge">

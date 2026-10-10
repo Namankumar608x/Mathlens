@@ -8,6 +8,7 @@ import MobileBottomNav from './components/layout/MobileBottomNav';
 import FeatureSheet from './components/navigation/FeatureSheet';
 import CommandPalette from './components/navigation/CommandPalette';
 import MathBackground from './components/background/MathBackground';
+import FetchSimulationLoader from './components/common/FetchSimulationLoader';
 
 
 import HeroSection from './components/home/HeroSection';
@@ -43,6 +44,7 @@ export default function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+  const [isSimulationLoading, setIsSimulationLoading] = useState(true);
 
   // View state: 'home' | 'module' | 'learn' | 'about' | 'roadmap'
   const [currentView, setCurrentView] = useState(() => {
@@ -219,6 +221,12 @@ export default function App() {
 
   return (
     <div className={`app-shell-root ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      {/* 0. Fullscreen Mathematical Fetch Simulation Loader */}
+      <FetchSimulationLoader
+        isOpen={isSimulationLoading}
+        onComplete={() => setIsSimulationLoading(false)}
+      />
+
       {/* 1. Global Layered Atmospheric Background */}
       <MathBackground />
 
@@ -247,6 +255,7 @@ export default function App() {
           onSelectView={handleSelectView}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           onOpenMobileSheet={() => setIsMobileSheetOpen(true)}
+          onTriggerSimulationLoader={() => setIsSimulationLoading(true)}
         />
 
         <main className="main-content-area" id="main-content">
@@ -294,6 +303,7 @@ export default function App() {
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         onSelectFeature={(feat) => handleSelectStep(feat.stepNumber)}
+        onTriggerSimulationLoader={() => setIsSimulationLoading(true)}
       />
 
       {/* 8. Level Selector Modal (Basic vs Advanced Math) */}

@@ -11,7 +11,8 @@ import {
   Check,
   Sparkles,
   Layers,
-  Compass
+  Compass,
+  Cpu
 } from 'lucide-react';
 import { getFeatureByStep, FEATURES } from '../../config/features';
 
@@ -23,7 +24,8 @@ export default function Header({
   currentView,
   onSelectView,
   onOpenCommandPalette,
-  onOpenMobileSheet
+  onOpenMobileSheet,
+  onTriggerSimulationLoader
 }) {
   const [copied, setCopied] = React.useState(false);
   const activeFeature = getFeatureByStep(currentStep);
@@ -179,6 +181,19 @@ export default function Header({
           >
             {copied ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
           </button>
+        )}
+
+        {onTriggerSimulationLoader && (
+          <motion.button
+            className="header-icon-btn"
+            onClick={onTriggerSimulationLoader}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title="Simulate Visual Engine Fetch Loader"
+            aria-label="Simulate Fetch"
+          >
+            <Cpu size={15} className="text-cyan-400" />
+          </motion.button>
         )}
 
         <motion.button

@@ -34,6 +34,7 @@ import {
   interpolateMatrix 
 } from '../core/transformEngine';
 import CoordinateTransformCanvas from '../components/visualizers/CoordinateTransformCanvas';
+import StepFooter from '../components/layout/StepFooter';
 
 // Curated presets specifically fulfilling the user's scenarios
 const ZOOM_PRESETS = [
@@ -323,75 +324,16 @@ export default function Step14MatrixInverseZoom({ onSelectStep }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.45rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
             <span className="modal-badge-tag" style={{ margin: 0, background: 'rgba(56, 189, 248, 0.15)', color: 'var(--accent-cyan)', borderColor: 'rgba(56, 189, 248, 0.35)' }}>
-              Chapter 8.7
+              Visual Lab 14
             </span>
             <span style={{ fontSize: '0.85rem', color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
               Scaling Inversion: S = [k 0; 0 k] &amp; S⁻¹ = [1/k 0; 0 1/k]
             </span>
           </div>
-
-          {/* Sub-Chapter Switcher with all 7 chapters */}
-          <div className="sub-chapter-nav">
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(8) : (window.location.hash = '#step8')}
-              title="8.1 Matrix Addition (Image Blending)"
-            >
-              <Blend size={13} />
-              <span>8.1 Blend</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(9) : (window.location.hash = '#step9')}
-              title="8.2 Matrix Subtraction (Background Removal)"
-            >
-              <Scissors size={13} />
-              <span>8.2 Remove BG</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(10) : (window.location.hash = '#step10')}
-              title="8.3 Matrix Subtraction (Find What Changed)"
-            >
-              <Scan size={13} />
-              <span>8.3 What Changed</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(11) : (window.location.hash = '#step11')}
-              title="8.4 Image Inversion & X-Ray Effect"
-            >
-              <Activity size={13} />
-              <span>8.4 Invert &amp; X-Ray</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(12) : (window.location.hash = '#step12')}
-              title="8.5 Determinant: Stretch, Shrink, Flip or Collapse"
-            >
-              <Maximize2 size={13} />
-              <span>8.5 Determinant</span>
-            </button>
-            <button 
-              className="sub-chapter-pill"
-              onClick={() => onSelectStep ? onSelectStep(13) : (window.location.hash = '#step13')}
-              title="8.6 Matrix Inverse: Undo the Transformation"
-            >
-              <Undo2 size={13} />
-              <span>8.6 Matrix Inverse</span>
-            </button>
-            <button 
-              className="sub-chapter-pill active"
-              title="Current: 8.7 Matrix Inverse: Zoom In and Zoom Out"
-            >
-              <ZoomIn size={13} />
-              <span>8.7 Zoom In &amp; Out</span>
-            </button>
-          </div>
         </div>
 
         <h2 className="step-heading">
-          8.7 Matrix Inverse: Zoom In and Zoom Out
+          Visual Lab 14: Zoom &amp; Scaling
         </h2>
         <p className="step-description">
           Zooming into an image is a geometric scaling transformation: <code>x′ = Sx</code> with 
@@ -405,7 +347,7 @@ export default function Step14MatrixInverseZoom({ onSelectStep }) {
         <div style={{
           marginTop: '1.25rem',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
           gap: '1rem'
         }}>
           {/* Pipeline 1: Zoom In 2x -> Apply Inverse -> Original */}
@@ -599,14 +541,14 @@ export default function Step14MatrixInverseZoom({ onSelectStep }) {
       </div>
 
       {/* MAIN TWO-COLUMN LAB WORKBENCH */}
-      <div className="interactive-lab-grid" style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="interactive-lab-grid" style={{ marginTop: '1.5rem', alignItems: 'start' }}>
         
         {/* LEFT COLUMN: Zoom Slider, Matrices, Presets */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
           
           {/* 1. DYNAMIC ZOOM FACTOR SLIDER */}
           <div className="control-panel-card">
-            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Sliders size={16} style={{ color: 'var(--accent-cyan)' }} />
                 <span>Zoom Factor (k)</span>
@@ -643,7 +585,7 @@ export default function Step14MatrixInverseZoom({ onSelectStep }) {
             <div style={{
               marginTop: '1.25rem',
               display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 110px), 1fr))',
               gap: '0.65rem'
             }}>
               <div className="stat-pill" style={{ flexDirection: 'column', alignItems: 'center', padding: '0.6rem 0.4rem', textAlign: 'center' }}>
@@ -679,7 +621,7 @@ export default function Step14MatrixInverseZoom({ onSelectStep }) {
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem', marginTop: '1rem' }}>
               
               {/* Matrix S */}
               <div style={{
@@ -1056,6 +998,8 @@ export default function Step14MatrixInverseZoom({ onSelectStep }) {
           </div>
         </div>
       </div>
+
+      <StepFooter stepNumber={14} onSelectStep={onSelectStep} />
     </motion.div>
   );
 }

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import PixelCanvas from '../components/visualizers/PixelCanvas';
 import MatrixGrid from '../components/matrix/MatrixGrid';
+import StepWrapper from '../components/layout/StepWrapper';
+import MathInspectorHUD from '../components/ui/MathInspectorHUD';
+import WipeSlider from '../components/ui/WipeSlider';
 import { scaleMatrix } from '../core/mathEngine';
 
 const BASE_MATRIX = [
@@ -11,138 +13,160 @@ const BASE_MATRIX = [
   [160, 200, 240, 255]
 ];
 
-export default function Step3ScalarBrightness() {
+export default function Step3ScalarBrightness({ onSelectStep }) {
   const [scalar, setScalar] = useState(1.0);
   const [hoveredCell, setHoveredCell] = useState(null);
+  const [viewMode, setViewMode] = useState('sideBySide'); // 'sideBySide' | 'wipe'
 
   const scaledMatrix = scaleMatrix(BASE_MATRIX, scalar);
 
-  return (
-    <motion.div 
-      className="step-module"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-    >
-      <div className="step-header-box">
-        <h2 className="step-heading">Scalar Multiplication & Image Brightness</h2>
-        <p className="step-description">
-          Multiplying a matrix <strong>A</strong> by a scalar multiplier <strong>k</strong> (<code>A' = kA</code>) scales pixel intensity. When <strong>k &gt; 1</strong>, the image brightens (e.g. <code>A' = 1.5A</code>). When <strong>0 &lt; k &lt; 1</strong>, the image darkens (e.g. <code>A' = 0.5A</code>). Values above 255 are clipped.
-        </p>
-      </div>
-
-      {/* TOP CONTROL CARD DIVIDED INTO TWO PARTS */}
-      <div className="top-control-card">
-        <div className="two-part-grid">
-          {/* Part 1: Slider Input & Math Formula */}
-          <div className="slider-group" style={{ marginBottom: 0 }}>
-            <div className="slider-label" style={{ marginBottom: '0.35rem' }}>
-              <span>Scalar Multiplier (k):</span>
-              <span className="font-mono" style={{ color: 'var(--accent-gold)', fontSize: '1.25rem', fontWeight: '800' }}>
-                {scalar.toFixed(2)}×
-              </span>
-            </div>
-            <input
-              type="range"
-              className="slider-input"
-              min="0.0"
-              max="3.0"
-              step="0.05"
-              value={scalar}
-              onChange={(e) => setScalar(parseFloat(e.target.value))}
-              onInput={(e) => setScalar(parseFloat(e.target.value))}
-              style={{ '--slider-pct': `${(scalar / 3.0) * 100}%`, '--slider-color': 'var(--accent-gold)' }}
-            />
-            <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
-              Operation: <span style={{ color: 'var(--accent-gold)', fontWeight: '700' }}>A' = {scalar.toFixed(2)} × A</span> (max clip at 255)
-            </div>
-          </div>
-
-          {/* Part 2: Quick Presets */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Preset Multipliers:
-            </span>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', width: '100%' }}>
-              <button 
-                className={`preset-btn ${Math.abs(scalar - 0.5) < 0.01 ? 'active' : ''}`} 
-                onClick={() => setScalar(0.5)}
-                style={{ justifyContent: 'center', textAlign: 'center' }}
-              >
-                k = 0.5 (Dark)
-              </button>
-              <button 
-                className={`preset-btn ${Math.abs(scalar - 1.0) < 0.01 ? 'active' : ''}`} 
-                onClick={() => setScalar(1.0)}
-                style={{ justifyContent: 'center', textAlign: 'center' }}
-              >
-                k = 1.0 (Normal)
-              </button>
-              <button 
-                className={`preset-btn ${Math.abs(scalar - 1.5) < 0.01 ? 'active' : ''}`} 
-                onClick={() => setScalar(1.5)}
-                style={{ justifyContent: 'center', textAlign: 'center' }}
-              >
-                k = 1.5 (Bright)
-              </button>
-              <button 
-                className={`preset-btn ${Math.abs(scalar - 2.0) < 0.01 ? 'active' : ''}`} 
-                onClick={() => setScalar(2.0)}
-                style={{ justifyContent: 'center', textAlign: 'center' }}
-              >
-                k = 2.0 (Clipped)
-              </button>
-            </div>
-          </div>
+  const controls = (
+    <div className="control-bar-grid">
+      {/* Slider Column */}
+      <div className="control-slider-block">
+        <div className="control-slider-header">
+          <span className="control-slider-label">Scalar Multiplier (k):</span>
+          <span className="control-slider-val text-amber-400 font-mono font-bold">
+            {scalar.toFixed(2)}×
+          </span>
+        </div>
+        <input
+          type="range"
+          className="glass-slider"
+          min="0.0"
+          max="3.0"
+          step="0.05"
+          value={scalar}
+          onChange={(e) => setScalar(parseFloat(e.target.value))}
+          style={{ '--slider-pct': `${(scalar / 3.0) * 100}%` }}
+        />
+        <div className="control-slider-meta">
+          <span>Operation: <strong className="text-amber-400">A' = {scalar.toFixed(2)} × A</strong> (clipped to [0, 255])</span>
         </div>
       </div>
 
-      {/* TWO EQUAL PARTS BELOW FOR IMAGE & MATRIX */}
-      <div className="side-by-side-container">
-        <PixelCanvas
-          matrix={scaledMatrix}
-          hoveredCell={hoveredCell}
-          onHoverCell={setHoveredCell}
-          highlightColor="var(--accent-purple)"
-          title="Resulting Scaled Image (A')"
-        />
-        <MatrixGrid
-          matrix={scaledMatrix}
-          hoveredCell={hoveredCell}
-          onHoverCell={setHoveredCell}
-          accentColor="var(--accent-purple)"
-          title="Resulting Output Matrix A' = kA"
-        />
-      </div>
+      {/* Preset Buttons & Mode Switcher */}
+      <div className="control-presets-block">
+        <div className="preset-label-row">
+          <span className="control-bar-label">Multiplier Presets:</span>
+          <div className="view-mode-tabs">
+            <button
+              className={`view-mode-tab ${viewMode === 'sideBySide' ? 'active' : ''}`}
+              onClick={() => setViewMode('sideBySide')}
+              type="button"
+            >
+              Side-by-Side
+            </button>
+            <button
+              className={`view-mode-tab ${viewMode === 'wipe' ? 'active' : ''}`}
+              onClick={() => setViewMode('wipe')}
+              type="button"
+            >
+              Wipe Comparison
+            </button>
+          </div>
+        </div>
 
-      {/* FLOATING CURSOR TOOLTIP AT CURSOR POSITION */}
-      {hoveredCell && hoveredCell.x !== undefined && (
-        <div 
-          className="cursor-tooltip"
-          style={{
-            position: 'fixed',
-            left: `${hoveredCell.x + 14}px`,
-            top: `${hoveredCell.y + 14}px`,
-            pointerEvents: 'none',
-            zIndex: 9999,
-            background: 'rgba(15, 23, 42, 0.94)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.45)',
-            backdropFilter: 'blur(8px)',
-            borderRadius: '20px',
-            padding: '0.35rem 0.85rem',
-            fontSize: '0.85rem',
-            fontFamily: 'var(--font-mono)',
-            color: '#FFFFFF',
-            whiteSpace: 'nowrap',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-        >
-          <span style={{ color: 'var(--accent-purple)', fontWeight: 700 }}>({hoveredCell.row + 1}, {hoveredCell.col + 1})</span>
+        <div className="preset-pills-row">
+          <button
+            className={`preset-pill-btn ${Math.abs(scalar - 0.5) < 0.01 ? 'active' : ''}`}
+            onClick={() => setScalar(0.5)}
+            type="button"
+          >
+            0.5× (Darken)
+          </button>
+          <button
+            className={`preset-pill-btn ${Math.abs(scalar - 1.0) < 0.01 ? 'active' : ''}`}
+            onClick={() => setScalar(1.0)}
+            type="button"
+          >
+            1.0× (Original)
+          </button>
+          <button
+            className={`preset-pill-btn ${Math.abs(scalar - 1.5) < 0.01 ? 'active' : ''}`}
+            onClick={() => setScalar(1.5)}
+            type="button"
+          >
+            1.5× (Brighten)
+          </button>
+          <button
+            className={`preset-pill-btn ${Math.abs(scalar - 2.0) < 0.01 ? 'active' : ''}`}
+            onClick={() => setScalar(2.0)}
+            type="button"
+          >
+            2.0× (Clipped)
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const origVal = hoveredCell ? BASE_MATRIX[hoveredCell.row]?.[hoveredCell.col] : null;
+  const scaledVal = hoveredCell ? scaledMatrix[hoveredCell.row]?.[hoveredCell.col] : null;
+
+  return (
+    <StepWrapper
+      stepNumber={3}
+      title="Scalar Multiplication & Image Brightness"
+      subtitle="Multiplying an image matrix A by a scalar multiplier k (A' = kA) scales pixel intensity. When k > 1, the image brightens; when 0 < k < 1, the image darkens. Values exceeding 255 are clamped."
+      formula="A' = \min(255, \max(0, k \cdot A))"
+      basicHint="Multiplying by 1.5 makes the whole picture 50% brighter. Multiplying by 0.5 cuts brightness in half."
+      advancedFormula="T_k(A) = \text{clamp}(k \cdot A, 0, 255), \quad k \in \mathbb{R}^+"
+      controls={controls}
+      onPrev={() => onSelectStep && onSelectStep(2)}
+      onNext={() => onSelectStep && onSelectStep(4)}
+      onReset={() => setScalar(1.0)}
+      insightTitle="Linear Scaling vs Saturation Clamping"
+      insightBody="In pure linear algebra, scalar multiplication is unbounded: (kA)ᵢⱼ = k · Aᵢⱼ. In digital image processing, however, pixel depth is constrained to an 8-bit unsigned integer range [0, 255]. Any product above 255 saturates into pure white, causing highlight clipping (loss of high-dynamic-range detail)."
+    >
+      {viewMode === 'wipe' ? (
+        <div className="workspace-wipe-wrapper">
+          <WipeSlider
+            originalContent={
+              <PixelCanvas
+                matrix={BASE_MATRIX}
+                hoveredCell={hoveredCell}
+                onHoverCell={setHoveredCell}
+                title="Original Baseline Image (1.0×)"
+              />
+            }
+            modifiedContent={
+              <PixelCanvas
+                matrix={scaledMatrix}
+                hoveredCell={hoveredCell}
+                onHoverCell={setHoveredCell}
+                title={`Scaled Image (${scalar.toFixed(2)}×)`}
+              />
+            }
+            originalLabel="Original (1.0×)"
+            modifiedLabel={`Scaled (${scalar.toFixed(2)}×)`}
+          />
+        </div>
+      ) : (
+        <div className="workspace-duo-stage">
+          <PixelCanvas
+            matrix={scaledMatrix}
+            hoveredCell={hoveredCell}
+            onHoverCell={setHoveredCell}
+            title="Resulting Scaled Image A'"
+          />
+          <MatrixGrid
+            matrix={scaledMatrix}
+            hoveredCell={hoveredCell}
+            onHoverCell={setHoveredCell}
+            title={`Output Matrix A' = ${scalar.toFixed(2)} × A`}
+          />
         </div>
       )}
-    </motion.div>
+
+      {hoveredCell && (
+        <MathInspectorHUD
+          cell={hoveredCell}
+          formula={`A'[${hoveredCell.row}, ${hoveredCell.col}] = clamp(${scalar.toFixed(2)} × ${origVal})`}
+          result={`${scaledVal} / 255`}
+          note={origVal * scalar > 255 ? `Raw calculation is ${(origVal * scalar).toFixed(1)} -> Clipped at 255!` : undefined}
+        />
+      )}
+    </StepWrapper>
   );
 }

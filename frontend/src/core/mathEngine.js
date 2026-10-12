@@ -36,6 +36,86 @@ export function addMatrices(matA, matB, alpha = null) {
   return result;
 }
 
+export function multiplyMatrices(matA, matB) {
+  const rowsA = matA.length;
+  const colsA = matA[0].length;
+  const rowsB = matB.length;
+  const colsB = matB[0].length;
+  if (colsA !== rowsB) {
+    throw new Error(`Incompatible matrix dimensions: ${rowsA}x${colsA} and ${rowsB}x${colsB}`);
+  }
+
+  const result = createEmptyMatrix(rowsA, colsB);
+  for (let i = 0; i < rowsA; i++) {
+    for (let j = 0; j < colsB; j++) {
+      let sum = 0;
+      for (let k = 0; k < colsA; k++) {
+        sum += matA[i][k] * matB[k][j];
+      }
+      result[i][j] = sum;
+    }
+  }
+  return result;
+}
+
+export function hadamardProduct(matA, matB) {
+  const rows = matA.length;
+  const cols = matA[0].length;
+  const result = createEmptyMatrix(rows, cols);
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      result[i][j] = matA[i][j] * (matB[i]?.[j] ?? 1);
+    }
+  }
+  return result;
+}
+
+export function hadamardDivision(matA, matB) {
+  const rows = matA.length;
+  const cols = matA[0].length;
+  const result = createEmptyMatrix(rows, cols);
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const divisor = matB[i]?.[j] ?? 1;
+      result[i][j] = divisor !== 0 ? Math.round(matA[i][j] / divisor) : matA[i][j];
+    }
+  }
+  return result;
+}
+
+export function normalizeMatrixForDisplay(matrix, mode = 'minmax') {
+  const rows = matrix.length;
+  const cols = matrix[0].length;
+  let minVal = Infinity;
+  let maxVal = -Infinity;
+
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const v = matrix[i][j];
+      if (v < minVal) minVal = v;
+      if (v > maxVal) maxVal = v;
+    }
+  }
+
+  const result = createEmptyMatrix(rows, cols);
+  const range = maxVal - minVal;
+
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const v = matrix[i][j];
+      if (mode === 'clamp') {
+        result[i][j] = clampPixel(v);
+      } else if (range === 0) {
+        result[i][j] = clampPixel(v > 0 ? 255 : 0);
+      } else {
+        // min-max normalization to [0, 255]
+        result[i][j] = clampPixel(((v - minVal) / range) * 255);
+      }
+    }
+  }
+  return { normalizedMatrix: result, minVal, maxVal };
+}
+
 export function subtractMatrices(matA, matB, modeOrUseAbs = 'direct', alpha = 1.0) {
   const rows = matA.length;
   const cols = matA[0].length;

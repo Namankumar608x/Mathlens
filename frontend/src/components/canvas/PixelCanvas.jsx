@@ -30,9 +30,14 @@ export function PixelCanvas({
 
   const handleCanvasClick = (e) => {
     if (!onPixelClick || !canvasRef.current) return;
+    const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) / pixelScale);
-    const y = Math.floor((e.clientY - rect.top) / pixelScale);
+    if (!rect.width || !rect.height) return null;
+    const scaleX = renderWidth / rect.width;
+    const scaleY = renderHeight / rect.height;
+    const x = Math.floor(((clientX - rect.left) * scaleX) / pixelScale);
+    const y = Math.floor(((clientY - rect.top) * scaleY) / pixelScale);
 
     if (x >= 0 && x < cols && y >= 0 && y < rows) {
       onPixelClick(y, x);
@@ -40,13 +45,14 @@ export function PixelCanvas({
   };
 
   return (
-    <div className={`relative flex flex-col items-center justify-center ${className}`}>
+    <div className={`relative flex flex-col items-center justify-center max-w-full ${className}`}>
       <div
-        className={`relative border-2 border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm ${
+        className={`relative border-2 border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm max-w-full ${
           onPixelClick ? 'cursor-pointer' : ''
         }`}
-        style={{ width: renderWidth, height: renderHeight }}
+        style={{ width: renderWidth, height: renderHeight, maxWidth: '100%', touchAction: 'manipulation' }}
         onClick={handleCanvasClick}
+        onTouchStart={handleCanvasClick}
       >
         <canvas
           ref={canvasRef}

@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Play, RotateCcw, Sparkles } from 'lucide-react';
+import { Play, Pause, RotateCcw, Sparkles } from 'lucide-react';
 import PixelCanvas from '../components/visualizers/PixelCanvas';
 import MatrixGrid from '../components/matrix/MatrixGrid';
+import StepWrapper from '../components/layout/StepWrapper';
+import MathInspectorHUD from '../components/ui/MathInspectorHUD';
 import { createEmptyMatrix } from '../core/mathEngine';
 
-export default function Step2CellEditing() {
+export default function Step2CellEditing({ onSelectStep }) {
   const [matrix, setMatrix] = useState([
     [0, 50, 100, 150],
     [50, 100, 150, 200],
@@ -41,11 +42,9 @@ export default function Step2CellEditing() {
 
     setIsAnimating(true);
     let currentVal = 0;
-    
-    // Smooth frame-by-frame animation incrementing by +1 up to 255
     let lastTime = performance.now();
+
     const animate = (now) => {
-      // Advance by 1 value smoothly every frame interval (~16ms)
       if (now - lastTime >= 12) {
         currentVal += 1;
         lastTime = now;
@@ -70,42 +69,49 @@ export default function Step2CellEditing() {
     setMatrix(createEmptyMatrix(4, 4, 128));
   };
 
+  const controls = (
+    <div className="control-bar-inner">
+      <span className="control-bar-label">Interactive Actions:</span>
+      <div className="preset-pills-row">
+        <button
+          className={`preset-pill-btn ${isAnimating ? 'active' : ''}`}
+          onClick={handleAnimateTransition}
+          type="button"
+        >
+          {isAnimating ? <Pause size={14} /> : <Play size={14} />}
+          <span>{isAnimating ? 'Pause Animation' : 'Auto Ramp (0 → 255)'}</span>
+        </button>
+
+        <button
+          className="preset-pill-btn"
+          onClick={handleReset}
+          type="button"
+        >
+          <RotateCcw size={14} />
+          <span>Reset to Mid-Gray (128)</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  const hoveredVal = hoveredCell ? matrix[hoveredCell.row]?.[hoveredCell.col] : null;
+
   return (
-    <motion.div 
-      className="step-module"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+    <StepWrapper
+      stepNumber={2}
+      title="Change Individual Matrix Elements"
+      subtitle="Directly edit individual cell values in the matrix below to see the pixel shade update immediately. Watch how values transition smoothly from 0 (Black) to 255 (White)."
+      formula="A_{i,j} \leftarrow v, \quad v \in [0, 255]"
+      basicHint="Try changing a single cell using your keyboard or the stepper arrows and watch only that specific pixel change shade."
+      advancedFormula="\Delta I(x_0, y_0) = v_{new} - v_{old}, \quad \text{supp}(\Delta I) = \{(x_0, y_0)\}"
+      controls={controls}
+      onPrev={() => onSelectStep && onSelectStep(1)}
+      onNext={() => onSelectStep && onSelectStep(3)}
+      onReset={handleReset}
+      insightTitle="Direct Memory Mutation"
+      insightBody="In image processing shaders and pixel buffers, mutating a single matrix entry corresponds to writing directly to memory buffer address (y × Width + x). There is zero overhead between the math array and the visual display."
     >
-      <div className="step-header-box">
-        <h2 className="step-heading">Edit Individual Matrix Elements</h2>
-        <p className="step-description">
-          Directly edit individual cell values in the matrix below to see the pixel shade update immediately. Watch how values transition smoothly from <strong>0 (Black)</strong> → <strong>255 (White)</strong> incrementing by +1.
-        </p>
-      </div>
-
-      <div className="top-control-card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Interactive Actions:
-          </span>
-          <div className="preset-buttons" style={{ margin: 0 }}>
-            <button 
-              className={`preset-btn ${isAnimating ? 'active' : ''}`} 
-              onClick={handleAnimateTransition}
-            >
-              <Play size={16} fill={isAnimating ? "currentColor" : "none"} />
-              <span>{isAnimating ? 'Pause Smooth Transition' : 'Play Animation (0 → 255)'}</span>
-            </button>
-            <button className="preset-btn" onClick={handleReset}>
-              <RotateCcw size={16} />
-              <span>Reset to Mid-Gray (128)</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="side-by-side-container">
+      <div className="workspace-duo-stage">
         <PixelCanvas
           matrix={matrix}
           hoveredCell={hoveredCell}
@@ -118,40 +124,18 @@ export default function Step2CellEditing() {
           onHoverCell={setHoveredCell}
           editable={true}
           onChangeCell={handleCellChange}
-          title="Editable Matrix Grid A"
+          title="Editable Numerical Matrix A"
         />
       </div>
 
-      {/* FLOATING CURSOR TOOLTIP AT CURSOR POSITION */}
-      {hoveredCell && hoveredCell.x !== undefined && (
-        <div 
-          className="cursor-tooltip"
-          style={{
-            position: 'fixed',
-            left: `${hoveredCell.x + 14}px`,
-            top: `${hoveredCell.y + 14}px`,
-            pointerEvents: 'none',
-            zIndex: 9999,
-            background: 'rgba(15, 23, 42, 0.94)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.45)',
-            backdropFilter: 'blur(8px)',
-            borderRadius: '20px',
-            padding: '0.35rem 0.85rem',
-            fontSize: '0.85rem',
-            fontFamily: 'var(--font-mono)',
-            color: '#FFFFFF',
-            whiteSpace: 'nowrap',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-        >
-          <span style={{ color: '#94A3B8', fontWeight: 600 }}>({hoveredCell.row + 1}, {hoveredCell.col + 1})</span>
-          <span style={{ opacity: 0.3, color: '#94A3B8' }}>|</span>
-          <span>Val: <strong style={{ color: '#38BDF8', fontWeight: 700 }}>{matrix[hoveredCell.row][hoveredCell.col]}</strong></span>
-        </div>
+      {hoveredCell && (
+        <MathInspectorHUD
+          cell={hoveredCell}
+          formula={`A[${hoveredCell.row}, ${hoveredCell.col}]`}
+          result={`${hoveredVal} / 255`}
+          note="Click and type a new integer or use the stepper arrows to modify"
+        />
       )}
-    </motion.div>
+    </StepWrapper>
   );
 }

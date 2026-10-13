@@ -101,28 +101,6 @@ export default function FeatureSheet({
                   </div>
                 );
               })}
-
-              {/* Roadmap Item */}
-              <div className="mobile-sheet-category-block">
-                <button
-                  className="mobile-sheet-roadmap-banner"
-                  onClick={() => {
-                    onSelectView('roadmap');
-                    onClose();
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="roadmap-icon-mini">
-                      <Lock size={15} className="text-amber-400" />
-                    </div>
-                    <div>
-                      <span className="font-semibold text-sm block">Advanced Mathematics</span>
-                      <span className="text-xs text-muted block">Eigenvalues, SVD, Fourier, PCA</span>
-                    </div>
-                  </div>
-                  <span className="roadmap-badge-small">Coming Soon</span>
-                </button>
-              </div>
             </div>
           </motion.div>
         </div>

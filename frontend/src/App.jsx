@@ -1,20 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import LevelSelectorModal from './components/common/LevelSelectorModal';
-import Sidebar from './components/layout/Sidebar';
 import FloatingDock from './components/layout/FloatingDock';
-import MobileBottomNav from './components/layout/MobileBottomNav';
 import FeatureSheet from './components/navigation/FeatureSheet';
 import CommandPalette from './components/navigation/CommandPalette';
 import MathBackground from './components/background/MathBackground';
 import FetchSimulationLoader from './components/common/FetchSimulationLoader';
 
-
 import HeroSection from './components/home/HeroSection';
 import CurriculumScreen from './screens/CurriculumScreen';
 import AboutScreen from './screens/AboutScreen';
-import RoadmapScreen from './screens/RoadmapScreen';
 
 import Step1Grayscale from './steps/Step1Grayscale';
 import Step2CellEditing from './steps/Step2CellEditing';
@@ -33,6 +28,7 @@ import Step14MatrixInverseZoom from './steps/Step14MatrixInverseZoom';
 import Step15MatrixMultiplicationShadows from './steps/Step15MatrixMultiplicationShadows';
 import Step16MyImageMyMatrix from './steps/Step16MyImageMyMatrix';
 import Step17RayOptics from './steps/Step17RayOptics';
+import Step18Eigenvalues from './steps/Step18Eigenvalues';
 
 import { getFeatureByStep, FEATURES } from './config/features';
 import './index.css';
@@ -41,29 +37,28 @@ import './App.css';
 export default function App() {
   const [currentLevel, setCurrentLevel] = useState('basic');
   const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const [isSimulationLoading, setIsSimulationLoading] = useState(true);
 
-  // View state: 'home' | 'module' | 'learn' | 'about' | 'roadmap'
+  // View state: 'home' | 'module' | 'learn' | 'about'
   const [currentView, setCurrentView] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const viewParam = params.get('view');
-    if (viewParam && ['home', 'module', 'learn', 'about', 'roadmap'].includes(viewParam)) {
+    if (viewParam && ['home', 'module', 'learn', 'about'].includes(viewParam)) {
       return viewParam;
     }
     if (params.get('step')) return 'module';
     return 'home';
   });
 
-  // Current interactive step (1 to 14)
+  // Current interactive step (1 to FEATURES.length)
   const [currentStep, setCurrentStep] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const stepParam = params.get('step');
     if (stepParam) {
       const parsed = parseInt(stepParam, 10);
-      if (!isNaN(parsed) && parsed >= 1 && parsed <= 16) return parsed;
+      if (!isNaN(parsed) && parsed >= 1 && parsed <= FEATURES.length) return parsed;
     }
     const saved = localStorage.getItem('mathlens_step');
     return saved ? parseInt(saved, 10) : 1;
@@ -122,13 +117,6 @@ export default function App() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsCommandPaletteOpen(prev => !prev);
-        return;
-      }
-
-      // [ -> Toggle Sidebar Collapse
-      if (e.key === '[') {
-        e.preventDefault();
-        setIsSidebarCollapsed(prev => !prev);
         return;
       }
 
@@ -191,6 +179,8 @@ export default function App() {
         return <Step16MyImageMyMatrix onSelectStep={handleSelectStep} />;
       case 17:
         return <Step17RayOptics onSelectStep={handleSelectStep} />;
+      case 18:
+        return <Step18Eigenvalues onSelectStep={handleSelectStep} />;
       default:
         return <Step1Grayscale onSelectStep={handleSelectStep} />;
     }
@@ -213,14 +203,11 @@ export default function App() {
     if (currentView === 'about') {
       return <AboutScreen />;
     }
-    if (currentView === 'roadmap') {
-      return <RoadmapScreen onSelectStep={handleSelectStep} />;
-    }
     return renderModuleStepContent();
   };
 
   return (
-    <div className={`app-shell-root ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+    <div className="app-shell-root">
       {/* 0. Fullscreen Mathematical Fetch Simulation Loader */}
       <FetchSimulationLoader
         isOpen={isSimulationLoading}
@@ -230,34 +217,8 @@ export default function App() {
       {/* 1. Global Layered Atmospheric Background */}
       <MathBackground />
 
-      {/* 2. Desktop Floating Glass Sidebar */}
-      <Sidebar
-        currentStep={currentStep}
-        onSelectStep={handleSelectStep}
-        currentView={currentView}
-        onSelectView={handleSelectView}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-      />
-
-      {/* 3. Main Application Body */}
+      {/* 2. Main Application Body */}
       <div className="app-main-viewport">
-        <Header
-          currentLevel={currentLevel}
-          onSelectLevel={setCurrentLevel}
-          onOpenLevelModal={() => setIsLevelModalOpen(true)}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          currentStep={currentStep}
-          onSelectStep={handleSelectStep}
-          currentView={currentView}
-          onSelectView={handleSelectView}
-          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-          onOpenMobileSheet={() => setIsMobileSheetOpen(true)}
-          onTriggerSimulationLoader={() => setIsSimulationLoading(true)}
-        />
-
         <main className="main-content-area" id="main-content">
           {renderMainContent()}
         </main>
@@ -268,28 +229,20 @@ export default function App() {
         />
       </div>
 
-      {/* 4. Desktop Floating Feature Dock (Center-Bottom) */}
+      {/* 3. Unified Thin Bottom Navbar (Scroll-reactive with Left-Side Toggle) */}
       <FloatingDock
         currentStep={currentStep}
         onSelectStep={handleSelectStep}
         currentView={currentView}
         onSelectView={handleSelectView}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-      />
-
-      {/* 5. Mobile Floating Bottom Navigation (Mobile Only) */}
-      <MobileBottomNav
-        currentStep={currentStep}
-        onSelectStep={handleSelectStep}
-        currentView={currentView}
-        onSelectView={handleSelectView}
-        onOpenFeatureSheet={() => setIsMobileSheetOpen(true)}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        currentLevel={currentLevel}
+        onOpenLevelModal={() => setIsLevelModalOpen(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
       />
 
-      {/* 6. Mobile Slide-Up Feature Sheet */}
+      {/* 4. Mobile Slide-Up Feature Sheet */}
       <FeatureSheet
         isOpen={isMobileSheetOpen}
         onClose={() => setIsMobileSheetOpen(false)}
@@ -298,7 +251,7 @@ export default function App() {
         onSelectView={handleSelectView}
       />
 
-      {/* 7. Global ⌘K Command Palette Modal */}
+      {/* 5. Global ⌘K Command Palette Modal */}
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
@@ -306,11 +259,18 @@ export default function App() {
         onTriggerSimulationLoader={() => setIsSimulationLoading(true)}
       />
 
-      {/* 8. Level Selector Modal (Basic vs Advanced Math) */}
+      {/* 6. Level Selector Modal (Basic vs Advanced Math) */}
       <LevelSelectorModal
         isOpen={isLevelModalOpen}
         currentLevel={currentLevel}
-        onSelectLevel={setCurrentLevel}
+        onSelectLevel={(lvl) => {
+          setCurrentLevel(lvl);
+          if (lvl === 'advanced' || lvl === 'intermediate') {
+            handleSelectStep(18);
+          } else if (lvl === 'basic' && currentStep > 17) {
+            handleSelectStep(1);
+          }
+        }}
         onClose={() => setIsLevelModalOpen(false)}
       />
 

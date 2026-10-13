@@ -58,6 +58,14 @@ export const CATEGORIES = [
     description: 'Light rays as vectors, plane mirror reflections, angular rotations, and retroreflectors',
     icon: Zap,
     color: '#F59E0B' // Golden Amber
+  },
+  {
+    id: 'eigen-spaces',
+    label: 'Advanced: Eigen & Invariants',
+    shortLabel: 'Advanced',
+    description: 'Advanced linear algebra: invariant directions, eigenvalues, scaling factors, and reflection eigenvectors',
+    icon: Variable,
+    color: '#EC4899' // Vibrant Rose / Pink
   }
 ];
 
@@ -304,6 +312,28 @@ export const FEATURES = [
     summary: 'Connect linear algebra with optics: represent light rays as 2D vectors, apply plane mirror reflections, angle rotations, and perpendicular retroreflectors via 2×2 transformation matrices.',
     concepts: ['Direction Vectors [dx, dy]', 'Plane Mirror Reflection Matrix', 'Law of Reflection (θ_i = θ_r)', 'Involution (R² = I)', 'Rotation Matrix R(θ)', 'Two Successive Reflections (Retroreflector)', 'Commutativity & Matrix Product RxRy = -I'],
     keywords: ['ray optics', 'light rays', 'reflection', 'plane mirror', 'vector', 'rotation matrix', 'corner reflector', 'retroreflector', 'successive reflections', 'matrix multiplication']
+  },
+  {
+    id: 'eigenvalues-eigenvectors',
+    stepNumber: 18,
+    slug: 'eigenvalues-eigenvectors',
+    title: 'Eigenvalues & Eigenvectors - Finding Special Directions',
+    shortTitle: 'Eigenvectors & Values',
+    category: 'eigen-spaces',
+    categoryLabel: 'Advanced: Eigenvalues',
+    icon: Variable,
+    formula: 'A X = \\lambda X, \\quad A = \\begin{bmatrix} \\lambda_x & 0 \\\\ 0 & \\lambda_y \\end{bmatrix}',
+    summary: 'Understand how vectors retain their direction under matrix transformations. Identify special eigenvectors, scale axes with eigenvalues [2 0; 0 1] on images, and examine reflection eigenvalues [-1 0; 0 1].',
+    concepts: [
+      'Eigenvector Definition (AX = λX)',
+      'Special Directions X₁=[1, 0]ᵀ & X₂=[0, 1]ᵀ',
+      'Eigenvalues as Scaling Factors',
+      'Dynamic Eigenvalue Matrix [λx 0; 0 λy]',
+      'Flower Photograph Stretch [2 0; 0 1]',
+      'Horizontal Reflection Matrix [-1 0; 0 1]',
+      'Line Direction vs Arrow Orientation (Negative λ)'
+    ],
+    keywords: ['eigenvalues', 'eigenvectors', 'special directions', 'stretch', 'flower image', 'reflection', 'negative eigenvalue', 'subspace', 'collinear']
   }
 ];
 
@@ -311,11 +341,11 @@ export const TOTAL_ACTIVE_LABS = FEATURES.length;
 
 export const COMING_SOON_TOPICS = [
   {
-    id: 'eigen',
-    title: 'Eigenvalues & Eigenvectors',
-    formula: 'A\\vec{v} = \\lambda\\vec{v}',
+    id: 'gram-schmidt',
+    title: 'Gram-Schmidt Orthogonalization',
+    formula: '\\vec{u}_k = \\vec{v}_k - \\sum_{j=1}^{k-1} \\text{proj}_{\\vec{u}_j}(\\vec{v}_k)',
     category: 'Advanced Vector Spaces',
-    description: 'Find invariant axes that only stretch under linear maps without rotating.',
+    description: 'Construct orthogonal and orthonormal coordinate bases from arbitrary vector sets.',
     icon: Variable
   },
   {
@@ -378,7 +408,6 @@ export const COMING_SOON_TOPICS = [
 
 export const STATIC_PAGES = [
   { id: 'home', label: 'Home', icon: Sparkles, path: '/' },
-  { id: 'roadmap', label: 'Coming Soon', icon: Lock, path: '/roadmap' },
   { id: 'learn', label: 'Learn', icon: BookOpen, path: '/learn' },
   { id: 'about', label: 'About', icon: Info, path: '/about' }
 ];

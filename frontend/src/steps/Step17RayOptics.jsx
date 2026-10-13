@@ -218,6 +218,7 @@ export default function Step17RayOptics({ onSelectStep }) {
     const mirrorY = height * 0.65;
     const mirrorXCenter = width / 2;
     const scale = 50;
+    const isNormalIncidence = Math.abs(incDx) < 0.05;
 
     // 1. Draw Plane Mirror Surface
     const mirrorLeft = width * 0.12;
@@ -251,8 +252,8 @@ export default function Step17RayOptics({ onSelectStep }) {
     ctx.fillText('Horizontal Plane Mirror (x-axis, y = 0)', mirrorLeft + 10, mirrorY + 26);
 
     // 2. Normal Line (Dashed perpendicular at reflection point)
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = isNormalIncidence ? 'rgba(56, 189, 248, 0.8)' : 'rgba(148, 163, 184, 0.5)';
+    ctx.lineWidth = isNormalIncidence ? 2 : 1.5;
     ctx.setLineDash([6, 6]);
     ctx.beginPath();
     ctx.moveTo(mirrorXCenter, mirrorY - 180);
@@ -265,91 +266,186 @@ export default function Step17RayOptics({ onSelectStep }) {
     ctx.lineWidth = 1;
     ctx.strokeRect(mirrorXCenter, mirrorY - 14, 14, 14);
 
-    ctx.fillStyle = 'rgba(148, 163, 184, 0.8)';
-    ctx.font = '11px monospace';
-    ctx.fillText('Normal (n̂)', mirrorXCenter + 6, mirrorY - 165);
+    ctx.fillStyle = isNormalIncidence ? '#38bdf8' : 'rgba(148, 163, 184, 0.8)';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText('Normal (n̂)', mirrorXCenter + 8, mirrorY - 165);
 
-    // Incident Ray coordinates
-    // Source point: incident ray travels DOWNWARD to mirrorXCenter, mirrorY
-    const incSourceX = mirrorXCenter - incDx * scale;
-    const incSourceY = mirrorY + incDy * scale; // incDy is negative (above mirror)
+    if (isNormalIncidence) {
+      // ------------------------------------------------------------------
+      // SPECIAL CASE: NORMAL INCIDENCE (i = 0° => r = 0°)
+      // Ray travels straight down along normal, then reflects straight UP
+      // ------------------------------------------------------------------
+      const rayTopY = mirrorY + incDy * scale; // incDy is negative, so rayTopY is above mirror
+      const offset = 4; // visual offset so both down & up rays and photons are distinct
 
-    // Incident Ray
-    ctx.save();
-    ctx.shadowColor = '#f59e0b';
-    ctx.shadowBlur = 10;
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(incSourceX, incSourceY);
-    ctx.lineTo(mirrorXCenter, mirrorY);
-    ctx.stroke();
-    ctx.restore();
+      // Incident Ray (Downward, amber)
+      ctx.save();
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 10;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(mirrorXCenter - offset, rayTopY);
+      ctx.lineTo(mirrorXCenter - offset, mirrorY);
+      ctx.stroke();
 
-    // Incident Ray Arrow
-    const incMidX = (incSourceX + mirrorXCenter) / 2;
-    const incMidY = (incSourceY + mirrorY) / 2;
-    const incAngle = Math.atan2(mirrorY - incSourceY, mirrorXCenter - incSourceX);
-    ctx.fillStyle = '#f59e0b';
-    ctx.beginPath();
-    ctx.moveTo(incMidX, incMidY);
-    ctx.lineTo(incMidX - 10 * Math.cos(incAngle - Math.PI / 7), incMidY - 10 * Math.sin(incAngle - Math.PI / 7));
-    ctx.lineTo(incMidX - 10 * Math.cos(incAngle + Math.PI / 7), incMidY - 10 * Math.sin(incAngle + Math.PI / 7));
-    ctx.closePath();
-    ctx.fill();
+      // Incident Arrow (pointing DOWN)
+      const midDownY = (rayTopY + mirrorY) / 2;
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.moveTo(mirrorXCenter - offset, midDownY + 8);
+      ctx.lineTo(mirrorXCenter - offset - 6, midDownY - 4);
+      ctx.lineTo(mirrorXCenter - offset + 6, midDownY - 4);
+      ctx.closePath();
+      ctx.fill();
 
-    // Reflected Ray: vertical component is reversed (-incDy)
-    // If double reflected, it reverses again back to incDy!
-    const effectiveDy = isDoubleReflected ? incDy : -incDy;
-    const refTargetX = mirrorXCenter + incDx * scale;
-    const refTargetY = mirrorY - effectiveDy * scale;
+      // Reflected Ray (Upward, emerald - or amber if double reflected)
+      const refColor = isDoubleReflected ? '#f59e0b' : '#10b981';
+      ctx.shadowColor = refColor;
+      ctx.strokeStyle = refColor;
+      ctx.beginPath();
+      ctx.moveTo(mirrorXCenter + offset, mirrorY);
+      ctx.lineTo(mirrorXCenter + offset, rayTopY);
+      ctx.stroke();
 
-    ctx.save();
-    ctx.shadowColor = '#10b981';
-    ctx.shadowBlur = 10;
-    ctx.strokeStyle = isDoubleReflected ? '#f59e0b' : '#10b981';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(mirrorXCenter, mirrorY);
-    ctx.lineTo(refTargetX, refTargetY);
-    ctx.stroke();
-    ctx.restore();
+      // Reflected Arrow (pointing UP)
+      ctx.fillStyle = refColor;
+      ctx.beginPath();
+      ctx.moveTo(mirrorXCenter + offset, midDownY - 8);
+      ctx.lineTo(mirrorXCenter + offset - 6, midDownY + 4);
+      ctx.lineTo(mirrorXCenter + offset + 6, midDownY + 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
 
-    // Reflected Arrow
-    const refMidX = (mirrorXCenter + refTargetX) / 2;
-    const refMidY = (mirrorY + refTargetY) / 2;
-    const refAngle = Math.atan2(refTargetY - mirrorY, refTargetX - mirrorXCenter);
-    ctx.fillStyle = isDoubleReflected ? '#f59e0b' : '#10b981';
-    ctx.beginPath();
-    ctx.moveTo(refMidX, refMidY);
-    ctx.lineTo(refMidX - 10 * Math.cos(refAngle - Math.PI / 7), refMidY - 10 * Math.sin(refAngle - Math.PI / 7));
-    ctx.lineTo(refMidX - 10 * Math.cos(refAngle + Math.PI / 7), refMidY - 10 * Math.sin(refAngle + Math.PI / 7));
-    ctx.closePath();
-    ctx.fill();
+      // Animated photons: down on left, up on right
+      const pFrac = animTime;
+      // Downward photon
+      const pDownY = rayTopY + (mirrorY - rayTopY) * pFrac;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(mirrorXCenter - offset, pDownY, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+      // Upward photon
+      const pUpY = mirrorY - (mirrorY - rayTopY) * pFrac;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(mirrorXCenter + offset, pUpY, 2.8, 0, Math.PI * 2);
+      ctx.fill();
 
-    // Incidence & Reflection Angle Arcs
-    const thetaIncidentDeg = Math.abs(Math.round(Math.atan2(Math.abs(incDx), Math.abs(incDy)) * (180 / Math.PI)));
-    
-    // Draw angle arc for incident ray (from normal to incident ray)
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.arc(mirrorXCenter, mirrorY, 40, -Math.PI / 2 - (thetaIncidentDeg * Math.PI) / 180, -Math.PI / 2);
-    ctx.stroke();
-    ctx.fillStyle = '#f59e0b';
-    ctx.font = '11px monospace';
-    ctx.fillText(`${thetaIncidentDeg}°`, mirrorXCenter - 32, mirrorY - 48);
+      // Bottom turnaround bounce arc
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(mirrorXCenter, mirrorY, offset, 0, Math.PI);
+      ctx.stroke();
 
-    // Draw angle arc for reflected ray (from normal to reflected ray)
-    if (!isDoubleReflected) {
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.7)';
+      // Normal Incidence Annotation Badge
+      ctx.save();
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+      ctx.lineWidth = 1;
+      const badgeW = 280;
+      const badgeH = 32;
+      const badgeX = mirrorXCenter - badgeW / 2;
+      const badgeY = mirrorY - 95;
+      ctx.beginPath();
+      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 11px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Normal Incidence: i = 0°, r = 0° (Ray Retraces Path)', mirrorXCenter, badgeY + 14);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.font = '10px monospace';
+      ctx.fillText('Deviation δ = 180° - 2(0°) = 180°', mirrorXCenter, badgeY + 26);
+      ctx.restore();
+    } else {
+      // ------------------------------------------------------------------
+      // STANDARD ANGLED INCIDENCE
+      // ------------------------------------------------------------------
+      const incSourceX = mirrorXCenter - incDx * scale;
+      const incSourceY = mirrorY + incDy * scale; // incDy is negative (above mirror)
+
+      // Incident Ray
+      ctx.save();
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 10;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(incSourceX, incSourceY);
+      ctx.lineTo(mirrorXCenter, mirrorY);
+      ctx.stroke();
+      ctx.restore();
+
+      // Incident Ray Arrow
+      const incMidX = (incSourceX + mirrorXCenter) / 2;
+      const incMidY = (incSourceY + mirrorY) / 2;
+      const incAngle = Math.atan2(mirrorY - incSourceY, mirrorXCenter - incSourceX);
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.moveTo(incMidX, incMidY);
+      ctx.lineTo(incMidX - 10 * Math.cos(incAngle - Math.PI / 7), incMidY - 10 * Math.sin(incAngle - Math.PI / 7));
+      ctx.lineTo(incMidX - 10 * Math.cos(incAngle + Math.PI / 7), incMidY - 10 * Math.sin(incAngle + Math.PI / 7));
+      ctx.closePath();
+      ctx.fill();
+
+      // Reflected Ray: vertical component is reversed (-incDy)
+      // If double reflected, it reverses again back to incDy!
+      const effectiveDy = isDoubleReflected ? incDy : -incDy;
+      const refTargetX = mirrorXCenter + incDx * scale;
+      const refTargetY = mirrorY - effectiveDy * scale;
+
+      ctx.save();
+      ctx.shadowColor = '#10b981';
+      ctx.shadowBlur = 10;
+      ctx.strokeStyle = isDoubleReflected ? '#f59e0b' : '#10b981';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(mirrorXCenter, mirrorY);
+      ctx.lineTo(refTargetX, refTargetY);
+      ctx.stroke();
+      ctx.restore();
+
+      // Reflected Arrow
+      const refMidX = (mirrorXCenter + refTargetX) / 2;
+      const refMidY = (mirrorY + refTargetY) / 2;
+      const refAngle = Math.atan2(refTargetY - mirrorY, refTargetX - mirrorXCenter);
+      ctx.fillStyle = isDoubleReflected ? '#f59e0b' : '#10b981';
+      ctx.beginPath();
+      ctx.moveTo(refMidX, refMidY);
+      ctx.lineTo(refMidX - 10 * Math.cos(refAngle - Math.PI / 7), refMidY - 10 * Math.sin(refAngle - Math.PI / 7));
+      ctx.lineTo(refMidX - 10 * Math.cos(refAngle + Math.PI / 7), refMidY - 10 * Math.sin(refAngle + Math.PI / 7));
+      ctx.closePath();
+      ctx.fill();
+
+      // Incidence & Reflection Angle Arcs
+      const thetaIncidentDeg = Math.abs(Math.round(Math.atan2(Math.abs(incDx), Math.abs(incDy)) * (180 / Math.PI)));
+
+      // Draw angle arc for incident ray (from normal to incident ray)
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
       ctx.lineWidth = 1.8;
       ctx.beginPath();
-      ctx.arc(mirrorXCenter, mirrorY, 40, -Math.PI / 2, -Math.PI / 2 + (thetaIncidentDeg * Math.PI) / 180);
+      ctx.arc(mirrorXCenter, mirrorY, 40, -Math.PI / 2 - (thetaIncidentDeg * Math.PI) / 180, -Math.PI / 2);
       ctx.stroke();
-      ctx.fillStyle = '#10b981';
+      ctx.fillStyle = '#f59e0b';
       ctx.font = '11px monospace';
-      ctx.fillText(`${thetaIncidentDeg}°`, mirrorXCenter + 14, mirrorY - 48);
+      ctx.fillText(`${thetaIncidentDeg}°`, mirrorXCenter - 32, mirrorY - 48);
+
+      // Draw angle arc for reflected ray (from normal to reflected ray)
+      if (!isDoubleReflected) {
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.7)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(mirrorXCenter, mirrorY, 40, -Math.PI / 2, -Math.PI / 2 + (thetaIncidentDeg * Math.PI) / 180);
+        ctx.stroke();
+        ctx.fillStyle = '#10b981';
+        ctx.font = '11px monospace';
+        ctx.fillText(`${thetaIncidentDeg}°`, mirrorXCenter + 14, mirrorY - 48);
+      }
     }
 
     // Impact point glow
@@ -467,7 +563,7 @@ export default function Step17RayOptics({ onSelectStep }) {
   }, [activeTab, rotAngle, baseDx, baseDy, animTime]);
 
   // ----------------------------------------------------------------------
-  // CANVAS RENDERER 4: SUCCESSIVE REFLECTIONS & RETROREFLECTOR (10.4)
+  // CANVAS RENDERER 4: SUCCESSIVE REFLECTIONS & NON-COMMUTATIVE MIRRORS (10.4)
   // ----------------------------------------------------------------------
   useEffect(() => {
     if (activeTab !== 'successive') return;
@@ -479,139 +575,327 @@ export default function Step17RayOptics({ onSelectStep }) {
 
     ctx.clearRect(0, 0, width, height);
 
-    // Corner vertex at center or lower quadrant
-    const cornerX = width * 0.42;
-    const cornerY = height * 0.58;
-    const armLength = Math.min(width, height) * 0.38;
+    // Corner vertex adaptive placement depending on angle
+    const cornerX = mirrorAngle > 95 ? width * 0.44 : (mirrorAngle < 45 ? width * 0.22 : width * 0.32);
+    const cornerY = height * 0.72;
+    const arm1Length = Math.min(width, height) * 0.58;
+    const arm2Length = Math.min(width, height) * 0.52;
+    const alphaRad = (mirrorAngle * Math.PI) / 180;
 
-    // 1. Draw Horizontal Mirror along cornerX -> cornerX + armLength
+    // 1. Draw Mirror 1 (Horizontal along x-axis)
     ctx.strokeStyle = 'rgba(56, 189, 248, 0.9)';
     ctx.lineWidth = 3.5;
     ctx.beginPath();
-    ctx.moveTo(cornerX - 40, cornerY);
-    ctx.lineTo(cornerX + armLength, cornerY);
+    ctx.moveTo(cornerX - 35, cornerY);
+    ctx.lineTo(cornerX + arm1Length, cornerY);
     ctx.stroke();
 
-    // Hatching under Horizontal Mirror
+    // Hatching under Horizontal Mirror 1
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
     ctx.lineWidth = 1.2;
-    for (let x = cornerX - 30; x <= cornerX + armLength - 10; x += 12) {
+    for (let x = cornerX - 25; x <= cornerX + arm1Length - 10; x += 14) {
       ctx.beginPath();
-      ctx.moveTo(x, cornerY);
-      ctx.lineTo(x - 8, cornerY + 10);
+      ctx.moveTo(x, cornerY + 1);
+      ctx.lineTo(x - 8, cornerY + 11);
       ctx.stroke();
     }
-    ctx.fillStyle = 'rgba(56, 189, 248, 0.8)';
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.9)';
     ctx.font = '11px Inter, sans-serif';
-    ctx.fillText('Mirror 1 (Rx)', cornerX + armLength - 70, cornerY + 22);
+    ctx.fillText('Mirror 1 (Rx, 0°)', cornerX + arm1Length - 95, cornerY + 22);
 
-    // 2. Draw Vertical Mirror along cornerY - armLength -> cornerY + 40
+    // 2. Draw Mirror 2 (Inclined at mirrorAngle α)
+    const m2EndX = cornerX + arm2Length * Math.cos(alphaRad);
+    const m2EndY = cornerY - arm2Length * Math.sin(alphaRad);
+
     ctx.strokeStyle = 'rgba(168, 85, 247, 0.9)';
     ctx.lineWidth = 3.5;
     ctx.beginPath();
-    ctx.moveTo(cornerX, cornerY - armLength);
-    ctx.lineTo(cornerX, cornerY + 40);
+    ctx.moveTo(cornerX, cornerY);
+    ctx.lineTo(m2EndX, m2EndY);
     ctx.stroke();
 
-    // Hatching behind Vertical Mirror
-    for (let y = cornerY - armLength + 10; y <= cornerY + 30; y += 12) {
+    // Hatching behind Mirror 2 (outer side of wedge)
+    // Tangent along mirror: (cos α, -sin α)
+    // Outward normal: (-sin α, -cos α)
+    const nOutX = -Math.sin(alphaRad);
+    const nOutY = -Math.cos(alphaRad);
+    const tX = Math.cos(alphaRad);
+    const tY = -Math.sin(alphaRad);
+    for (let s = 14; s <= arm2Length - 10; s += 14) {
+      const px = cornerX + s * tX;
+      const py = cornerY + s * tY;
       ctx.beginPath();
-      ctx.moveTo(cornerX, y);
-      ctx.lineTo(cornerX - 10, y + 8);
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + 10 * nOutX - 5 * tX, py + 10 * nOutY - 5 * tY);
       ctx.stroke();
     }
-    ctx.fillStyle = 'rgba(168, 85, 247, 0.8)';
+
+    ctx.fillStyle = 'rgba(168, 85, 247, 0.9)';
     ctx.font = '11px Inter, sans-serif';
-    ctx.fillText('Mirror 2 (Ry)', cornerX - 78, cornerY - armLength + 20);
+    const m2LabelDist = arm2Length * 0.75;
+    ctx.fillText(
+      mirrorAngle === 90 ? 'Mirror 2 (Ry, 90°)' : `Mirror 2 (Rα, ${mirrorAngle}°)`,
+      cornerX + m2LabelDist * tX + 16 * nOutX,
+      cornerY + m2LabelDist * tY + 16 * nOutY
+    );
 
-    // Perpendicular angle marker at corner
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 1.2;
-    ctx.strokeRect(cornerX, cornerY - 14, 14, 14);
-
-    // Ray Paths:
-    // Case A: Strike Horizontal mirror first at P1(cornerX + 80, cornerY), then Vertical mirror at P2(cornerX, cornerY - 60)
-    // Case B: Strike Vertical mirror first at P1, then Horizontal mirror at P2
-    const hStrikeDist = 80;
-    const vStrikeDist = 60;
-
-    let pStart, p1, p2, pFinal;
-
-    if (reflectionOrder === 'xThenY') {
-      // Incident hits Horizontal mirror at (cornerX + hStrikeDist, cornerY)
-      p1 = { x: cornerX + hStrikeDist, y: cornerY };
-      pStart = { x: p1.x + retroVx * 45, y: p1.y - retroVy * 45 };
-      p2 = { x: cornerX, y: cornerY - vStrikeDist };
-      // After hitting vertical mirror, ray exits travelling in opposite direction (-v)
-      pFinal = { x: p2.x + retroVx * 45, y: p2.y - retroVy * 45 };
+    // 3. Corner Angle Marker / Arc
+    if (mirrorAngle === 90) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(cornerX, cornerY - 14, 14, 14);
     } else {
-      // Strike Vertical mirror first at (cornerX, cornerY - vStrikeDist)
-      p1 = { x: cornerX, y: cornerY - vStrikeDist };
-      pStart = { x: p1.x + retroVx * 45, y: p1.y - retroVy * 45 };
-      p2 = { x: cornerX + hStrikeDist, y: cornerY };
-      pFinal = { x: p2.x + retroVx * 45, y: p2.y - retroVy * 45 };
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.75)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(cornerX, cornerY, 34, 0, -alphaRad, true);
+      ctx.stroke();
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(
+        `α=${mirrorAngle}°`,
+        cornerX + 44 * Math.cos(-alphaRad / 2) - 10,
+        cornerY + 44 * Math.sin(-alphaRad / 2) + 4
+      );
     }
 
-    // 1. Incident Segment
-    ctx.save();
-    ctx.strokeStyle = '#f59e0b';
-    ctx.shadowColor = '#f59e0b';
-    ctx.shadowBlur = 8;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(pStart.x, pStart.y);
-    ctx.lineTo(p1.x, p1.y);
-    ctx.stroke();
+    // Inward normal for Mirror 2 (facing inside wedge)
+    const nInX = Math.sin(alphaRad);
+    const nInY = Math.cos(alphaRad);
 
-    // 2. Intermediate Segment (Between Mirror 1 and Mirror 2)
-    ctx.strokeStyle = '#38bdf8';
-    ctx.shadowColor = '#38bdf8';
-    ctx.beginPath();
-    ctx.moveTo(p1.x, p1.y);
-    ctx.lineTo(p2.x, p2.y);
-    ctx.stroke();
-
-    // 3. Exiting Retroreflected Segment (Opposite direction: -v)
-    ctx.strokeStyle = '#10b981';
-    ctx.shadowColor = '#10b981';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(p2.x, p2.y);
-    ctx.lineTo(pFinal.x, pFinal.y);
-    ctx.stroke();
-    ctx.restore();
-
-    // Hit Point Sparks
-    [p1, p2].forEach(p => {
-      ctx.fillStyle = '#ffffff';
+    // Helper: Draw Arrowhead
+    const drawArrow = (x, y, angle, color) => {
+      ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 9 * Math.cos(angle - Math.PI / 7), y - 9 * Math.sin(angle - Math.PI / 7));
+      ctx.lineTo(x - 9 * Math.cos(angle + Math.PI / 7), y - 9 * Math.sin(angle + Math.PI / 7));
+      ctx.closePath();
       ctx.fill();
-    });
+    };
 
-    // Arrow on Exit Segment showing anti-parallel direction
-    const exitAngle = Math.atan2(pFinal.y - p2.y, pFinal.x - p2.x);
-    const exitMidX = (p2.x + pFinal.x) / 2;
-    const exitMidY = (p2.y + pFinal.y) / 2;
-    ctx.fillStyle = '#10b981';
+    // Helper: Draw animated photon along segment
+    const drawPhoton = (x1, y1, x2, y2, tVal, color) => {
+      const px = x1 + (x2 - x1) * tVal;
+      const py = y1 + (y2 - y1) * tVal;
+      ctx.fillStyle = color || '#ffffff';
+      ctx.beginPath();
+      ctx.arc(px, py, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    // ------------------------------------------------------------------
+    // PATH CALCULATIONS
+    // ------------------------------------------------------------------
+    // Order A: Strike M1 at P1A, then M2 at P2A, exit as Exit A
+    const s1A = 125;
+    const s2A = 120;
+    const p1A = { x: cornerX + s1A, y: cornerY };
+    const p2A = { x: cornerX + s2A * tX, y: cornerY + s2A * tY };
+    const wAx = p2A.x - p1A.x;
+    const wAy = p2A.y - p1A.y;
+
+    // Incoming vector to hit M1 and reflect into wA
+    const vInAx = wAx;
+    const vInAy = -wAy;
+    const lenInA = Math.hypot(vInAx, vInAy) || 1;
+    const pStartA = { x: p1A.x - (vInAx / lenInA) * 80, y: p1A.y - (vInAy / lenInA) * 80 };
+
+    // Exit vector from M2
+    const dotA = wAx * nInX + wAy * nInY;
+    const vExitAx = wAx - 2 * dotA * nInX;
+    const vExitAy = wAy - 2 * dotA * nInY;
+    const lenExitA = Math.hypot(vExitAx, vExitAy) || 1;
+    const pFinalA = { x: p2A.x + (vExitAx / lenExitA) * 90, y: p2A.y + (vExitAy / lenExitA) * 90 };
+
+    // Order B: Strike M2 at P1B, then M1 at P2B, exit as Exit B
+    const s2B = 135;
+    const s1B = 75;
+    const p1B = { x: cornerX + s2B * tX, y: cornerY + s2B * tY };
+    const p2B = { x: cornerX + s1B, y: cornerY };
+    const wBx = p2B.x - p1B.x;
+    const wBy = p2B.y - p1B.y;
+
+    // Incoming vector to hit M2 and reflect into wB
+    const dotB = wBx * nInX + wBy * nInY;
+    const vInBx = wBx - 2 * dotB * nInX;
+    const vInBy = wBy - 2 * dotB * nInY;
+    const lenInB = Math.hypot(vInBx, vInBy) || 1;
+    const pStartB = { x: p1B.x - (vInBx / lenInB) * 80, y: p1B.y - (vInBy / lenInB) * 80 };
+
+    // Exit vector from M1
+    const vExitBx = wBx;
+    const vExitBy = -wBy;
+    const lenExitB = Math.hypot(vExitBx, vExitBy) || 1;
+    const pFinalB = { x: p2B.x + (vExitBx / lenExitB) * 90, y: p2B.y + (vExitBy / lenExitB) * 90 };
+
+    const showPathA = reflectionOrder === 'xThenY' || reflectionOrder === 'compare';
+    const showPathB = reflectionOrder === 'yThenX' || reflectionOrder === 'compare';
+
+    // ------------------------------------------------------------------
+    // RENDER PATH A: M1 -> M2 (Rx then Rα)
+    // ------------------------------------------------------------------
+    if (showPathA) {
+      const aColor = reflectionOrder === 'compare' ? '#38bdf8' : '#f59e0b';
+      const aMidColor = '#38bdf8';
+      const aExitColor = '#10b981';
+
+      ctx.save();
+      ctx.shadowBlur = 8;
+
+      // Incident segment
+      ctx.strokeStyle = aColor;
+      ctx.shadowColor = aColor;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(pStartA.x, pStartA.y);
+      ctx.lineTo(p1A.x, p1A.y);
+      ctx.stroke();
+      drawArrow((pStartA.x + p1A.x) / 2, (pStartA.y + p1A.y) / 2, Math.atan2(p1A.y - pStartA.y, p1A.x - pStartA.x), aColor);
+      drawPhoton(pStartA.x, pStartA.y, p1A.x, p1A.y, animTime, '#ffffff');
+
+      // Intermediate segment
+      ctx.strokeStyle = aMidColor;
+      ctx.shadowColor = aMidColor;
+      ctx.beginPath();
+      ctx.moveTo(p1A.x, p1A.y);
+      ctx.lineTo(p2A.x, p2A.y);
+      ctx.stroke();
+      drawArrow((p1A.x + p2A.x) / 2, (p1A.y + p2A.y) / 2, Math.atan2(p2A.y - p1A.y, p2A.x - p1A.x), aMidColor);
+      drawPhoton(p1A.x, p1A.y, p2A.x, p2A.y, (animTime + 0.33) % 1, '#ffffff');
+
+      // Exiting segment
+      ctx.strokeStyle = aExitColor;
+      ctx.shadowColor = aExitColor;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(p2A.x, p2A.y);
+      ctx.lineTo(pFinalA.x, pFinalA.y);
+      ctx.stroke();
+      drawArrow((p2A.x + pFinalA.x) / 2, (p2A.y + pFinalA.y) / 2, Math.atan2(pFinalA.y - p2A.y, pFinalA.x - p2A.x), aExitColor);
+      drawPhoton(p2A.x, p2A.y, pFinalA.x, pFinalA.y, (animTime + 0.66) % 1, '#ffffff');
+
+      // Exit Label
+      ctx.fillStyle = aExitColor;
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`Exit A (+${2 * mirrorAngle}°)`, pFinalA.x + 8, pFinalA.y + 4);
+
+      // Hit sparks
+      [p1A, p2A].forEach(p => {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    // ------------------------------------------------------------------
+    // RENDER PATH B: M2 -> M1 (Rα then Rx)
+    // ------------------------------------------------------------------
+    if (showPathB) {
+      const bColor = reflectionOrder === 'compare' ? '#e879f9' : '#f59e0b';
+      const bMidColor = '#c084fc';
+      const bExitColor = '#f43f5e';
+
+      ctx.save();
+      ctx.shadowBlur = 8;
+
+      // Incident segment
+      ctx.strokeStyle = bColor;
+      ctx.shadowColor = bColor;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(pStartB.x, pStartB.y);
+      ctx.lineTo(p1B.x, p1B.y);
+      ctx.stroke();
+      drawArrow((pStartB.x + p1B.x) / 2, (pStartB.y + p1B.y) / 2, Math.atan2(p1B.y - pStartB.y, p1B.x - pStartB.x), bColor);
+      drawPhoton(pStartB.x, pStartB.y, p1B.x, p1B.y, (animTime + 0.5) % 1, '#ffffff');
+
+      // Intermediate segment
+      ctx.strokeStyle = bMidColor;
+      ctx.shadowColor = bMidColor;
+      ctx.beginPath();
+      ctx.moveTo(p1B.x, p1B.y);
+      ctx.lineTo(p2B.x, p2B.y);
+      ctx.stroke();
+      drawArrow((p1B.x + p2B.x) / 2, (p1B.y + p2B.y) / 2, Math.atan2(p2B.y - p1B.y, p2B.x - p1B.x), bMidColor);
+      drawPhoton(p1B.x, p1B.y, p2B.x, p2B.y, (animTime + 0.83) % 1, '#ffffff');
+
+      // Exiting segment
+      ctx.strokeStyle = bExitColor;
+      ctx.shadowColor = bExitColor;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(p2B.x, p2B.y);
+      ctx.lineTo(pFinalB.x, pFinalB.y);
+      ctx.stroke();
+      drawArrow((p2B.x + pFinalB.x) / 2, (p2B.y + pFinalB.y) / 2, Math.atan2(pFinalB.y - p2B.y, pFinalB.x - p2B.x), bExitColor);
+      drawPhoton(p2B.x, p2B.y, pFinalB.x, pFinalB.y, (animTime + 0.16) % 1, '#ffffff');
+
+      // Exit Label
+      ctx.fillStyle = bExitColor;
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`Exit B (-${2 * mirrorAngle}°)`, pFinalB.x + 8, pFinalB.y + 12);
+
+      // Hit sparks
+      [p1B, p2B].forEach(p => {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    // Top Canvas Diagnostic Badge
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.strokeStyle = mirrorAngle === 90 ? 'rgba(16, 185, 129, 0.5)' : 'rgba(244, 63, 94, 0.5)';
+    ctx.lineWidth = 1;
+    const topBadgeW = 380;
+    const topBadgeH = 28;
+    const topBadgeX = width / 2 - topBadgeW / 2;
+    const topBadgeY = 12;
     ctx.beginPath();
-    ctx.moveTo(exitMidX, exitMidY);
-    ctx.lineTo(exitMidX - 10 * Math.cos(exitAngle - Math.PI / 7), exitMidY - 10 * Math.sin(exitAngle - Math.PI / 7));
-    ctx.lineTo(exitMidX - 10 * Math.cos(exitAngle + Math.PI / 7), exitMidY - 10 * Math.sin(exitAngle + Math.PI / 7));
-    ctx.closePath();
+    ctx.roundRect(topBadgeX, topBadgeY, topBadgeW, topBadgeH, 6);
     ctx.fill();
+    ctx.stroke();
+
+    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    if (mirrorAngle === 90) {
+      ctx.fillStyle = '#10b981';
+      ctx.fillText('α = 90°: Commutative! Rx·Ry = Ry·Rx = -I (Retroreflection v₂ = -v)', width / 2, topBadgeY + 18);
+    } else {
+      ctx.fillStyle = '#f43f5e';
+      ctx.fillText(`α = ${mirrorAngle}°: Non-Commutative! Rα·Rx ≠ Rx·Rα (Exits Diverge by ${Math.abs(4 * mirrorAngle) % 360}°)`, width / 2, topBadgeY + 18);
+    }
+    ctx.restore();
   }, [activeTab, retroVx, retroVy, reflectionOrder, mirrorAngle, animTime]);
 
   // Calculations for display
   const vecAngleDeg = (Math.atan2(vecDy, vecDx) * (180 / Math.PI)).toFixed(1);
   const vecMagnitude = Math.hypot(vecDx, vecDy).toFixed(2);
 
-  // Rotation Matrix values
+  // Rotation Matrix values (Tab 3)
   const thetaRad = (rotAngle * Math.PI) / 180;
   const cosT = Math.cos(thetaRad);
   const sinT = Math.sin(thetaRad);
   const rotDx = cosT * baseDx - sinT * baseDy;
   const rotDy = sinT * baseDx + cosT * baseDy;
+
+  // Successive Reflections Matrix Calculations (Tab 4)
+  const alphaRadVal = (mirrorAngle * Math.PI) / 180;
+  const twoAlphaRadVal = 2 * alphaRadVal;
+  const cos2A = Math.cos(twoAlphaRadVal);
+  const sin2A = Math.sin(twoAlphaRadVal);
+  // Order A (M1 then M2): R_alpha * R_x = Rot(+2alpha)
+  const vOutAx = cos2A * retroVx - sin2A * retroVy;
+  const vOutAy = sin2A * retroVx + cos2A * retroVy;
+  // Order B (M2 then M1): R_x * R_alpha = Rot(-2alpha)
+  const vOutBx = cos2A * retroVx + sin2A * retroVy;
+  const vOutBy = -sin2A * retroVx + cos2A * retroVy;
 
   return (
     <div className="math-step-view" style={{ maxWidth: '1200px', margin: '0 auto', padding: '1.5rem 1rem' }}>
@@ -641,8 +925,9 @@ export default function Step17RayOptics({ onSelectStep }) {
         </h2>
         <p className="step-description">
           Connect linear algebra with familiar optical phenomena! Represent light rays as 2D spatial vectors,
-          formalize specular mirror reflection as matrix transformations ($R^2 = I$), rotate light beams via $R(\theta)$,
-          and uncover why perpendicular double-mirrors create retroreflection ($R_y R_x = -I$).
+          formalize specular mirror reflection ($R^2 = I$), explore normal incidence ($i = 0^\circ \implies r = 0^\circ$, path retracing),
+          rotate light beams via $R(\theta)$, and uncover when successive reflections commute ($90^\circ$ retroreflection: $R_y R_x = R_x R_y = -I$)
+          versus when they do not ($R_x R_\alpha \neq R_\alpha R_x$ for other angles $\alpha$).
         </p>
       </div>
 
@@ -857,22 +1142,31 @@ export default function Step17RayOptics({ onSelectStep }) {
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs font-mono">
                     <span className="text-zinc-300">Incident dx:</span>
-                    <span className="text-amber-400 font-bold">{incDx.toFixed(1)}</span>
+                    <span className="text-amber-400 font-bold">
+                      {incDx.toFixed(1)} {incDx === 0 ? '(Normal Incidence: i = 0°)' : ''}
+                    </span>
                   </div>
                   <input
                     type="range"
-                    min="0.5"
+                    min="0"
                     max="4"
                     step="0.1"
                     value={incDx}
                     onChange={e => setIncDx(parseFloat(e.target.value))}
                     className="w-full accent-amber-500 cursor-pointer"
                   />
+                  <div className="flex justify-between text-[10px] font-mono text-zinc-500">
+                    <span>0.0 (Normal i=0°)</span>
+                    <span>1.0</span>
+                    <span>2.0</span>
+                    <span>3.0</span>
+                    <span>4.0</span>
+                  </div>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs font-mono">
-                    <span className="text-zinc-300">Incident dy (Downward):</span>
+                    <span className="text-zinc-300">Incident dy (Downward toward mirror):</span>
                     <span className="text-amber-400 font-bold">{incDy.toFixed(1)}</span>
                   </div>
                   <input
@@ -887,6 +1181,36 @@ export default function Step17RayOptics({ onSelectStep }) {
                 </div>
               </div>
 
+              {/* Angle Presets including Normal Incidence (i = 0) */}
+              <div className="pt-1">
+                <span className="text-xs font-semibold text-zinc-400 block mb-2">Preset Angles of Incidence:</span>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: 'Normal: i = 0° (Retraces Path)', dx: 0, dy: -2 },
+                    { label: '30° Incidence', dx: 1.15, dy: -2 },
+                    { label: '45° Incidence', dx: 2, dy: -2 },
+                    { label: '60° Incidence', dx: 3.46, dy: -2 },
+                    { label: 'Grazing: ~70°', dx: 4, dy: -1.5 }
+                  ].map(p => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => {
+                        setIncDx(p.dx);
+                        setIncDy(p.dy);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer border ${
+                        Math.abs(incDx - p.dx) < 0.05 && Math.abs(incDy - p.dy) < 0.05
+                          ? 'bg-emerald-500/25 border-emerald-500/50 text-emerald-300 font-bold shadow-sm'
+                          : 'bg-white/5 border-white/10 hover:border-emerald-500/40 text-zinc-300 hover:text-emerald-200'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Matrix Formulation Display */}
               <div className="p-3.5 rounded-xl bg-black/40 border border-white/5 space-y-2">
                 <div className="text-xs text-zinc-400">Matrix Transformation:</div>
@@ -894,8 +1218,20 @@ export default function Step17RayOptics({ onSelectStep }) {
                   [dx', dy']^T = [1, 0; 0, -1] · [{incDx.toFixed(1)}, {incDy.toFixed(1)}]^T
                 </div>
                 <div className="font-mono text-xs sm:text-sm text-emerald-400 font-bold text-center">
-                  Result: [{incDx.toFixed(1)}, {(-incDy).toFixed(1)}]^T
+                  Result: [{incDx.toFixed(1)}, {(-incDy).toFixed(1)}]^T {incDx === 0 ? '= -d (Path Reversal)' : ''}
                 </div>
+
+                {incDx === 0 ? (
+                  <div className="mt-2 p-2.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-xs text-amber-200 leading-relaxed">
+                    <strong className="text-amber-300 flex items-center gap-1.5 mb-1">
+                      <Sparkles size={13} />
+                      Normal Incidence Special Case (i = 0°):
+                    </strong>
+                    The incident ray travels directly along the surface normal n̂.
+                    Multiplying by R_x gives [0, {-incDy}]^T = -d. The reflected ray reflects directly back along the same path (r = 0°).
+                    The angle of deviation is δ = 180° - 2(0°) = 180° (complete path retracing).
+                  </div>
+                ) : null}
               </div>
 
               {/* R^2 = I Involution Action */}
@@ -926,7 +1262,31 @@ export default function Step17RayOptics({ onSelectStep }) {
                 {
                   id: 1,
                   q: '1. What happens when the incident angle is zero?',
-                  a: 'When incident angle is zero, the ray travels directly along the normal line (dx = 0, dy = -1). Multiplying by R yields [0, 1]^T: the ray reflects straight back on itself along the normal (180° reversal).'
+                  a: (
+                    <div>
+                      <p>
+                        When incident angle is zero ($i = 0^\circ$), the ray strikes perpendicular to the mirror along the normal line ($dx = 0, dy = -2$).
+                        Multiplying by $R_x$:
+                      </p>
+                      <div className="font-mono text-[11px] my-1.5 p-1.5 rounded bg-black/40 text-cyan-300">
+                        [1, 0; 0, -1] · [0, -2]^T = [0, 2]^T = -d
+                      </div>
+                      <p>
+                        The ray reflects straight back along the normal line ($r = 0^\circ$, angle of deviation $\delta = 180^\circ$), retracing its exact trajectory!
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIncDx(0);
+                          setIncDy(-2);
+                        }}
+                        className="mt-2 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-all cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Zap size={12} />
+                        Simulate i = 0° (Normal Incidence)
+                      </button>
+                    </div>
+                  )
                 },
                 {
                   id: 2,
@@ -1106,102 +1466,252 @@ export default function Step17RayOptics({ onSelectStep }) {
       )}
 
       {/* ========================================================================= */}
-      {/* SECTION 4: TWO SUCCESSIVE REFLECTIONS */}
+      {/* SECTION 4: TWO SUCCESSIVE REFLECTIONS & NON-COMMUTATIVITY */}
       {/* ========================================================================= */}
       {activeTab === 'successive' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Controls & Retroreflector Insights */}
+          {/* Controls & Non-Commutativity Breakdown */}
           <div className="lg:col-span-5 space-y-5">
             <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Repeat size={17} className="text-cyan-400" />
-                  Two Successive Reflections
+                  Successive Reflections &amp; Order
                 </h3>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-mono">
-                  v₂ = -v
+                <span
+                  className={`text-xs px-2.5 py-0.5 rounded-full font-mono border ${
+                    mirrorAngle === 90
+                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                      : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                  }`}
+                >
+                  {mirrorAngle === 90 ? 'Rx · Ry = Ry · Rx = -I' : 'Rx · Rα ≠ Rα · Rx'}
                 </span>
               </div>
 
               <p className="text-xs text-zinc-400 leading-relaxed">
-                A light ray travels toward two perpendicular plane mirrors. Reflecting first from one mirror
-                and then from the second produces a <strong>retroreflection</strong> ($v_2 = -v$), reversing the ray back to its source!
+                When light reflects successively from two mirrors inclined at angle α, the combined operation
+                is a <strong>pure rotation of 2α</strong>.
+                At α = 90°, reflections commute (v₂ = -v, retroreflection).
+                For any other angle α, <strong>order matters</strong>: R_x · R_α ≠ R_α · R_x!
               </p>
 
+              {/* Mirror Angle α Slider */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-zinc-300">Angle Between Mirrors (α):</span>
+                  <span
+                    className={`font-bold ${
+                      mirrorAngle === 90 ? 'text-emerald-400' : 'text-cyan-400'
+                    }`}
+                  >
+                    {mirrorAngle}° {mirrorAngle === 90 ? '(Perpendicular: Commutative)' : '(Non-Commutative)'}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="30"
+                  max="120"
+                  step="1"
+                  value={mirrorAngle}
+                  onChange={e => setMirrorAngle(parseInt(e.target.value, 10))}
+                  className="w-full accent-cyan-500 cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] font-mono text-zinc-500">
+                  <span>30°</span>
+                  <span>45°</span>
+                  <span>60°</span>
+                  <span className="text-emerald-400 font-bold">90° (Retro)</span>
+                  <span>120°</span>
+                </div>
+              </div>
+
+              {/* Angle Presets */}
+              <div>
+                <span className="text-xs font-semibold text-zinc-400 block mb-2">Mirror Angle Presets:</span>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: '90° (Perpendicular / Retroreflector)', deg: 90, note: 'Commutative' },
+                    { label: '60° (Kaleidoscope Angle)', deg: 60, note: 'Non-Commutative' },
+                    { label: '45° (Octant Reflector)', deg: 45, note: 'Non-Commutative' },
+                    { label: '30° (Narrow Wedge)', deg: 30, note: 'Non-Commutative' },
+                    { label: '75° (Oblique Angle)', deg: 75, note: 'Non-Commutative' },
+                    { label: '120° (Obtuse Angle)', deg: 120, note: 'Non-Commutative' }
+                  ].map(p => (
+                    <button
+                      key={p.deg}
+                      type="button"
+                      onClick={() => setMirrorAngle(p.deg)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer border ${
+                        mirrorAngle === p.deg
+                          ? p.deg === 90
+                            ? 'bg-emerald-500/25 border-emerald-500/50 text-emerald-300 font-bold'
+                            : 'bg-cyan-500/25 border-cyan-500/50 text-cyan-300 font-bold'
+                          : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white hover:border-white/20'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Order of Operations Switcher */}
-              <div className="space-y-2">
+              <div className="space-y-2 pt-1">
                 <span className="text-xs font-semibold text-zinc-300 block">Reflection Order:</span>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setReflectionOrder('xThenY')}
-                    className={`py-2 px-3 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                    className={`py-2 px-2 rounded-xl text-[11px] font-medium border transition-all cursor-pointer text-center ${
                       reflectionOrder === 'xThenY'
-                        ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                        ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300 font-semibold'
                         : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
                     }`}
                   >
-                    1st: Horizontal (Rx)<br />2nd: Vertical (Ry)
+                    1st: M1 (Rx)<br />2nd: M2 (Rα)<br />
+                    <span className="text-[10px] text-cyan-400/80">Rot(+{2 * mirrorAngle}°)</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setReflectionOrder('yThenX')}
-                    className={`py-2 px-3 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                    className={`py-2 px-2 rounded-xl text-[11px] font-medium border transition-all cursor-pointer text-center ${
                       reflectionOrder === 'yThenX'
-                        ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                        ? 'bg-purple-500/20 border-purple-500/50 text-purple-300 font-semibold'
                         : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
                     }`}
                   >
-                    1st: Vertical (Ry)<br />2nd: Horizontal (Rx)
+                    1st: M2 (Rα)<br />2nd: M1 (Rx)<br />
+                    <span className="text-[10px] text-purple-400/80">Rot(-{2 * mirrorAngle}°)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setReflectionOrder('compare')}
+                    className={`py-2 px-2 rounded-xl text-[11px] font-medium border transition-all cursor-pointer text-center ${
+                      reflectionOrder === 'compare'
+                        ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 font-semibold shadow-sm'
+                        : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    Compare Both<br />Simultaneously<br />
+                    <span className="text-[10px] text-amber-400/80">Rx·Rα vs Rα·Rx</span>
                   </button>
                 </div>
               </div>
 
-              {/* Matrix Product Derivation from PDF */}
-              <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-2 font-mono text-xs">
-                <span className="text-zinc-400 font-sans block text-xs font-semibold">Mathematical Derivation:</span>
-                
-                {reflectionOrder === 'xThenY' ? (
-                  <>
-                    <div className="text-amber-300">1. v₁ = R_x · v = [1, 0; 0, -1] · [2, 1]^T = [2, -1]^T</div>
-                    <div className="text-cyan-300">2. v₂ = R_y · v₁ = [-1, 0; 0, 1] · [2, -1]^T = [-2, -1]^T = -v</div>
-                    <div className="pt-2 text-emerald-400 font-bold border-t border-white/10">
-                      R_y · R_x = [-1, 0; 0, -1] = -I
+              {/* Matrix Product Derivation & Non-Commutativity Proof */}
+              <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-3 font-mono text-xs">
+                <span className="text-zinc-400 font-sans block text-xs font-semibold">
+                  Matrix Algebra: R_α and R_x
+                </span>
+
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/5">
+                    <span className="text-zinc-400 font-sans block text-[10px]">Mirror 1 (x-axis, 0°):</span>
+                    <strong className="text-amber-300">R_x = [1, 0; 0, -1]</strong>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/5">
+                    <span className="text-zinc-400 font-sans block text-[10px]">
+                      Mirror 2 ({mirrorAngle}°):
+                    </span>
+                    <strong className="text-purple-300">
+                      R_α = [{cos2A.toFixed(2)}, {sin2A.toFixed(2)}; {sin2A.toFixed(2)}, {(-cos2A).toFixed(2)}]
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Evaluated Composite Matrix Products */}
+                <div className="space-y-1.5 pt-1 border-t border-white/10">
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-cyan-950/30 border border-cyan-500/30 text-cyan-200">
+                    <div>
+                      <span className="font-bold">Order A (R_α · R_x):</span>
+                      <div className="text-[10px] text-cyan-300/80">
+                        = [{cos2A.toFixed(2)}, {(-sin2A).toFixed(2)}; {sin2A.toFixed(2)}, {cos2A.toFixed(2)}] = Rot(+{2 * mirrorAngle}°)
+                      </div>
                     </div>
-                  </>
+                    <span className="text-xs font-bold text-cyan-300">
+                      v_out = [{vOutAx.toFixed(1)}, {vOutAy.toFixed(1)}]^T
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-purple-950/30 border border-purple-500/30 text-purple-200">
+                    <div>
+                      <span className="font-bold">Order B (R_x · R_α):</span>
+                      <div className="text-[10px] text-purple-300/80">
+                        = [{cos2A.toFixed(2)}, {sin2A.toFixed(2)}; {(-sin2A).toFixed(2)}, {cos2A.toFixed(2)}] = Rot(-{2 * mirrorAngle}°)
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-purple-300">
+                      v_out = [{vOutBx.toFixed(1)}, {vOutBy.toFixed(1)}]^T
+                    </span>
+                  </div>
+                </div>
+
+                {/* Commutator Verdict */}
+                {mirrorAngle === 90 ? (
+                  <div className="p-2.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 font-sans leading-relaxed">
+                    <div className="font-bold text-emerald-400 flex items-center gap-1.5 font-mono text-xs">
+                      <CheckCircle2 size={14} />
+                      Commutative Case: R_x · R_y = R_y · R_x = -I
+                    </div>
+                    <p className="text-[11px] text-emerald-300/90 mt-1">
+                      Because +180° ≡ -180°, both orders yield the exact same inverted vector -v.
+                      The two reflection matrices commute at 90°!
+                    </p>
+                  </div>
                 ) : (
-                  <>
-                    <div className="text-purple-300">1. v₁ = R_y · v = [-1, 0; 0, 1] · [2, 1]^T = [-2, 1]^T</div>
-                    <div className="text-cyan-300">2. v₂ = R_x · v₁ = [1, 0; 0, -1] · [-2, 1]^T = [-2, -1]^T = -v</div>
-                    <div className="pt-2 text-emerald-400 font-bold border-t border-white/10">
-                      R_x · R_y = [-1, 0; 0, -1] = -I
+                  <div className="p-2.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-200 font-sans leading-relaxed">
+                    <div className="font-bold text-rose-300 flex items-center gap-1.5 font-mono text-xs">
+                      <Info size={14} />
+                      Non-Commutative: R_x · R_α ≠ R_α · R_x !
                     </div>
-                  </>
+                    <div className="font-mono text-[11px] text-rose-200 mt-1">
+                      Commutator [R_x, R_α] = [0, {(2 * sin2A).toFixed(3)}; {(-2 * sin2A).toFixed(3)}, 0] ≠ 0
+                    </div>
+                    <p className="text-[11px] text-rose-300/90 mt-1">
+                      Notice the off-diagonal signs flip! Order A rotates the ray by +{2 * mirrorAngle}°,
+                      while Order B rotates the ray by -{2 * mirrorAngle}°.
+                      Matrix multiplication is <strong>not commutative</strong>: reflection order directly changes where the ray exits!
+                    </p>
+                  </div>
                 )}
               </div>
 
               {/* Physical Insight Card */}
-              <div className="p-3.5 rounded-xl bg-cyan-950/20 border border-cyan-500/20 space-y-1 text-xs text-zinc-300 leading-relaxed">
+              <div className="p-3.5 rounded-xl bg-cyan-950/20 border border-cyan-500/20 space-y-2 text-xs text-zinc-300 leading-relaxed">
                 <div className="font-bold text-cyan-400 flex items-center gap-1.5">
                   <Sparkles size={14} />
-                  Does the order of reflection matter?
+                  Why does order matter for angles other than 90°?
                 </div>
                 <p>
-                  Because $R_y R_x = R_x R_y = -I$, the order does <strong>not</strong> matter for perpendicular ($90^\circ$) mirrors!
-                  However, for mirrors intersecting at other angles $\alpha$, the combined operation is a rotation of $2\alpha$,
-                  and the order <strong>does</strong> matter!
+                  Successive reflections across two plane mirrors separated by angle α create a net rotation
+                  of 2α.
+                  In 2D planar geometry, rotation by +2α is equal to rotation by -2α if and only if
+                  2α ≡ -2α (mod 360°) ⇔ 4α = 360° ⇔ α = 90°.
+                  For all other angles α (such as 30°, 45°, 60°), R_x · R_α ≠ R_α · R_x!
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Retroreflector Canvas Column */}
+          {/* Interactive Multi-Angle Canvas Column */}
           <div className="lg:col-span-7">
             <div className="glass-level-2 p-4 rounded-2xl border border-white/10 flex flex-col items-center">
               <div className="w-full flex items-center justify-between mb-3 px-2">
-                <span className="text-xs font-semibold text-zinc-400">Perpendicular 90° Corner Reflector (Retroreflector)</span>
-                <span className="text-xs font-mono text-cyan-400">Order: {reflectionOrder === 'xThenY' ? 'Rx → Ry' : 'Ry → Rx'}</span>
+                <span className="text-xs font-semibold text-zinc-400">
+                  {mirrorAngle === 90
+                    ? 'Perpendicular 90° Corner Reflector (Retroreflector)'
+                    : `Inclined Two-Mirror System (α = ${mirrorAngle}°)`}
+                </span>
+                <span
+                  className={`text-xs font-mono font-bold ${
+                    mirrorAngle === 90 ? 'text-emerald-400' : 'text-rose-400'
+                  }`}
+                >
+                  {mirrorAngle === 90 ? 'Commutative: v₂ = -v' : 'Non-Commutative: R₁R₂ ≠ R₂R₁'}
+                </span>
               </div>
               <canvas
                 ref={successiveCanvasRef}
@@ -1209,19 +1719,56 @@ export default function Step17RayOptics({ onSelectStep }) {
                 height={400}
                 className="w-full max-w-[560px] h-auto rounded-xl bg-slate-950/80 border border-white/5 shadow-inner"
               />
+
+              {/* Dynamic Legend */}
               <div className="flex flex-wrap items-center justify-center gap-4 mt-4 text-xs">
-                <span className="flex items-center gap-1.5 text-amber-300">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-                  Incident Ray v = [2, 1]^T
-                </span>
-                <span className="flex items-center gap-1.5 text-cyan-300">
-                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" />
-                  Intermediate v₁
-                </span>
-                <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
-                  Final Ray v₂ = -v (Anti-Parallel)
-                </span>
+                {reflectionOrder === 'compare' ? (
+                  <>
+                    <span className="flex items-center gap-1.5 text-cyan-300 font-semibold">
+                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" />
+                      Order A (M1 then M2): Rot(+{2 * mirrorAngle}°)
+                    </span>
+                    <span className="flex items-center gap-1.5 text-fuchsia-300 font-semibold">
+                      <span className="w-2.5 h-2.5 rounded-full bg-fuchsia-400 inline-block" />
+                      Order B (M2 then M1): Rot(-{2 * mirrorAngle}°)
+                    </span>
+                    <span className="text-zinc-400 text-[11px] block w-full text-center mt-1">
+                      {mirrorAngle === 90
+                        ? 'At 90°, both exit rays are parallel (-v)!'
+                        : `At ${mirrorAngle}°, both exit rays diverge by ${Math.abs(4 * mirrorAngle) % 360}°!`}
+                    </span>
+                  </>
+                ) : reflectionOrder === 'xThenY' ? (
+                  <>
+                    <span className="flex items-center gap-1.5 text-amber-300">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+                      Incident Beam (v)
+                    </span>
+                    <span className="flex items-center gap-1.5 text-cyan-300">
+                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" />
+                      Inter-Mirror Bounce
+                    </span>
+                    <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
+                      Exit A (Rot +{2 * mirrorAngle}°)
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex items-center gap-1.5 text-amber-300">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+                      Incident Beam (v)
+                    </span>
+                    <span className="flex items-center gap-1.5 text-purple-300">
+                      <span className="w-2.5 h-2.5 rounded-full bg-purple-400 inline-block" />
+                      Inter-Mirror Bounce
+                    </span>
+                    <span className="flex items-center gap-1.5 text-rose-400 font-bold">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-400 inline-block" />
+                      Exit B (Rot -{2 * mirrorAngle}°)
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>

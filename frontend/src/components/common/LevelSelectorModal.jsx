@@ -56,22 +56,34 @@ export default function LevelSelectorModal({ isOpen, currentLevel, onSelectLevel
               </motion.div>
 
               {/* Advanced Linear Algebra Track */}
-              <div className="level-card disabled">
-                <div className="level-card-icon-box disabled-icon-box">
-                  <Cpu size={22} color="var(--text-muted)" />
+              <motion.div 
+                className={`level-card ${currentLevel === 'advanced' ? 'selected' : ''}`}
+                onClick={() => { onSelectLevel('advanced'); onClose(); }}
+                whileHover={{ scale: 1.015 }}
+                whileTap={{ scale: 0.985 }}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="level-card-icon-box active-icon-box" style={{ background: 'rgba(236, 72, 153, 0.15)', borderColor: 'rgba(236, 72, 153, 0.4)' }}>
+                  <Sparkles size={22} style={{ color: '#ec4899' }} />
                 </div>
                 <div className="level-info" style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 className="level-card-title disabled-title">Advanced Track</h3>
-                    <span className="track-status-pill coming-soon-pill">
-                      <Lock size={12} /> Coming Soon
-                    </span>
+                    <h3 className="level-card-title">Advanced Linear Algebra Track</h3>
+                    {currentLevel === 'advanced' ? (
+                      <span className="track-status-pill active-pill" style={{ background: 'rgba(236, 72, 153, 0.2)', color: '#ec4899', borderColor: 'rgba(236, 72, 153, 0.4)' }}>
+                        <CheckCircle2 size={13} /> Active
+                      </span>
+                    ) : (
+                      <span className="track-status-pill" style={{ background: 'rgba(236, 72, 153, 0.12)', color: '#ec4899', border: '1px solid rgba(236, 72, 153, 0.3)' }}>
+                        Module 1 Ready
+                      </span>
+                    )}
                   </div>
-                  <p className="level-card-desc disabled-desc">
-                    Explore deeper vector spaces: Eigenvalues & Eigenvectors, Singular Value Decomposition (SVD), 3D Projections, and Image Compression Tensors.
+                  <p className="level-card-desc">
+                    <strong>Module 1: Eigenvalues &amp; Eigenvectors</strong> — Special directions, invariant lines, real-time matrix scaling [2 0; 0 1] on images, and reflection negative eigenvalues (with SVD &amp; PCA in R&amp;D).
                   </p>
                 </div>
-              </div>
+              </motion.div>
             </div>
 
             <button className="close-btn" onClick={onClose}>Apply Track & Continue</button>

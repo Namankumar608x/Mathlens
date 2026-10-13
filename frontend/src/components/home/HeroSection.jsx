@@ -223,12 +223,12 @@ export default function HeroSection({ onStartExploring, onSelectStep, onSelectVi
               <Grid size={22} className="text-cyan-400" />
             </div>
             <div className="pathway-step-count">Steps 01 — 06</div>
-            <h3 className="pathway-title">Pixel & Matrix Foundations</h3>
+            <h3 className="pathway-title">Pixel &amp; Matrix Foundations</h3>
             <p className="pathway-desc">
               Understand pixels as numerical intensity arrays. Edit cells, scale brightness with scalar $kA$, and decompose color images into 3D RGB tensors.
             </p>
             <div className="pathway-footer">
-              <span>6 Modules</span>
+              <span>{FEATURES.filter(f => f.category === 'pixel-matrix').length} Modules</span>
               <ArrowRight size={14} className="pathway-arrow" />
             </div>
           </motion.div>
@@ -248,7 +248,7 @@ export default function HeroSection({ onStartExploring, onSelectStep, onSelectVi
               See what matrices do to physical space: rotate, shear, scale, and reflect shapes by mapping vector coordinates $X' = AX$.
             </p>
             <div className="pathway-footer">
-              <span>Interactive Space</span>
+              <span>{FEATURES.filter(f => f.category === 'transformations').length} Module</span>
               <ArrowRight size={14} className="pathway-arrow" />
             </div>
           </motion.div>
@@ -262,34 +262,56 @@ export default function HeroSection({ onStartExploring, onSelectStep, onSelectVi
             <div className="pathway-icon-box blue-glow">
               <Blend size={22} className="text-blue-400" />
             </div>
-            <div className="pathway-step-count">Steps 08 — 14</div>
+            <div className="pathway-step-count">Steps 08 — 16</div>
             <h3 className="pathway-title">Visual Labs</h3>
             <p className="pathway-desc">
               Matrix blending, background subtraction, defect change detection, negative inversion, determinant area scaling, and reversible inverse transformations.
             </p>
             <div className="pathway-footer">
-              <span>7 Interactive Labs</span>
+              <span>{FEATURES.filter(f => f.category === 'visual-labs').length} Interactive Labs</span>
               <ArrowRight size={14} className="pathway-arrow" />
             </div>
           </motion.div>
 
-          {/* Pathway 4: Coming Soon - Advanced Mathematics */}
+          {/* Pathway 4: Ray Optics (Step 17) */}
           <motion.div
-            className="pathway-card glass-level-2 roadmap-pathway-card"
+            className="pathway-card glass-level-2"
             whileHover={{ y: -4, borderColor: 'rgba(245, 158, 11, 0.4)' }}
-            onClick={() => onSelectView ? onSelectView('roadmap') : onSelectStep(12)}
+            onClick={() => onSelectStep(17)}
+            style={{ cursor: 'pointer' }}
           >
-            <div className="pathway-icon-box amber-glow">
-              <Lock size={22} className="text-amber-400" />
+            <div className="pathway-icon-box" style={{ background: 'rgba(245, 158, 11, 0.15)', borderColor: 'rgba(245, 158, 11, 0.35)' }}>
+              <Zap size={22} className="text-amber-400" />
             </div>
-            <div className="pathway-step-count" style={{ color: 'var(--accent-amber)' }}>Coming Soon</div>
-            <h3 className="pathway-title">Advanced Mathematics</h3>
+            <div className="pathway-step-count" style={{ color: '#f59e0b' }}>Step 17</div>
+            <h3 className="pathway-title">Ray Optics &amp; Matrices</h3>
             <p className="pathway-desc">
-              Eigenvalues, Eigenvectors, SVD, PCA, Fourier Transforms, and AI Math Tutoring currently in active research &amp; development.
+              Represent light rays as vectors. Explore plane mirror reflection matrices, angular rotation, and retroreflectors ($R_x R_y = -I$).
             </p>
             <div className="pathway-footer">
-              <span style={{ color: 'var(--accent-amber)' }}>Product Roadmap</span>
+              <span style={{ color: '#f59e0b' }}>{FEATURES.filter(f => f.category === 'ray-optics').length} Optics Lab</span>
               <ArrowRight size={14} className="pathway-arrow text-amber-400" />
+            </div>
+          </motion.div>
+
+          {/* Pathway 5: Advanced Linear Algebra (Step 18) */}
+          <motion.div
+            className="pathway-card glass-level-2 roadmap-pathway-card"
+            whileHover={{ y: -4, borderColor: 'rgba(236, 72, 153, 0.4)' }}
+            onClick={() => onSelectStep(18)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="pathway-icon-box" style={{ background: 'rgba(236, 72, 153, 0.15)', borderColor: 'rgba(236, 72, 153, 0.35)' }}>
+              <Sparkles size={22} className="text-pink-400" />
+            </div>
+            <div className="pathway-step-count" style={{ color: '#ec4899' }}>Step 18 Active</div>
+            <h3 className="pathway-title">Advanced Eigenspaces</h3>
+            <p className="pathway-desc">
+              Explore invariant directions, eigenvalues, flower photograph scaling [2 0; 0 1], and horizontal reflections.
+            </p>
+            <div className="pathway-footer">
+              <span style={{ color: '#ec4899' }}>{FEATURES.filter(f => f.category === 'eigen-spaces').length} Advanced Module</span>
+              <ArrowRight size={14} className="pathway-arrow text-pink-400" />
             </div>
           </motion.div>
         </div>

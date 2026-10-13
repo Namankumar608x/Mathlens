@@ -100,16 +100,13 @@ export default function Step2CellEditing({ onSelectStep }) {
     <StepWrapper
       stepNumber={2}
       title="Change Individual Matrix Elements"
-      subtitle="Directly edit individual cell values in the matrix below to see the pixel shade update immediately. Watch how values transition smoothly from 0 (Black) to 255 (White)."
-      formula="A_{i,j} \leftarrow v, \quad v \in [0, 255]"
+      subtitle="Directly modify matrix values to observe instant real-time changes in the image."
+      formula="A[i, j] ← v,  v ∈ [0, 255]"
       basicHint="Try changing a single cell using your keyboard or the stepper arrows and watch only that specific pixel change shade."
-      advancedFormula="\Delta I(x_0, y_0) = v_{new} - v_{old}, \quad \text{supp}(\Delta I) = \{(x_0, y_0)\}"
+      advancedFormula="ΔI(x₀, y₀) = v_new - v_old,  supp(ΔI) = {(x₀, y₀)}"
       controls={controls}
       onPrev={() => onSelectStep && onSelectStep(1)}
       onNext={() => onSelectStep && onSelectStep(3)}
-      onReset={handleReset}
-      insightTitle="Direct Memory Mutation"
-      insightBody="In image processing shaders and pixel buffers, mutating a single matrix entry corresponds to writing directly to memory buffer address (y × Width + x). There is zero overhead between the math array and the visual display."
     >
       <div className="workspace-duo-stage">
         <PixelCanvas

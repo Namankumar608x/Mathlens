@@ -9,11 +9,10 @@ export default function Footer({ onSelectStep, onSelectView }) {
         <div className="footer-top-row">
           <div className="footer-brand-col">
             <div className="footer-logo-row">
-              <span className="footer-lambda">λ</span>
               <span className="footer-title">MathLens</span>
             </div>
             <p className="footer-motto">
-              "Don't just calculate mathematics. See it. Manipulate it. Understand it."
+              &ldquo;Don&rsquo;t just calculate mathematics. See it. Manipulate it. Understand it.&rdquo;
             </p>
             <div className="footer-inst-tag">
               <span>IIIT Vadodara • Academic Research &amp; Education</span>
@@ -61,7 +60,7 @@ export default function Footer({ onSelectStep, onSelectView }) {
           </div>
           <div className="footer-shortcuts-hint">
             <span>Shortcuts:</span>
-            <kbd>⌘K</kbd> Search • <kbd>←</kbd> <kbd>→</kbd> Steps • <kbd>T</kbd> Theme
+            <kbd>←</kbd> <kbd>→</kbd> Steps • <kbd>T</kbd> Theme • <kbd>N</kbd> Modules
           </div>
 
           <div className="footer-column">

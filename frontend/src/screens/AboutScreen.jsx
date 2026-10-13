@@ -7,10 +7,9 @@ export default function AboutScreen() {
     <div className="about-page-container">
       {/* Header */}
       <div className="about-masthead">
-        <span className="about-badge">Platform Architecture</span>
         <h1 className="about-title">About MathLens</h1>
         <p className="about-subtitle">
-          "Don’t just calculate mathematics. See it. Manipulate it. Understand it."
+          &ldquo;Don&rsquo;t just calculate mathematics. See it. Manipulate it. Understand it.&rdquo;
         </p>
       </div>
 
@@ -18,7 +17,7 @@ export default function AboutScreen() {
         {/* Card 1: Core Mission */}
         <div className="about-card glass-level-2">
           <div className="about-card-icon-box">
-            <Sparkles size={22} className="text-cyan-400" />
+            <Sparkles size={22} style={{ color: 'var(--accent-primary)' }} />
           </div>
           <h2 className="about-card-title">Pedagogical Mission</h2>
           <p className="about-card-text">
@@ -29,7 +28,7 @@ export default function AboutScreen() {
         {/* Card 2: Engineering Architecture */}
         <div className="about-card glass-level-2">
           <div className="about-card-icon-box">
-            <Cpu size={22} className="text-purple-400" />
+            <Cpu size={22} style={{ color: 'var(--accent-primary)' }} />
           </div>
           <h2 className="about-card-title">Zero-Lag Canvas Architecture</h2>
           <p className="about-card-text">
@@ -40,11 +39,11 @@ export default function AboutScreen() {
         {/* Card 3: Design Philosophy */}
         <div className="about-card glass-level-2">
           <div className="about-card-icon-box">
-            <Code2 size={22} className="text-blue-400" />
+            <Code2 size={22} style={{ color: 'var(--accent-primary)' }} />
           </div>
-          <h2 className="about-card-title">Glassmorphism & Micro-Interactions</h2>
+          <h2 className="about-card-title">Precision Mathematical Workspace</h2>
           <p className="about-card-text">
-            Engineered with a dark-first atmospheric glass system, electric cyan and violet accents, fluid responsive layouts, keyboard accessibility (⌘K command palette, arrow key navigation), and mobile dock ergonomics.
+            Engineered with a minimalist editorial design system, high-contrast typography, matte surfaces, keyboard accessibility (⌘K command palette, arrow key navigation), and unified light and dark themes.
           </p>
         </div>
       </div>

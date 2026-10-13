@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Footer from './components/common/Footer';
+import Navbar from './components/layout/Navbar';
 import LevelSelectorModal from './components/common/LevelSelectorModal';
-import FloatingDock from './components/layout/FloatingDock';
 import FeatureSheet from './components/navigation/FeatureSheet';
 import CommandPalette from './components/navigation/CommandPalette';
 import MathBackground from './components/background/MathBackground';
@@ -10,6 +10,8 @@ import FetchSimulationLoader from './components/common/FetchSimulationLoader';
 import HeroSection from './components/home/HeroSection';
 import CurriculumScreen from './screens/CurriculumScreen';
 import AboutScreen from './screens/AboutScreen';
+import RightNavRail from './components/navigation/RightNavRail';
+import BackButton from './components/common/BackButton';
 
 import Step1Grayscale from './steps/Step1Grayscale';
 import Step2CellEditing from './steps/Step2CellEditing';
@@ -35,11 +37,20 @@ import './index.css';
 import './App.css';
 
 export default function App() {
-  const [currentLevel, setCurrentLevel] = useState('basic');
+  const [currentLevel, setCurrentLevel] = useState(() => {
+    return (typeof window !== 'undefined' && localStorage.getItem('mathlens_level')) || 'basic';
+  });
+
+  const handleSelectLevel = useCallback((lvl) => {
+    setCurrentLevel(lvl);
+    localStorage.setItem('mathlens_level', lvl);
+    window.dispatchEvent(new CustomEvent('mathlens_level_change', { detail: lvl }));
+  }, []);
   const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
-  const [isSimulationLoading, setIsSimulationLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRightRailOpen, setIsRightRailOpen] = useState(false);
 
   // View state: 'home' | 'module' | 'learn' | 'about'
   const [currentView, setCurrentView] = useState(() => {
@@ -64,12 +75,17 @@ export default function App() {
     return saved ? parseInt(saved, 10) : 1;
   });
 
+  // In-app navigation history stack for consistent Back button behaviour
+  const [navHistory, setNavHistory] = useState(() => [
+    { view: currentView, step: currentStep }
+  ]);
+
   // Theme state: 'dark' | 'light'
   const [theme, setTheme] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const themeParam = params.get('theme');
     if (themeParam === 'light' || themeParam === 'dark') return themeParam;
-    return localStorage.getItem('mathlens_theme') || 'dark';
+    return localStorage.getItem('mathlens_theme') || 'light';
   });
 
   const toggleTheme = useCallback(() => {
@@ -81,6 +97,7 @@ export default function App() {
   const handleSelectStep = useCallback((step) => {
     setCurrentStep(step);
     setCurrentView('module');
+    setNavHistory(prev => [...prev, { view: 'module', step }]);
     localStorage.setItem('mathlens_step', step);
     const url = new URL(window.location.href);
     url.searchParams.set('step', step);
@@ -91,6 +108,7 @@ export default function App() {
 
   const handleSelectView = useCallback((view) => {
     setCurrentView(view);
+    setNavHistory(prev => [...prev, { view, step: currentStep }]);
     const url = new URL(window.location.href);
     if (view === 'module') {
       url.searchParams.set('step', currentStep);
@@ -102,6 +120,36 @@ export default function App() {
     window.history.replaceState({}, '', url.toString());
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
+
+  // Reversible Back Navigation Handler with Sensible Fallbacks
+  const handleBack = useCallback(() => {
+    if (navHistory.length > 1) {
+      const nextStack = [...navHistory];
+      nextStack.pop(); // Remove current view
+      const prevEntry = nextStack[nextStack.length - 1];
+      setNavHistory(nextStack);
+      if (prevEntry.view === 'module') {
+        const targetStep = prevEntry.step || 1;
+        setCurrentStep(targetStep);
+        setCurrentView('module');
+        const url = new URL(window.location.href);
+        url.searchParams.set('step', targetStep);
+        url.searchParams.delete('view');
+        window.history.replaceState({}, '', url.toString());
+      } else {
+        const targetView = prevEntry.view || 'home';
+        setCurrentView(targetView);
+        const url = new URL(window.location.href);
+        url.searchParams.set('view', targetView);
+        url.searchParams.delete('step');
+        window.history.replaceState({}, '', url.toString());
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Sensible Fallback when opened directly via URL or refreshed
+      handleSelectView('home');
+    }
+  }, [navHistory, handleSelectView]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -124,6 +172,13 @@ export default function App() {
       if (e.key === 't' || e.key === 'T') {
         e.preventDefault();
         toggleTheme();
+        return;
+      }
+
+      // N / n -> Toggle Right-Side Modules Rail
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        setIsRightRailOpen(prev => !prev);
         return;
       }
 
@@ -206,12 +261,14 @@ export default function App() {
     return renderModuleStepContent();
   };
 
+  const activeFeature = getFeatureByStep(currentStep) || FEATURES[0];
+
   return (
     <div className="app-shell-root">
-      {/* 0. Fullscreen Mathematical Fetch Simulation Loader */}
+      {/* 0. Fast & Simple Optical Loader */}
       <FetchSimulationLoader
-        isOpen={isSimulationLoading}
-        onComplete={() => setIsSimulationLoading(false)}
+        isOpen={isLoading}
+        onComplete={() => setIsLoading(false)}
       />
 
       {/* 1. Global Layered Atmospheric Background */}
@@ -219,7 +276,36 @@ export default function App() {
 
       {/* 2. Main Application Body */}
       <div className="app-main-viewport">
+        <Navbar
+          currentView={currentView}
+          onSelectView={handleSelectView}
+          currentStep={currentStep}
+          onSelectStep={handleSelectStep}
+          currentLevel={currentLevel}
+          onSelectLevel={handleSelectLevel}
+          onOpenLevelModal={() => setIsLevelModalOpen(true)}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          onToggleRightRail={() => setIsRightRailOpen(prev => !prev)}
+          isRightRailOpen={isRightRailOpen}
+        />
+
         <main className="main-content-area" id="main-content">
+          {/* Consistent Back Button across all non-overview pages */}
+          {currentView !== 'home' && (
+            <BackButton
+              onBack={handleBack}
+              contextText={
+                currentView === 'module'
+                  ? `Workspace • Module ${activeFeature.code}: ${activeFeature.title}`
+                  : currentView === 'learn'
+                  ? 'Curriculum & Pathways'
+                  : 'About Platform Architecture'
+              }
+            />
+          )}
+
           {renderMainContent()}
         </main>
 
@@ -229,18 +315,18 @@ export default function App() {
         />
       </div>
 
-      {/* 3. Unified Thin Bottom Navbar (Scroll-reactive with Left-Side Toggle) */}
-      <FloatingDock
+      {/* 3. Integrated Right-Side Navigation Rail & Expandable Panel */}
+      <RightNavRail
+        isOpen={isRightRailOpen}
+        onToggle={() => setIsRightRailOpen(prev => !prev)}
+        onClose={() => setIsRightRailOpen(false)}
         currentStep={currentStep}
         onSelectStep={handleSelectStep}
         currentView={currentView}
         onSelectView={handleSelectView}
-        currentLevel={currentLevel}
-        onOpenLevelModal={() => setIsLevelModalOpen(true)}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
       />
+
+
 
       {/* 4. Mobile Slide-Up Feature Sheet */}
       <FeatureSheet
@@ -256,21 +342,13 @@ export default function App() {
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         onSelectFeature={(feat) => handleSelectStep(feat.stepNumber)}
-        onTriggerSimulationLoader={() => setIsSimulationLoading(true)}
       />
 
       {/* 6. Level Selector Modal (Basic vs Advanced Math) */}
       <LevelSelectorModal
         isOpen={isLevelModalOpen}
         currentLevel={currentLevel}
-        onSelectLevel={(lvl) => {
-          setCurrentLevel(lvl);
-          if (lvl === 'advanced' || lvl === 'intermediate') {
-            handleSelectStep(18);
-          } else if (lvl === 'basic' && currentStep > 17) {
-            handleSelectStep(1);
-          }
-        }}
+        onSelectLevel={handleSelectLevel}
         onClose={() => setIsLevelModalOpen(false)}
       />
 

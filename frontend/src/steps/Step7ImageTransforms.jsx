@@ -155,11 +155,11 @@ export default function Step7ImageTransforms({ onSelectStep }) {
   return (
     <StepWrapper
       stepNumber={7}
-      title="2D Coordinate Geometric Transformations"
-      subtitle="Transform spatial 2D coordinates of digital vectors and images via matrix-vector multiplication: X' = AX. The columns of matrix A dictate where the standard basis vectors î = [1, 0]ᵀ and ĵ = [0, 1]ᵀ land."
-      formula="\begin{bmatrix} x' \\ y' \end{bmatrix} = \begin{bmatrix} a & b \\ c & d \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} = x \begin{bmatrix} a \\ c \end{bmatrix} + y \begin{bmatrix} b \\ d \end{bmatrix}"
+      title="2D Geometric Transformations"
+      subtitle="Transform spatial pixel coordinates using matrix-vector multiplication: x' = A · x."
+      formula="[x', y']ᵀ = [a b; c d] · [x, y]ᵀ"
       basicHint="Moving pixel positions according to a matrix formula allows you to rotate, stretch, shear, and reflect entire pictures!"
-      advancedFormula="\vec{v}' = A \vec{v}, \quad A = [\vec{T}(\hat{e}_1) \; \vec{T}(\hat{e}_2)], \quad \det(A) = ad - bc"
+      advancedFormula="v⃗' = A·v⃗,  where A = [T(ê₁), T(ê₂)],  det(A) = ad - bc"
       controls={controls}
       onPrev={() => onSelectStep && onSelectStep(6)}
       onNext={() => onSelectStep && onSelectStep(8)}

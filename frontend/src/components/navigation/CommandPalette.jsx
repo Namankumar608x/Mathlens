@@ -75,7 +75,7 @@ export default function CommandPalette({ isOpen, onClose, onSelectFeature, onTri
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search matrices, transformations, determinants, RGB... (↑↓ to navigate)"
+                placeholder="Search experiments, operations, or concepts"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="cmd-search-input"
@@ -95,8 +95,8 @@ export default function CommandPalette({ isOpen, onClose, onSelectFeature, onTri
               {filteredFeatures.length === 0 ? (
                 <div className="cmd-empty-state">
                   <Sparkles size={24} className="cmd-empty-icon" />
-                  <p className="cmd-empty-text">No mathematical modules found for "{query}"</p>
-                  <span className="cmd-empty-sub">Try searching for "determinant", "brightness", "subtraction", or "2D"</span>
+                  <p className="cmd-empty-text">No experiments found for "{query}"</p>
+                  <span className="cmd-empty-sub">Try searching for "eigenvalue", "rgb", "matrix subtraction", or "inversion"</span>
                 </div>
               ) : (
                 filteredFeatures.map((feat, idx) => {
@@ -144,7 +144,7 @@ export default function CommandPalette({ isOpen, onClose, onSelectFeature, onTri
                       onClose();
                       onTriggerSimulationLoader();
                     }}
-                    className="hover:text-cyan-400 transition-colors cursor-pointer"
+                    className="hover:opacity-80 transition-opacity cursor-pointer"
                     style={{ background: 'none', border: 'none', color: 'inherit', font: 'inherit', padding: 0 }}
                   >
                     <span>⚡ <kbd>Simulate Fetch</kbd></span>

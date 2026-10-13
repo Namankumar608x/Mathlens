@@ -3,7 +3,6 @@ import PixelCanvas from '../components/visualizers/PixelCanvas';
 import MatrixGrid from '../components/matrix/MatrixGrid';
 import StepWrapper from '../components/layout/StepWrapper';
 import MathInspectorHUD from '../components/ui/MathInspectorHUD';
-import WipeSlider from '../components/ui/WipeSlider';
 import { scaleMatrix } from '../core/mathEngine';
 
 const BASE_MATRIX = [
@@ -16,7 +15,6 @@ const BASE_MATRIX = [
 export default function Step3ScalarBrightness({ onSelectStep }) {
   const [scalar, setScalar] = useState(1.0);
   const [hoveredCell, setHoveredCell] = useState(null);
-  const [viewMode, setViewMode] = useState('sideBySide'); // 'sideBySide' | 'wipe'
 
   const scaledMatrix = scaleMatrix(BASE_MATRIX, scalar);
 
@@ -26,7 +24,7 @@ export default function Step3ScalarBrightness({ onSelectStep }) {
       <div className="control-slider-block">
         <div className="control-slider-header">
           <span className="control-slider-label">Scalar Multiplier (k):</span>
-          <span className="control-slider-val text-amber-400 font-mono font-bold">
+          <span className="control-slider-val font-mono font-bold" style={{ color: 'var(--accent-primary)' }}>
             {scalar.toFixed(2)}×
           </span>
         </div>
@@ -41,30 +39,14 @@ export default function Step3ScalarBrightness({ onSelectStep }) {
           style={{ '--slider-pct': `${(scalar / 3.0) * 100}%` }}
         />
         <div className="control-slider-meta">
-          <span>Operation: <strong className="text-amber-400">A' = {scalar.toFixed(2)} × A</strong> (clipped to [0, 255])</span>
+          <span>Operation: <strong style={{ color: 'var(--accent-primary)' }}>A' = {scalar.toFixed(2)} × A</strong> (clipped to [0, 255])</span>
         </div>
       </div>
 
-      {/* Preset Buttons & Mode Switcher */}
+      {/* Preset Buttons */}
       <div className="control-presets-block">
         <div className="preset-label-row">
           <span className="control-bar-label">Multiplier Presets:</span>
-          <div className="view-mode-tabs">
-            <button
-              className={`view-mode-tab ${viewMode === 'sideBySide' ? 'active' : ''}`}
-              onClick={() => setViewMode('sideBySide')}
-              type="button"
-            >
-              Side-by-Side
-            </button>
-            <button
-              className={`view-mode-tab ${viewMode === 'wipe' ? 'active' : ''}`}
-              onClick={() => setViewMode('wipe')}
-              type="button"
-            >
-              Wipe Comparison
-            </button>
-          </div>
         </div>
 
         <div className="preset-pills-row">
@@ -107,57 +89,29 @@ export default function Step3ScalarBrightness({ onSelectStep }) {
   return (
     <StepWrapper
       stepNumber={3}
-      title="Scalar Multiplication & Image Brightness"
-      subtitle="Multiplying an image matrix A by a scalar multiplier k (A' = kA) scales pixel intensity. When k > 1, the image brightens; when 0 < k < 1, the image darkens. Values exceeding 255 are clamped."
-      formula="A' = \min(255, \max(0, k \cdot A))"
+      title="Scalar Multiplication & Brightness"
+      subtitle="Multiply every matrix element by a single scalar factor to brighten or darken the image."
+      formula="A' = clamp(k · A, 0, 255)"
       basicHint="Multiplying by 1.5 makes the whole picture 50% brighter. Multiplying by 0.5 cuts brightness in half."
-      advancedFormula="T_k(A) = \text{clamp}(k \cdot A, 0, 255), \quad k \in \mathbb{R}^+"
+      advancedFormula="T_k(A) = clamp(k · A, 0, 255),  k ∈ ℝ⁺"
       controls={controls}
       onPrev={() => onSelectStep && onSelectStep(2)}
       onNext={() => onSelectStep && onSelectStep(4)}
-      onReset={() => setScalar(1.0)}
-      insightTitle="Linear Scaling vs Saturation Clamping"
-      insightBody="In pure linear algebra, scalar multiplication is unbounded: (kA)ᵢⱼ = k · Aᵢⱼ. In digital image processing, however, pixel depth is constrained to an 8-bit unsigned integer range [0, 255]. Any product above 255 saturates into pure white, causing highlight clipping (loss of high-dynamic-range detail)."
     >
-      {viewMode === 'wipe' ? (
-        <div className="workspace-wipe-wrapper">
-          <WipeSlider
-            originalContent={
-              <PixelCanvas
-                matrix={BASE_MATRIX}
-                hoveredCell={hoveredCell}
-                onHoverCell={setHoveredCell}
-                title="Original Baseline Image (1.0×)"
-              />
-            }
-            modifiedContent={
-              <PixelCanvas
-                matrix={scaledMatrix}
-                hoveredCell={hoveredCell}
-                onHoverCell={setHoveredCell}
-                title={`Scaled Image (${scalar.toFixed(2)}×)`}
-              />
-            }
-            originalLabel="Original (1.0×)"
-            modifiedLabel={`Scaled (${scalar.toFixed(2)}×)`}
-          />
-        </div>
-      ) : (
-        <div className="workspace-duo-stage">
-          <PixelCanvas
-            matrix={scaledMatrix}
-            hoveredCell={hoveredCell}
-            onHoverCell={setHoveredCell}
-            title="Resulting Scaled Image A'"
-          />
-          <MatrixGrid
-            matrix={scaledMatrix}
-            hoveredCell={hoveredCell}
-            onHoverCell={setHoveredCell}
-            title={`Output Matrix A' = ${scalar.toFixed(2)} × A`}
-          />
-        </div>
-      )}
+      <div className="workspace-duo-stage">
+        <PixelCanvas
+          matrix={scaledMatrix}
+          hoveredCell={hoveredCell}
+          onHoverCell={setHoveredCell}
+          title="Resulting Scaled Image A'"
+        />
+        <MatrixGrid
+          matrix={scaledMatrix}
+          hoveredCell={hoveredCell}
+          onHoverCell={setHoveredCell}
+          title={`Output Matrix A' = ${scalar.toFixed(2)} × A`}
+        />
+      </div>
 
       {hoveredCell && (
         <MathInspectorHUD

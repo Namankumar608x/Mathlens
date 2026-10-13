@@ -88,16 +88,13 @@ export default function Step1Grayscale({ onSelectStep }) {
     <StepWrapper
       stepNumber={1}
       title="From Pixels to Matrices"
-      subtitle="Every digital image is stored as a 2D numerical array (a matrix). In an 8-bit grayscale image, each element represents a pixel intensity from 0 (Pure Black) to 255 (Pure White)."
-      formula="I(x, y) \in [0, 255] \subset \mathbb{Z}"
+      subtitle="Every digital image is stored as a 2D numerical matrix of pixel light intensities."
+      formula="I(x, y) ∈ [0, 255] ⊂ ℤ"
       basicHint="Think of an image like a grid of tiny light bulbs: 0 means completely OFF, and 255 means fully ON."
-      advancedFormula="I: \Omega \to \{0, 1, \dots, 255\}, \quad \Omega = \{0, \dots, H-1\} \times \{0, \dots, W-1\}"
+      advancedFormula="I: Ω → {0, 1, …, 255},  where Ω = {0, …, H-1} × {0, …, W-1}"
       controls={controls}
       onPrev={() => onSelectStep && onSelectStep(1)}
       onNext={() => onSelectStep && onSelectStep(2)}
-      onReset={() => handleSelectPreset('black')}
-      insightTitle="The Discrete Image Representation"
-      insightBody="When you zoom into any digital photo, curves disappear into square picture elements ('pixels'). Computer vision algorithms never 'see' pictures—they operate strictly on 2D mathematical arrays of integer numbers."
     >
       <div className="workspace-duo-stage">
         <PixelCanvas

@@ -1,432 +1,296 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles,
+  Home,
   Grid,
   Compass,
   Blend,
-  BookOpen,
-  ChevronUp,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  Check,
   Zap,
   Variable,
-  Sun,
-  Moon,
-  PanelBottomClose,
-  PanelBottomOpen,
-  Layers,
-  Info,
-  Home
+  ChevronUp,
+  Check,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
-import { CATEGORIES, FEATURES, getFeatureByStep } from '../../config/features';
+import { FEATURES, getFeatureByStep } from '../../config/features';
 
 export default function FloatingDock({
   currentStep,
   onSelectStep,
   currentView,
-  onSelectView,
-  currentLevel = 'basic',
-  onOpenLevelModal,
-  theme = 'dark',
-  onToggleTheme,
-  onOpenCommandPalette
+  onSelectView
 }) {
-  const [expandedCategory, setExpandedCategory] = useState(null);
-  const [isNavVisible, setIsNavVisible] = useState(true);
-  const dockRef = useRef(null);
-  const lastScrollY = useRef(0);
-  const scrollTimeout = useRef(null);
+  const [isOpen, setIsOpen] = useState(() => {
+    const saved = localStorage.getItem('mathlens_dock_open');
+    if (saved !== null) return saved === 'true';
+    return true; // Default to open so user sees it right away
+  });
 
-  // Close subnav when clicking outside
+  const [openSubmenu, setOpenSubmenu] = useState(null);
+  const dockRef = useRef(null);
+
+  // Save dock open state to localStorage
+  const handleToggleOpen = (nextState) => {
+    setIsOpen(nextState);
+    localStorage.setItem('mathlens_dock_open', String(nextState));
+    if (!nextState) setOpenSubmenu(null);
+  };
+
+  // Close sub-menu on outside click
   useEffect(() => {
     function handleClickOutside(e) {
       if (dockRef.current && !dockRef.current.contains(e.target)) {
-        setExpandedCategory(null);
+        setOpenSubmenu(null);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Scroll detection transition:
-  // Scroll DOWN -> Open/show bottom navbar
-  // Scroll UP -> Hide bottom navbar so it doesn't obstruct reading content
-  // Top of page -> Keep visible
+  // Keyboard shortcut 'N' to toggle dock
   useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const scrollDiff = currentScrollY - lastScrollY.current;
-
-      // Only react if scrolled more than small jitter
-      if (Math.abs(scrollDiff) > 6) {
-        if (currentScrollY <= 40) {
-          // At top of page: always open
-          setIsNavVisible(true);
-        } else if (scrollDiff > 0) {
-          // Scrolling DOWN -> Reveal/open bottom navbar
-          setIsNavVisible(true);
-        } else if (scrollDiff < 0) {
-          // Scrolling UP -> Hide navbar to preserve reading space
-          setIsNavVisible(false);
-          setExpandedCategory(null);
-        }
-      }
-
-      lastScrollY.current = currentScrollY;
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Keyboard shortcut: Press 'N' to toggle navbar visibility
-  useEffect(() => {
-    const handleKeyDown = (e) => {
+    function handleKeyDown(e) {
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
       if (e.key === 'n' || e.key === 'N') {
-        setIsNavVisible(prev => !prev);
+        handleToggleOpen(!isOpen);
       }
-    };
+    }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isOpen]);
 
-  const activeFeature = getFeatureByStep(currentStep) || FEATURES[0];
-  const currentCategory = currentView === 'module' ? activeFeature?.category : null;
+  // Determine active item based on currentView and currentStep
+  const isHome = currentView === 'home';
+  const isPixels = currentView === 'module' && currentStep >= 1 && currentStep <= 6;
+  const isTransforms = currentView === 'module' && currentStep === 7;
+  const isVisualLabs = currentView === 'module' && currentStep >= 8 && currentStep <= 16;
+  const isOptics = currentView === 'module' && currentStep === 17;
+  const isAdvanced = currentView === 'module' && currentStep === 18;
 
-  const handleCategoryClick = (catId) => {
-    if (expandedCategory === catId) {
-      setExpandedCategory(null);
+  const activeFeature = getFeatureByStep(currentStep);
+
+  // Items for Pixels (B01 - B06)
+  const pixelModules = FEATURES.filter((f) => f.stepNumber >= 1 && f.stepNumber <= 6);
+  // Items for Visual Labs (B08 - B16)
+  const visualLabModules = FEATURES.filter((f) => f.stepNumber >= 8 && f.stepNumber <= 16);
+
+  const handleNavClick = (key, defaultStep, hasSubmenu) => {
+    if (key === 'home') {
+      setOpenSubmenu(null);
+      onSelectView('home');
+      return;
+    }
+
+    if (hasSubmenu) {
+      if (openSubmenu === key) {
+        setOpenSubmenu(null);
+      } else {
+        setOpenSubmenu(key);
+      }
     } else {
-      setExpandedCategory(catId);
+      setOpenSubmenu(null);
     }
-  };
 
-  const getSubFeatures = (catId) => {
-    return FEATURES.filter(f => f.category === catId);
-  };
-
-  const handlePrevStep = (e) => {
-    e.stopPropagation();
-    if (onSelectStep && currentStep > 1) {
-      onSelectStep(currentStep - 1);
-      onSelectView('module');
-      setExpandedCategory(null);
-    }
-  };
-
-  const handleNextStep = (e) => {
-    e.stopPropagation();
-    if (onSelectStep && currentStep < FEATURES.length) {
-      onSelectStep(currentStep + 1);
-      onSelectView('module');
-      setExpandedCategory(null);
+    if (defaultStep) {
+      onSelectStep(defaultStep);
     }
   };
 
   return (
-    <>
-      {/* ========================================================================= */}
-      {/* 1. MORPHING CIRCULAR / FULL-BAR BOTTOM NAVIGATION DOCK                    */}
-      {/* ========================================================================= */}
-      <div className="floating-dock-container" ref={dockRef} aria-label="Bottom Navigation">
-        <AnimatePresence mode="wait">
-          {!isNavVisible ? (
-            /* COLLAPSED STATE: Contracted Circle Sliding to Left Side of Screen */
-            <motion.button
-              key="dock-collapsed-circle"
-              type="button"
-              className="dock-morph-circle-btn dock-circle-left glass-level-3"
-              onClick={() => setIsNavVisible(true)}
-              initial={{ scale: 0.4, opacity: 0, x: 0 }}
-              animate={{ 
-                scale: 1, 
-                opacity: 1, 
-                x: 'calc(-50vw + 3.25rem)',
-                transition: {
-                  type: 'spring',
-                  stiffness: 380,
-                  damping: 26,
-                  mass: 0.9
-                }
-              }}
-              exit={{ 
-                scale: 0.6, 
-                opacity: 0, 
-                x: 0,
-                transition: { duration: 0.2 }
-              }}
-              whileHover={{ scale: 1.15, y: -2 }}
-              whileTap={{ scale: 0.92 }}
-              title="Open Navigation Bar (or Scroll Down / Press N)"
-              aria-label="Open Navigation Bar"
-            >
-              <div className="dock-circle-inner-glow" />
-              <PanelBottomOpen size={18} className="text-cyan-400 z-10" />
-              <span className="dock-circle-ripple" />
-            </motion.button>
-          ) : (
-            /* EXPANDED STATE: Full Slender Glass Capsule Centered on Screen */
-            <motion.div
-              key="dock-expanded-bar"
-              className="dock-wrapper-relative"
-              initial={{ scale: 0.4, opacity: 0, x: 'calc(-50vw + 3.25rem)' }}
-              animate={{ 
-                scale: 1, 
-                opacity: 1, 
-                x: 0,
-                transition: {
-                  type: 'spring',
-                  stiffness: 400,
-                  damping: 30
-                }
-              }}
-              exit={{ 
-                scale: 0.4, 
-                opacity: 0, 
-                transition: { duration: 0.18 }
-              }}
-            >
-              {/* Upward Expanding Secondary Glass Panel (Popovers strictly in one line) */}
-              <AnimatePresence>
-                {expandedCategory && (
-                  <motion.div
-                    className="dock-subnav-panel glass-level-3"
-                    initial={{ opacity: 0, y: 12, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 12, scale: 0.96 }}
-                    transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-                  >
-                    <div className="dock-subnav-header" style={{ paddingBottom: '0.4rem', marginBottom: '0.5rem' }}>
-                      <span className="dock-subnav-title whitespace-nowrap text-xs font-bold text-white">
-                        {CATEGORIES.find(c => c.id === expandedCategory)?.label}
-                      </span>
-                      <span className="dock-subnav-hint whitespace-nowrap text-[11px] text-zinc-400 font-mono">
-                        {getSubFeatures(expandedCategory).length} Modules
-                      </span>
-                    </div>
-
-                    <div className="dock-subnav-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.4rem' }}>
-                      {getSubFeatures(expandedCategory).map((feat) => {
-                        const isSelected = currentView === 'module' && currentStep === feat.stepNumber;
-                        const Icon = feat.icon;
-                        return (
-                          <motion.button
-                            key={feat.id}
-                            className={`dock-subnav-item ${isSelected ? 'active' : ''}`}
-                            onClick={() => {
-                              onSelectStep(feat.stepNumber);
-                              onSelectView('module');
-                              setExpandedCategory(null);
-                            }}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            style={{ padding: '0.4rem 0.6rem', minHeight: 'auto' }}
-                          >
-                            <div className="dock-subnav-icon-wrap" style={{ width: '22px', height: '22px' }}>
-                              <Icon size={12} />
-                            </div>
-                            <div className="dock-subnav-text min-w-0" style={{ overflow: 'hidden' }}>
-                              {/* Strictly ONE line heading */}
-                              <span className="dock-subnav-name whitespace-nowrap truncate block text-xs font-medium">
-                                {feat.stepNumber < 10 ? `0${feat.stepNumber}` : feat.stepNumber} · {feat.shortTitle}
-                              </span>
-                            </div>
-                            {isSelected && <Check size={13} className="dock-subnav-check text-cyan-400 shrink-0" />}
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Main Sleek Thin Glass Bar (Capsule, Height ~40px, All in 1 Line) */}
-              <nav className="dock-glass-bar glass-level-2 thin-bottom-nav">
-                {/* Close to circle button */}
-                <motion.button
-                  type="button"
-                  className="dock-item thin-item dock-close-minimize-btn"
-                  onClick={() => {
-                    setIsNavVisible(false);
-                    setExpandedCategory(null);
-                  }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  title="Collapse navbar into circle (Press N or scroll up)"
+    <div
+      className={`floating-dock-container ${isOpen ? 'dock-open' : 'dock-collapsed'}`}
+      ref={dockRef}
+      role="navigation"
+      aria-label="Quick Dock Navigation"
+    >
+      <AnimatePresence mode="wait">
+        {!isOpen ? (
+          /* COLLAPSED STATE: Pop-up button anchored at bottom-left */
+          <motion.button
+            key="dock-popup-trigger-btn"
+            type="button"
+            className="dock-toggle-popup-btn"
+            onClick={() => handleToggleOpen(true)}
+            initial={{ x: -24, opacity: 0, scale: 0.95 }}
+            animate={{ x: 0, opacity: 1, scale: 1 }}
+            exit={{ x: -24, opacity: 0, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            title="Slide open navigation bar (Press N)"
+            aria-label="Open Navigation Bar"
+          >
+            <PanelLeftOpen size={16} className="dock-icon" />
+            <span className="dock-popup-text">Nav</span>
+            <span className="dock-popup-badge">
+              {isHome ? 'Home' : (activeFeature ? activeFeature.code : '01')}
+            </span>
+          </motion.button>
+        ) : (
+          /* EXPANDED STATE: Full bar slid out from left side */
+          <motion.div
+            key="dock-expanded-bar-wrapper"
+            className="dock-wrapper-relative"
+            initial={{ x: -40, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -40, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+          >
+            {/* Submenu Popover for Multi-Module Categories */}
+            <AnimatePresence>
+              {openSubmenu && (
+                <motion.div
+                  className="dock-subnav-panel"
+                  initial={{ opacity: 0, y: 10, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
                 >
-                  <PanelBottomClose size={14} className="text-zinc-400 hover:text-cyan-400 transition-colors" />
-                </motion.button>
+                  <div className="dock-subnav-header">
+                    <span className="dock-subnav-title">
+                      {openSubmenu === 'pixels' ? 'Pixels & RGB Modules' : 'Visual Labs Modules'}
+                    </span>
+                    <span className="dock-subnav-hint">
+                      {openSubmenu === 'pixels' ? 'Steps 01 – 06' : 'Steps 08 – 16'}
+                    </span>
+                  </div>
 
-                <div className="dock-separator" />
-
-                {/* Home Button */}
-                <motion.button
-                  type="button"
-                  className={`dock-item thin-item ${currentView === 'home' ? 'active' : ''}`}
-                  onClick={() => {
-                    onSelectView('home');
-                    setExpandedCategory(null);
-                  }}
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  title="Home Overview"
-                >
-                  {currentView === 'home' && (
-                    <motion.div
-                      layoutId="activeDockIndicator"
-                      className="dock-active-glow"
-                      transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                    />
-                  )}
-                  <Home size={13} className="dock-icon text-cyan-400" />
-                  <span className="dock-label whitespace-nowrap">Home</span>
-                </motion.button>
-
-                <div className="dock-separator" />
-          <motion.button
-            type="button"
-            className={`dock-item thin-item ${currentCategory === 'pixel-matrix' ? 'active' : ''} ${expandedCategory === 'pixel-matrix' ? 'open' : ''}`}
-            onClick={() => handleCategoryClick('pixel-matrix')}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            title="Pixels & Foundations (Steps 01-06)"
-          >
-            {currentCategory === 'pixel-matrix' && (
-              <motion.div
-                layoutId="activeDockIndicator"
-                className="dock-active-glow"
-                transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-              />
-            )}
-            <Grid size={13} className="dock-icon text-cyan-400" />
-            <span className="dock-label whitespace-nowrap">Pixels</span>
-            <ChevronUp size={10} className={`dock-arrow ${expandedCategory === 'pixel-matrix' ? 'rotated' : ''}`} />
-          </motion.button>
-
-          {/* Transforms (Step 07) */}
-          <motion.button
-            type="button"
-            className={`dock-item thin-item ${currentCategory === 'transformations' ? 'active' : ''}`}
-            onClick={() => {
-              onSelectStep(7);
-              onSelectView('module');
-              setExpandedCategory(null);
-            }}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            title="2D Transforms (Step 07)"
-          >
-            {currentCategory === 'transformations' && (
-              <motion.div
-                layoutId="activeDockIndicator"
-                className="dock-active-glow"
-                transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-              />
-            )}
-            <Compass size={13} className="dock-icon text-purple-400" />
-            <span className="dock-label whitespace-nowrap">Transforms</span>
-          </motion.button>
-
-          {/* Visual Labs (Steps 08-16) */}
-          <motion.button
-            type="button"
-            className={`dock-item thin-item ${currentCategory === 'visual-labs' ? 'active' : ''} ${expandedCategory === 'visual-labs' ? 'open' : ''}`}
-            onClick={() => handleCategoryClick('visual-labs')}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            title="Visual Labs (Steps 08-16)"
-          >
-            {currentCategory === 'visual-labs' && (
-              <motion.div
-                layoutId="activeDockIndicator"
-                className="dock-active-glow"
-                transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-              />
-            )}
-            <Blend size={13} className="dock-icon text-teal-400" />
-            <span className="dock-label whitespace-nowrap">Visual Labs</span>
-            <ChevronUp size={10} className={`dock-arrow ${expandedCategory === 'visual-labs' ? 'rotated' : ''}`} />
-          </motion.button>
-
-          {/* Ray Optics (Step 17) */}
-          <motion.button
-            type="button"
-            className={`dock-item thin-item ${currentCategory === 'ray-optics' ? 'active' : ''}`}
-            onClick={() => {
-              onSelectStep(17);
-              onSelectView('module');
-              setExpandedCategory(null);
-            }}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            title="Ray Optics (Step 17)"
-          >
-            {currentCategory === 'ray-optics' && (
-              <motion.div
-                layoutId="activeDockIndicator"
-                className="dock-active-glow"
-                transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-              />
-            )}
-            <Zap size={13} className="dock-icon text-amber-400" />
-            <span className="dock-label whitespace-nowrap">Optics</span>
-          </motion.button>
-
-          {/* Advanced: Eigenvalues (Step 18) */}
-          <motion.button
-            type="button"
-            className={`dock-item thin-item ${currentCategory === 'eigen-spaces' ? 'active' : ''}`}
-            onClick={() => {
-              onSelectStep(18);
-              onSelectView('module');
-              setExpandedCategory(null);
-            }}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            title="Advanced: Eigenvalues & Eigenvectors (Step 18)"
-          >
-            {currentCategory === 'eigen-spaces' && (
-              <motion.div
-                layoutId="activeDockIndicator"
-                className="dock-active-glow"
-                transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-              />
-            )}
-            <Variable size={13} className="dock-icon text-pink-400" />
-            <span className="dock-label whitespace-nowrap">Advanced</span>
-          </motion.button>
-
-
-
-          <div className="dock-separator" />
-
-          {/* Theme Toggle Button */}
-          {onToggleTheme && (
-            <motion.button
-              type="button"
-              className="dock-item thin-item"
-              onClick={onToggleTheme}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-              title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {theme === 'dark' ? (
-                <Sun size={13} className="text-amber-300" />
-              ) : (
-                <Moon size={13} className="text-indigo-400" />
+                  <div className="dock-subnav-grid">
+                    {(openSubmenu === 'pixels' ? pixelModules : visualLabModules).map((feat) => {
+                      const isSelected = currentView === 'module' && currentStep === feat.stepNumber;
+                      const Icon = feat.icon;
+                      return (
+                        <button
+                          key={feat.id}
+                          type="button"
+                          className={`dock-subnav-item ${isSelected ? 'active' : ''}`}
+                          onClick={() => {
+                            onSelectStep(feat.stepNumber);
+                            setOpenSubmenu(null);
+                          }}
+                        >
+                          <div className="dock-subnav-icon-wrap">
+                            <Icon size={13} />
+                          </div>
+                          <div className="dock-subnav-text">
+                            <span className="dock-subnav-code">{feat.code}</span>
+                            <span className="dock-subnav-name">{feat.title}</span>
+                          </div>
+                          {isSelected && <Check size={13} className="dock-subnav-check" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
               )}
-            </motion.button>
-          )}
-        </nav>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </>
+            </AnimatePresence>
+
+            {/* Main Dock Glass Bar */}
+            <nav className="dock-glass-bar">
+              {/* Slide to left / Collapse button */}
+              <button
+                type="button"
+                className="dock-collapse-btn"
+                onClick={() => handleToggleOpen(false)}
+                title="Slide dock to left button (Press N)"
+                aria-label="Slide dock to left"
+              >
+                <PanelLeftClose size={15} />
+              </button>
+
+              <div className="dock-separator" />
+
+              {/* 1. Home */}
+              <button
+                type="button"
+                className={`dock-item ${isHome ? 'active' : ''}`}
+                onClick={() => handleNavClick('home', null, false)}
+                title="Return to Overview"
+                aria-label="Home Overview"
+              >
+                {isHome && <span className="dock-active-indicator" />}
+                <Home size={15} className="dock-icon" />
+                <span className="dock-label">Home</span>
+              </button>
+
+              <div className="dock-separator" />
+
+              {/* 2. Pixels (B01 - B06) */}
+              <button
+                type="button"
+                className={`dock-item ${isPixels ? 'active' : ''} ${openSubmenu === 'pixels' ? 'open' : ''}`}
+                onClick={() => handleNavClick('pixels', isPixels ? null : 1, true)}
+                title="Pixels & Foundations (B01 - B06)"
+                aria-label="Pixels and Matrix modules"
+              >
+                {isPixels && <span className="dock-active-indicator" />}
+                <Grid size={15} className="dock-icon" />
+                <span className="dock-label">Pixels</span>
+                <ChevronUp
+                  size={11}
+                  className={`dock-chevron ${openSubmenu === 'pixels' ? 'rotated' : ''}`}
+                />
+              </button>
+
+              {/* 3. Transforms (B07) */}
+              <button
+                type="button"
+                className={`dock-item ${isTransforms ? 'active' : ''}`}
+                onClick={() => handleNavClick('transforms', 7, false)}
+                title="2D Coordinate Geometric Transformations (B07)"
+                aria-label="2D Transformations module"
+              >
+                {isTransforms && <span className="dock-active-indicator" />}
+                <Compass size={15} className="dock-icon" />
+                <span className="dock-label">Transforms</span>
+              </button>
+
+              {/* 4. Visual Labs (B08 - B16) */}
+              <button
+                type="button"
+                className={`dock-item ${isVisualLabs ? 'active' : ''} ${openSubmenu === 'visual-labs' ? 'open' : ''}`}
+                onClick={() => handleNavClick('visual-labs', isVisualLabs ? null : 8, true)}
+                title="Visual Labs (B08 - B16)"
+                aria-label="Visual Labs modules"
+              >
+                {isVisualLabs && <span className="dock-active-indicator" />}
+                <Blend size={15} className="dock-icon" />
+                <span className="dock-label">Visual Labs</span>
+                <ChevronUp
+                  size={11}
+                  className={`dock-chevron ${openSubmenu === 'visual-labs' ? 'rotated' : ''}`}
+                />
+              </button>
+
+              {/* 5. Optics (B17) */}
+              <button
+                type="button"
+                className={`dock-item ${isOptics ? 'active' : ''}`}
+                onClick={() => handleNavClick('optics', 17, false)}
+                title="Exploring Ray Optics Through Matrices (B17)"
+                aria-label="Ray Optics module"
+              >
+                {isOptics && <span className="dock-active-indicator" />}
+                <Zap size={15} className="dock-icon" />
+                <span className="dock-label">Optics</span>
+              </button>
+
+              {/* 6. Advanced (B18) */}
+              <button
+                type="button"
+                className={`dock-item ${isAdvanced ? 'active' : ''}`}
+                onClick={() => handleNavClick('advanced', 18, false)}
+                title="Eigenvalues & Eigenvectors (B18)"
+                aria-label="Advanced Eigenvalues module"
+              >
+                {isAdvanced && <span className="dock-active-indicator" />}
+                <Variable size={15} className="dock-icon" />
+                <span className="dock-label">Advanced</span>
+              </button>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

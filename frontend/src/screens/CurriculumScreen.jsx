@@ -1,17 +1,16 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, CheckCircle2, ArrowRight, Sparkles, Layers, Compass, Blend } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { CATEGORIES, FEATURES } from '../config/features';
 
 export default function CurriculumScreen({ onSelectStep }) {
   return (
     <div className="curriculum-page-container">
-      {/* Header */}
+      {/* Header with clear, simple, inviting title and subtitle */}
       <div className="curriculum-masthead">
-        <span className="curriculum-badge">Interactive Curriculum</span>
-        <h1 className="curriculum-title">Curriculum &amp; Pedagogical Journey</h1>
+        <h1 className="curriculum-title">Learning Path</h1>
         <p className="curriculum-subtitle">
-          From elementary discrete pixel arrays to multilinear algebra, singular geometry, and ray optics. Follow this {FEATURES.length}-step curriculum to master visual linear algebra.
+          A clear, step-by-step journey through visual linear algebra. Discover how numbers become pixels, colors, shapes, and optical reflections through {FEATURES.length} interactive experiments.
         </p>
       </div>
 
@@ -24,12 +23,12 @@ export default function CurriculumScreen({ onSelectStep }) {
           return (
             <div key={cat.id} className="curriculum-chapter-card glass-level-2">
               <div className="chapter-header-row">
-                <div className="chapter-num-box" style={{ borderColor: cat.color }}>
+                <div className="chapter-num-box">
                   <span>0{idx + 1}</span>
                 </div>
                 <div className="chapter-meta">
                   <div className="chapter-tag-row">
-                    <span className="chapter-cat-label" style={{ color: cat.color }}>{cat.label}</span>
+                    <span className="chapter-cat-label">{cat.label}</span>
                     <span className="chapter-count-label">{catFeatures.length} Modules</span>
                   </div>
                   <h2 className="chapter-headline">{cat.description}</h2>
@@ -43,25 +42,24 @@ export default function CurriculumScreen({ onSelectStep }) {
                     <motion.div
                       key={feat.id}
                       className="chapter-step-item glass-level-1"
-                      whileHover={{ y: -3, borderColor: 'rgba(34, 211, 238, 0.35)' }}
+                      whileHover={{ y: -3, borderColor: 'var(--border-hover)' }}
                       onClick={() => onSelectStep(feat.stepNumber)}
                     >
                       <div className="step-item-top">
                         <div className="step-icon-bubble">
                           <Icon size={16} />
                         </div>
-                        <span className="step-item-number">Step {feat.stepNumber}</span>
+                        <span className="step-item-number">Module {feat.code}</span>
                       </div>
 
                       <h3 className="step-item-title">{feat.title}</h3>
-                      <p className="step-item-summary">{feat.summary}</p>
 
                       <div className="step-item-formula-box">
                         <code>{feat.formula}</code>
                       </div>
 
                       <div className="step-item-footer">
-                        <span>Launch Lab</span>
+                        <span>Open Experiment</span>
                         <ArrowRight size={14} />
                       </div>
                     </motion.div>

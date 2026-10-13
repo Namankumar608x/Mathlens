@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import PixelCanvas from '../components/visualizers/PixelCanvas';
 import StepWrapper from '../components/layout/StepWrapper';
 import MathInspectorHUD from '../components/ui/MathInspectorHUD';
-import WipeSlider from '../components/ui/WipeSlider';
 import { combineRGBChannels, scaleMatrix, splitRGBChannels } from '../core/mathEngine';
 
 const SAMPLE_COLOR_GRID = [
@@ -15,7 +14,6 @@ const SAMPLE_COLOR_GRID = [
 export default function Step6RGBScalarMult({ onSelectStep }) {
   const [scalar, setScalar] = useState(1.0);
   const [hoveredCell, setHoveredCell] = useState(null);
-  const [viewMode, setViewMode] = useState('sideBySide');
 
   const { rMatrix, gMatrix, bMatrix } = splitRGBChannels(SAMPLE_COLOR_GRID);
   const scaledR = scaleMatrix(rMatrix, scalar);
@@ -29,7 +27,7 @@ export default function Step6RGBScalarMult({ onSelectStep }) {
       <div className="control-slider-block">
         <div className="control-slider-header">
           <span className="control-slider-label">Brightness Multiplier (k):</span>
-          <span className="control-slider-val text-amber-400 font-mono font-bold">
+          <span className="control-slider-val font-mono font-bold" style={{ color: 'var(--accent-primary)' }}>
             {scalar.toFixed(2)}×
           </span>
         </div>
@@ -44,29 +42,13 @@ export default function Step6RGBScalarMult({ onSelectStep }) {
           style={{ '--slider-pct': `${(scalar / 2.5) * 100}%` }}
         />
         <div className="control-slider-meta">
-          <span>Vector Operation: <strong className="text-amber-400">p' = {scalar.toFixed(2)} × [R, G, B]</strong> (clamped at 255)</span>
+          <span>Vector Operation: <strong style={{ color: 'var(--accent-primary)' }}>p' = {scalar.toFixed(2)} × [R, G, B]</strong> (clamped at 255)</span>
         </div>
       </div>
 
       <div className="control-presets-block">
         <div className="preset-label-row">
           <span className="control-bar-label">Multiplier Presets:</span>
-          <div className="view-mode-tabs">
-            <button
-              className={`view-mode-tab ${viewMode === 'sideBySide' ? 'active' : ''}`}
-              onClick={() => setViewMode('sideBySide')}
-              type="button"
-            >
-              Side-by-Side
-            </button>
-            <button
-              className={`view-mode-tab ${viewMode === 'wipe' ? 'active' : ''}`}
-              onClick={() => setViewMode('wipe')}
-              type="button"
-            >
-              Wipe Comparison
-            </button>
-          </div>
         </div>
 
         <div className="preset-pills-row">
@@ -94,10 +76,10 @@ export default function Step6RGBScalarMult({ onSelectStep }) {
     <StepWrapper
       stepNumber={6}
       title="Multi-Channel Scalar Operations"
-      subtitle="Applying scalar multiplication across all three color channels simultaneously scales brightness while preserving the chromatic hue ratio: R'=kR, G'=kG, B'=kB."
-      formula="R' = \min(255, kR), \quad G' = \min(255, kG), \quad B' = \min(255, kB)"
+      subtitle="Scale all three color channels by a factor k to adjust brightness while preserving hue."
+      formula="R' = clamp(k·R, 0, 255), G' = clamp(k·G, 0, 255), B' = clamp(k·B, 0, 255)"
       basicHint="Scaling all 3 channels by the same factor keeps the tint unchanged while brightening or dimming the scene."
-      advancedFormula="\vec{p}' = \text{clamp}(k \cdot \vec{p}, 0, 255), \quad \frac{R'}{G'} = \frac{R}{G} \text{ (below clipping threshold)}"
+      advancedFormula="p⃗' = clamp(k · p⃗, 0, 255),  R'/G' = R/G (below clipping)"
       controls={controls}
       onPrev={() => onSelectStep && onSelectStep(5)}
       onNext={() => onSelectStep && onSelectStep(7)}
@@ -105,45 +87,20 @@ export default function Step6RGBScalarMult({ onSelectStep }) {
       insightTitle="Hue Preservation in Linear Color Scaling"
       insightBody="As long as neither channel clips at 255, multiplying [R, G, B] by a scalar moves along a straight ray in 3D color space starting at the origin (0, 0, 0). The hue and chromaticity coordinates (r = R/(R+G+B)) remain strictly invariant."
     >
-      {viewMode === 'wipe' ? (
-        <div className="workspace-wipe-wrapper">
-          <WipeSlider
-            originalContent={
-              <PixelCanvas
-                colorGrid={SAMPLE_COLOR_GRID}
-                hoveredCell={hoveredCell}
-                onHoverCell={setHoveredCell}
-                title="Original Image (1.0×)"
-              />
-            }
-            modifiedContent={
-              <PixelCanvas
-                colorGrid={modifiedColorGrid}
-                hoveredCell={hoveredCell}
-                onHoverCell={setHoveredCell}
-                title={`Scaled Image (${scalar.toFixed(2)}×)`}
-              />
-            }
-            originalLabel="Original (1.0×)"
-            modifiedLabel={`Scaled (${scalar.toFixed(2)}×)`}
-          />
-        </div>
-      ) : (
-        <div className="workspace-duo-stage">
-          <PixelCanvas 
-            colorGrid={SAMPLE_COLOR_GRID} 
-            hoveredCell={hoveredCell}
-            onHoverCell={setHoveredCell}
-            title="Original Colour Image (1.00×)" 
-          />
-          <PixelCanvas 
-            colorGrid={modifiedColorGrid} 
-            hoveredCell={hoveredCell}
-            onHoverCell={setHoveredCell}
-            title={`Resulting Scaled Image (${scalar.toFixed(2)}×)`} 
-          />
-        </div>
-      )}
+      <div className="workspace-duo-stage">
+        <PixelCanvas 
+          colorGrid={SAMPLE_COLOR_GRID} 
+          hoveredCell={hoveredCell}
+          onHoverCell={setHoveredCell}
+          title="Original Colour Image (1.00×)" 
+        />
+        <PixelCanvas 
+          colorGrid={modifiedColorGrid} 
+          hoveredCell={hoveredCell}
+          onHoverCell={setHoveredCell}
+          title={`Resulting Scaled Image (${scalar.toFixed(2)}×)`} 
+        />
+      </div>
 
       {hoveredCell && origPixel && modPixel && (
         <MathInspectorHUD

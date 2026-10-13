@@ -6,7 +6,7 @@ export default function MatrixGrid({
   onHoverCell,
   editable = false,
   onChangeCell,
-  accentColor = 'var(--accent-cyan, #22D3EE)',
+  accentColor = 'var(--accent-primary, #829FC7)',
   title = "Matrix Representation A"
 }) {
   if (!matrix || !matrix.length) return null;
@@ -21,16 +21,31 @@ export default function MatrixGrid({
           <h3 className="matrix-title-text">{title}</h3>
           <span className="matrix-bracket-symbol">]</span>
         </div>
-        <span 
-          className="matrix-dims-badge"
-          style={{ 
-            borderColor: `${accentColor}40`, 
-            color: accentColor, 
-            background: `${accentColor}12` 
-          }}
-        >
-          {rows} × {cols}
-        </span>
+        <div className="matrix-header-badge-wrap">
+          {hoveredCell ? (
+            <span 
+              className="matrix-dims-badge matrix-active-badge"
+              style={{ 
+                borderColor: accentColor, 
+                color: accentColor, 
+                background: `${accentColor}18` 
+              }}
+            >
+              Cell [{hoveredCell.row}, {hoveredCell.col}] • {matrix[hoveredCell.row]?.[hoveredCell.col]}
+            </span>
+          ) : (
+            <span 
+              className="matrix-dims-badge"
+              style={{ 
+                borderColor: `${accentColor}40`, 
+                color: accentColor, 
+                background: `${accentColor}12` 
+              }}
+            >
+              {rows} × {cols}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="matrix-bracket-container">
@@ -52,6 +67,7 @@ export default function MatrixGrid({
                 <div
                   key={`${i}-${j}`}
                   className={`matrix-cell ${isHovered ? 'hovered' : ''} ${isSameRow ? 'same-row' : ''} ${isSameCol ? 'same-col' : ''} ${editable ? 'editable-cell' : ''}`}
+                  title={`Cell [${i}, ${j}] = ${val}`}
                   style={{
                     '--cell-accent': accentColor,
                     borderColor: isHovered ? accentColor : undefined
@@ -121,11 +137,6 @@ export default function MatrixGrid({
                       {val}
                     </span>
                   )}
-                  {isHovered && (
-                    <span className="matrix-cell-coord-indicator">
-                      [{i},{j}]
-                    </span>
-                  )}
                 </div>
               );
             })
@@ -135,7 +146,11 @@ export default function MatrixGrid({
       </div>
 
       <div className="matrix-footer-hint">
-        {editable ? (
+        {hoveredCell ? (
+          <span className="matrix-footer-active-info">
+            Selected Cell: <strong>[{hoveredCell.row}, {hoveredCell.col}]</strong> • Pixel intensity: <strong style={{ color: accentColor }}>{matrix[hoveredCell.row]?.[hoveredCell.col]}</strong>
+          </span>
+        ) : editable ? (
           <span>Click to edit • Use <kbd>▲</kbd> <kbd>▼</kbd> keys or steppers (0–255)</span>
         ) : (
           <span>Hover cell to highlight matching pixel on canvas</span>

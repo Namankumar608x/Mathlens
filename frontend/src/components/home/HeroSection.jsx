@@ -1,355 +1,368 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles,
   ArrowRight,
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
   Grid,
   Compass,
-  Maximize2,
   Blend,
-  Play,
-  Layers,
   Zap,
-  CheckCircle2,
-  Lock
+  Variable,
+  Layers,
+  Sparkles,
+  BookOpen
 } from 'lucide-react';
 import { FEATURES, CATEGORIES } from '../../config/features';
 
-export default function HeroSection({ onStartExploring, onSelectStep, onSelectView, onOpenCommandPalette }) {
-  // Interactive mini 3x3 matrix in the hero visualizer
-  const [heroMatrix, setHeroMatrix] = useState([
-    [220, 45, 180],
-    [90, 255, 120],
-    [15, 175, 240]
-  ]);
-  const [selectedCell, setSelectedCell] = useState({ r: 1, c: 1 });
-  const [angle, setAngle] = useState(0);
+export default function HeroSection({
+  onStartExploring,
+  onSelectStep,
+  onSelectView,
+  onOpenCommandPalette
+}) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
-  // Subtle continuous rotation of the 3D coordinate frame
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setAngle(prev => (prev + 0.5) % 360);
-    }, 50);
-    return () => clearInterval(timer);
+  const scrollContainerRef = useRef(null);
+  const categoryRefs = useRef({});
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
   }, []);
 
-  const handleCellClick = (r, c) => {
-    setSelectedCell({ r, c });
-    // Cycle value
-    setHeroMatrix(prev => {
-      const copy = prev.map(row => [...row]);
-      copy[r][c] = (copy[r][c] + 65) % 256;
-      return copy;
-    });
+  const handleScrollBy = (offset) => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    }
   };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [checkScroll]);
+
+  // Automatically reveal the selected category chip
+  useEffect(() => {
+    const el = categoryRefs.current[selectedCategory];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+    // Check scroll after layout adjusts
+    const timer = setTimeout(checkScroll, 100);
+    return () => clearTimeout(timer);
+  }, [selectedCategory, checkScroll]);
+
+  // Filter features based on search query and active category chip
+  const filteredFeatures = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return FEATURES.filter((feat) => {
+      // Category filter
+      if (selectedCategory !== 'all' && feat.category !== selectedCategory) {
+        return false;
+      }
+
+      // Query filter
+      if (!query) return true;
+
+      const titleMatch = feat.title.toLowerCase().includes(query);
+      const summaryMatch = feat.summary.toLowerCase().includes(query);
+      const codeMatch = feat.code.toLowerCase().includes(query);
+      const formulaMatch = feat.formula.toLowerCase().includes(query);
+      const categoryMatch = feat.categoryLabel?.toLowerCase().includes(query);
+      const keywordMatch = feat.keywords?.some((k) => k.toLowerCase().includes(query));
+
+      return titleMatch || summaryMatch || codeMatch || formulaMatch || categoryMatch || keywordMatch;
+    });
+  }, [searchQuery, selectedCategory]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (filteredFeatures.length > 0) {
+      onSelectStep(filteredFeatures[0].stepNumber);
+    } else {
+      onSelectStep(1);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSelectedCategory('all');
+  };
+
+  const categoryChips = [
+    { id: 'all', label: 'All', count: FEATURES.length },
+    { id: 'pixel-matrix', label: 'Pixels', count: 6 },
+    { id: 'transformations', label: 'Transforms', count: 1 },
+    { id: 'visual-labs', label: 'Visual Labs', count: 9 },
+    { id: 'ray-optics', label: 'Optics', count: 1 },
+    { id: 'eigen-spaces', label: 'Advanced', count: 1 }
+  ];
 
   return (
     <div className="hero-page-wrapper">
-      {/* 1. Main Hero Presentation */}
+      {/* 1. Masthead Section (Editorial, spacious, high contrast) */}
       <section className="hero-masthead-section">
-        <div className="hero-content-grid">
-          {/* Left: Copy & Value Proposition */}
-          <motion.div 
-            className="hero-copy-column"
-            initial={{ opacity: 0, y: 25 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          >
-            {/* Pill Tag */}
-            <div className="hero-status-pill">
-              <span className="hero-pulse-dot" />
-              <span className="hero-pill-text">Interactive Linear Algebra & Vision Lab</span>
-              <Sparkles size={13} className="text-cyan-400" />
-            </div>
+        <motion.div
+          className="hero-masthead-inner"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {/* Eyebrow Label */}
+          <div className="hero-eyebrow">
+            <span>INTERACTIVE MATHEMATICS &amp; LINEAR ALGEBRA LAB</span>
+          </div>
 
-            {/* Headline */}
-            <h1 className="hero-headline">
-              See Mathematics <br />
-              <span className="hero-gradient-text">Differently.</span>
-            </h1>
+          {/* Large Bold Editorial Headline */}
+          <h1 className="hero-headline">
+            See the <span className="hero-headline-accent">mathematics</span> you can actually understand.
+          </h1>
 
-            {/* Subheading */}
-            <p className="hero-subheading">
-              Don’t just calculate mathematics. <em>See it. Manipulate it. Understand it.</em> Bridge the gap between abstract matrix equations and tangible digital pixels through {FEATURES.length} real-time interactive laboratory experiments.
-            </p>
+          {/* Subheading */}
+          <p className="hero-subheading">
+            Bridge the gap between abstract matrix equations and tangible digital pixels through 18 real-time visual laboratories. Discover intensity tensors, 2D coordinate mappings, and eigenspaces.
+          </p>
 
-            {/* CTAs */}
-            <div className="hero-cta-row">
-              <motion.button
-                className="hero-primary-btn"
-                onClick={() => onSelectStep(1)}
-                whileHover={{ scale: 1.03, y: -2 }}
-                whileTap={{ scale: 0.97 }}
+          {/* Single Primary Search & Filter Bar */}
+          <div className="hero-search-capsule-wrapper">
+            <form className="hero-search-capsule" onSubmit={handleSearchSubmit}>
+              <div className="search-capsule-left">
+                <Search size={18} className="search-capsule-icon" aria-hidden="true" />
+                <input
+                  id="hero-search-input"
+                  type="text"
+                  className="search-capsule-input"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search experiments, operations, or concepts"
+                  aria-label="Search experiments, operations, or concepts"
+                  autoComplete="off"
+                  spellCheck="false"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    className="search-clear-btn"
+                    onClick={handleClearSearch}
+                    title="Clear search query"
+                    aria-label="Clear search"
+                  >
+                    <X size={15} />
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="search-capsule-action-btn"
+                title={
+                  filteredFeatures.length > 0
+                    ? `Open ${filteredFeatures[0].title}`
+                    : 'Explore First Module'
+                }
               >
-                <span>Start Exploring</span>
-                <ArrowRight size={17} />
-              </motion.button>
+                <span>Explore Lab</span>
+                <ArrowRight size={14} />
+              </button>
+            </form>
 
-              <motion.button
-                className="hero-secondary-btn glass-level-2"
-                onClick={onOpenCommandPalette}
-                whileHover={{ scale: 1.03, y: -2 }}
-                whileTap={{ scale: 0.97 }}
+            {/* Responsive Modules Category Slider with Smooth Scrolling & Arrow Controls */}
+            <div className="hero-category-slider-wrapper">
+              <button
+                type="button"
+                className={`category-slider-arrow left ${canScrollLeft ? 'active' : 'disabled'}`}
+                onClick={() => handleScrollBy(-200)}
+                aria-label="Scroll categories left"
+                title="Previous categories"
+                disabled={!canScrollLeft}
               >
-                <span>Search Modules (⌘K)</span>
-              </motion.button>
+                <ChevronLeft size={16} />
+              </button>
+
+              <div
+                ref={scrollContainerRef}
+                className="hero-category-slider-track"
+                role="tablist"
+                aria-label="Experiment Category Filters"
+                onScroll={checkScroll}
+              >
+                {categoryChips.map((chip) => {
+                  const isActive = selectedCategory === chip.id;
+                  return (
+                    <button
+                      key={chip.id}
+                      ref={(el) => (categoryRefs.current[chip.id] = el)}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      className={`hero-tag-pill ${isActive ? 'active' : ''}`}
+                      onClick={() => setSelectedCategory(chip.id)}
+                    >
+                      <span>{chip.label}</span>
+                      <span className="hero-pill-badge">{chip.count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                className={`category-slider-arrow right ${canScrollRight ? 'active' : 'disabled'}`}
+                onClick={() => handleScrollBy(200)}
+                aria-label="Scroll categories right"
+                title="Next categories"
+                disabled={!canScrollRight}
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
-
-            {/* Trust / Stats strip */}
-            <div className="hero-stats-strip">
-              <div className="hero-stat-item">
-                <span className="stat-value">{FEATURES.length}</span>
-                <span className="stat-label">Interactive Labs</span>
-              </div>
-              <div className="stat-separator" />
-              <div className="hero-stat-item">
-                <span className="stat-value">60 FPS</span>
-                <span className="stat-label">Canvas Engine</span>
-              </div>
-              <div className="stat-separator" />
-              <div className="hero-stat-item">
-                <span className="stat-value">100%</span>
-                <span className="stat-label">Visual Math</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Right: Interactive 3D / Isometric Mathematical Visualization */}
-          <motion.div
-            className="hero-visual-column"
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="hero-visual-stage glass-level-3">
-              {/* Stage Header */}
-              <div className="visual-stage-header">
-                <div className="stage-dots">
-                  <span className="stage-dot red" />
-                  <span className="stage-dot yellow" />
-                  <span className="stage-dot green" />
-                </div>
-                <span className="stage-title">Interactive Tensor Viewport</span>
-                <span className="stage-badge">Live Math</span>
-              </div>
-
-              {/* Central Interactive Grid Visualizer */}
-              <div className="stage-interactive-core">
-                {/* 3x3 Matrix Grid */}
-                <div className="hero-matrix-box">
-                  <span className="matrix-label-top">Matrix A (3×3)</span>
-                  <div className="hero-matrix-bracket left">[</div>
-                  <div className="hero-matrix-grid">
-                    {heroMatrix.map((row, r) =>
-                      row.map((val, c) => {
-                        const isSelected = selectedCell.r === r && selectedCell.c === c;
-                        return (
-                          <div
-                            key={`${r}-${c}`}
-                            className={`hero-matrix-cell ${isSelected ? 'selected' : ''}`}
-                            onClick={() => handleCellClick(r, c)}
-                            title={`Cell (${r}, ${c}): ${val} - Click to cycle`}
-                          >
-                            <span className="hero-cell-val">{val}</span>
-                            <span className="hero-cell-coord">[{r},{c}]</span>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                  <div className="hero-matrix-bracket right">]</div>
-                </div>
-
-                {/* Animated Transformation Vector Arrow */}
-                <div className="hero-transform-connector">
-                  <div className="connector-pulse-line" />
-                  <span className="connector-operator">X' = AX</span>
-                </div>
-
-                {/* Resulting 3x3 Pixel Canvas */}
-                <div className="hero-canvas-box">
-                  <span className="matrix-label-top">Rendered Pixels</span>
-                  <div className="hero-pixel-grid">
-                    {heroMatrix.map((row, r) =>
-                      row.map((val, c) => {
-                        const isSelected = selectedCell.r === r && selectedCell.c === c;
-                        return (
-                          <div
-                            key={`px-${r}-${c}`}
-                            className={`hero-pixel-square ${isSelected ? 'pulse-border' : ''}`}
-                            style={{
-                              backgroundColor: `rgb(${val}, ${val}, ${val})`
-                            }}
-                            onClick={() => handleCellClick(r, c)}
-                          />
-                        );
-                      })
-                    )}
-                  </div>
-                  <span className="matrix-hint-bot">Click any cell to mutate pixel</span>
-                </div>
-              </div>
-
-              {/* Floating Formula Badge */}
-              <div className="stage-formula-pill">
-                <span className="formula-tag">Active State:</span>
-                <code className="formula-code">
-                  I({selectedCell.r}, {selectedCell.c}) = {heroMatrix[selectedCell.r][selectedCell.c]}
-                </code>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </section>
 
-      {/* 2. Structured Learning Pathways / Feature Showcase */}
+      {/* 2. Structured Learning Pathways (Clean, matte cards) */}
       <section className="hero-curriculum-overview">
         <div className="section-header-block">
           <span className="section-pre-tag">Core Curriculum</span>
-          <h2 className="section-headline">Four Foundations of Visual Linear Algebra</h2>
+          <h2 className="section-headline">Five Foundations of Visual Linear Algebra</h2>
           <p className="section-description">
-            Explore 14 progressive modules, carefully engineered to make mathematical intuition instant and memorable.
+            Explore 18 progressive laboratory modules engineered to make mathematical intuition instant and rigorous.
           </p>
         </div>
 
         <div className="hero-pathways-grid">
-          {/* Pathway 1 */}
-          <motion.div
-            className="pathway-card glass-level-2"
-            whileHover={{ y: -4, borderColor: 'rgba(34, 211, 238, 0.4)' }}
-            onClick={() => onSelectStep(1)}
-          >
-            <div className="pathway-icon-box cyan-glow">
-              <Grid size={22} className="text-cyan-400" />
-            </div>
-            <div className="pathway-step-count">Steps 01 — 06</div>
-            <h3 className="pathway-title">Pixel &amp; Matrix Foundations</h3>
-            <p className="pathway-desc">
-              Understand pixels as numerical intensity arrays. Edit cells, scale brightness with scalar $kA$, and decompose color images into 3D RGB tensors.
-            </p>
-            <div className="pathway-footer">
-              <span>{FEATURES.filter(f => f.category === 'pixel-matrix').length} Modules</span>
-              <ArrowRight size={14} className="pathway-arrow" />
-            </div>
-          </motion.div>
+          {CATEGORIES.map((cat, idx) => {
+            const catFeatures = FEATURES.filter((f) => f.category === cat.id);
+            const CatIcon = cat.icon;
+            const firstStep = catFeatures[0]?.stepNumber || 1;
 
-          {/* Pathway 2 */}
-          <motion.div
-            className="pathway-card glass-level-2"
-            whileHover={{ y: -4, borderColor: 'rgba(168, 85, 247, 0.4)' }}
-            onClick={() => onSelectStep(7)}
-          >
-            <div className="pathway-icon-box violet-glow">
-              <Compass size={22} className="text-violet-400" />
-            </div>
-            <div className="pathway-step-count">Step 07</div>
-            <h3 className="pathway-title">2D Coordinate Transformations</h3>
-            <p className="pathway-desc">
-              See what matrices do to physical space: rotate, shear, scale, and reflect shapes by mapping vector coordinates $X' = AX$.
-            </p>
-            <div className="pathway-footer">
-              <span>{FEATURES.filter(f => f.category === 'transformations').length} Module</span>
-              <ArrowRight size={14} className="pathway-arrow" />
-            </div>
-          </motion.div>
-
-          {/* Pathway 3: Visual Labs */}
-          <motion.div
-            className="pathway-card glass-level-2"
-            whileHover={{ y: -4, borderColor: 'rgba(59, 130, 246, 0.4)' }}
-            onClick={() => onSelectStep(8)}
-          >
-            <div className="pathway-icon-box blue-glow">
-              <Blend size={22} className="text-blue-400" />
-            </div>
-            <div className="pathway-step-count">Steps 08 — 16</div>
-            <h3 className="pathway-title">Visual Labs</h3>
-            <p className="pathway-desc">
-              Matrix blending, background subtraction, defect change detection, negative inversion, determinant area scaling, and reversible inverse transformations.
-            </p>
-            <div className="pathway-footer">
-              <span>{FEATURES.filter(f => f.category === 'visual-labs').length} Interactive Labs</span>
-              <ArrowRight size={14} className="pathway-arrow" />
-            </div>
-          </motion.div>
-
-          {/* Pathway 4: Ray Optics (Step 17) */}
-          <motion.div
-            className="pathway-card glass-level-2"
-            whileHover={{ y: -4, borderColor: 'rgba(245, 158, 11, 0.4)' }}
-            onClick={() => onSelectStep(17)}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="pathway-icon-box" style={{ background: 'rgba(245, 158, 11, 0.15)', borderColor: 'rgba(245, 158, 11, 0.35)' }}>
-              <Zap size={22} className="text-amber-400" />
-            </div>
-            <div className="pathway-step-count" style={{ color: '#f59e0b' }}>Step 17</div>
-            <h3 className="pathway-title">Ray Optics &amp; Matrices</h3>
-            <p className="pathway-desc">
-              Represent light rays as vectors. Explore plane mirror reflection matrices, angular rotation, and retroreflectors ($R_x R_y = -I$).
-            </p>
-            <div className="pathway-footer">
-              <span style={{ color: '#f59e0b' }}>{FEATURES.filter(f => f.category === 'ray-optics').length} Optics Lab</span>
-              <ArrowRight size={14} className="pathway-arrow text-amber-400" />
-            </div>
-          </motion.div>
-
-          {/* Pathway 5: Advanced Linear Algebra (Step 18) */}
-          <motion.div
-            className="pathway-card glass-level-2 roadmap-pathway-card"
-            whileHover={{ y: -4, borderColor: 'rgba(236, 72, 153, 0.4)' }}
-            onClick={() => onSelectStep(18)}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="pathway-icon-box" style={{ background: 'rgba(236, 72, 153, 0.15)', borderColor: 'rgba(236, 72, 153, 0.35)' }}>
-              <Sparkles size={22} className="text-pink-400" />
-            </div>
-            <div className="pathway-step-count" style={{ color: '#ec4899' }}>Step 18 Active</div>
-            <h3 className="pathway-title">Advanced Eigenspaces</h3>
-            <p className="pathway-desc">
-              Explore invariant directions, eigenvalues, flower photograph scaling [2 0; 0 1], and horizontal reflections.
-            </p>
-            <div className="pathway-footer">
-              <span style={{ color: '#ec4899' }}>{FEATURES.filter(f => f.category === 'eigen-spaces').length} Advanced Module</span>
-              <ArrowRight size={14} className="pathway-arrow text-pink-400" />
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 3. Quick Start Interactive Directory */}
-      <section className="hero-modules-directory">
-        <div className="section-header-block">
-          <span className="section-pre-tag">All Experiments</span>
-          <h2 className="section-headline">Jump Straight into Any Module</h2>
-        </div>
-
-        <div className="directory-cards-grid">
-          {FEATURES.map((feat) => {
-            const Icon = feat.icon;
             return (
-              <motion.button
-                key={feat.id}
-                className="directory-item-card glass-level-1"
-                onClick={() => onSelectStep(feat.stepNumber)}
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
+              <motion.div
+                key={cat.id}
+                className="pathway-card"
+                whileHover={{ y: -3 }}
+                onClick={() => onSelectStep(firstStep)}
+                tabIndex={0}
+                role="button"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectStep(firstStep);
+                  }
+                }}
               >
-                <div className="dir-item-top">
-                  <div className="dir-icon-box">
-                    <Icon size={16} />
+                <div className="pathway-card-top">
+                  <div className="pathway-icon-box">
+                    <CatIcon size={18} />
                   </div>
-                  <span className="dir-step-pill">0{feat.stepNumber}</span>
+                  <span className="pathway-step-count">Track 0{idx + 1}</span>
                 </div>
-                <h4 className="dir-item-title">{feat.shortTitle}</h4>
-                <p className="dir-item-desc">{feat.summary}</p>
-                <div className="dir-item-formula">
-                  <code>{feat.formula}</code>
+
+                <h3 className="pathway-title">{cat.label}</h3>
+                <p className="pathway-desc">{cat.description}</p>
+
+                <div className="pathway-footer">
+                  <span>{catFeatures.length} Modules</span>
+                  <ArrowRight size={14} className="pathway-arrow" />
                 </div>
-              </motion.button>
+              </motion.div>
             );
           })}
         </div>
+      </section>
+
+      {/* 3. Redesigned "All Experiments" Section */}
+      <section className="hero-modules-directory" id="all-experiments">
+        <div className="section-header-block">
+          <span className="section-pre-tag">ALL EXPERIMENTS</span>
+          <h2 className="section-headline">Explore Mathematics Through Interactive Experiments</h2>
+          <p className="section-description">
+            Discover how matrices, linear algebra, and image processing work through hands-on experiments. Open any module to explore the concepts, modify values, and see the results in real time.
+          </p>
+
+          {/* Feedback meta strip showing active filter and match count */}
+          <div className="experiments-meta-bar">
+            <span className="experiments-count-pill">
+              Showing {filteredFeatures.length} of {FEATURES.length} experiments
+            </span>
+            {(searchQuery || selectedCategory !== 'all') && (
+              <button
+                type="button"
+                className="experiments-reset-btn"
+                onClick={handleClearSearch}
+              >
+                Reset filters
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Experiments Grid or Empty State */}
+        {filteredFeatures.length > 0 ? (
+          <div className="directory-cards-grid">
+            {filteredFeatures.map((feat) => {
+              const Icon = feat.icon;
+              return (
+                <motion.button
+                  key={feat.id}
+                  className="directory-item-card"
+                  onClick={() => onSelectStep(feat.stepNumber)}
+                  whileHover={{ y: -3 }}
+                  whileTap={{ scale: 0.985 }}
+                  type="button"
+                  tabIndex={0}
+                  aria-label={`${feat.code}: ${feat.title}`}
+                >
+                  {/* 1. Top row: Icon + Code Pill */}
+                  <div className="dir-item-top">
+                    <div className="dir-icon-box">
+                      <Icon size={16} />
+                    </div>
+                    <span className="dir-step-pill">{feat.code}</span>
+                  </div>
+
+                  {/* 2. Topic Name */}
+                  <h3 className="dir-item-title">{feat.title}</h3>
+
+                  {/* 3. Mathematical Formula Preview */}
+                  <div className="dir-item-formula" title={`Formula: ${feat.formula}`}>
+                    <span className="formula-symbol">ƒ</span>
+                    <span className="formula-text">{feat.formula}</span>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="experiments-empty-state">
+            <div className="empty-state-icon">
+              <Search size={28} />
+            </div>
+            <h4 className="empty-state-title">No experiments matched your search</h4>
+            <p className="empty-state-desc">
+              No results found for &ldquo;<strong>{searchQuery}</strong>&rdquo;
+              {selectedCategory !== 'all' ? ` in category "${selectedCategory}"` : ''}.
+              Try searching by keyword, matrix operation, or clear filters.
+            </p>
+            <button
+              type="button"
+              className="empty-state-clear-btn"
+              onClick={handleClearSearch}
+            >
+              Clear filters and view all 18 experiments
+            </button>
+          </div>
+        )}
       </section>
     </div>
   );

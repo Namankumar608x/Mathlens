@@ -78,16 +78,13 @@ export default function Step4SingleRGBPixel({ onSelectStep }) {
     <StepWrapper
       stepNumber={4}
       title="Single RGB Pixel as a 3D Vector"
-      subtitle="A colour pixel is not represented by a single scalar. Instead, it lives in a 3-dimensional vector space spanned by Red, Green, and Blue basis vectors: p = [R, G, B]ᵀ, with each coordinate ranging from 0 to 255."
-      formula="\vec{p} = \begin{bmatrix} R \\ G \\ B \end{bmatrix} \in \mathbb{R}^3, \quad 0 \le R, G, B \le 255"
+      subtitle="Represent any color pixel as a 3D column vector [R, G, B]ᵀ in Euclidean color space."
+      formula="p⃗ = [R, G, B]ᵀ ∈ ℝ³,  0 ≤ R, G, B ≤ 255"
       basicHint="Red + Blue makes Purple [128, 0, 128]. Red + Green makes Yellow [255, 255, 0]. Additive color mixes into light!"
-      advancedFormula="\vec{p} = R \cdot \hat{e}_r + G \cdot \hat{e}_g + B \cdot \hat{e}_b, \quad \vec{p} \in [0, 255]^3"
+      advancedFormula="p⃗ = R·êᵣ + G·ê_g + B·ê_b,  p⃗ ∈ [0, 255]³"
       controls={controls}
       onPrev={() => onSelectStep && onSelectStep(3)}
       onNext={() => onSelectStep && onSelectStep(5)}
-      onReset={() => setPreset(128, 0, 128)}
-      insightTitle="The Additive RGB Color Space"
-      insightBody="Unlike subtractive pigments (paint), electronic screens emit additive light. When R = G = B = 0, the pixel emits zero energy (black). When R = G = B = 255, all three color guns saturate equally, producing pure white."
     >
       <div className="workspace-duo-stage">
         {/* Sliders Card */}
@@ -158,13 +155,14 @@ export default function Step4SingleRGBPixel({ onSelectStep }) {
           </div>
 
           <div className="swatch-center-stage">
-            <div
-              className="color-swatch-box"
-              style={{
-                backgroundColor: `rgb(${r}, ${g}, ${b})`,
-                boxShadow: `0 14px 40px rgba(0, 0, 0, 0.6), 0 0 45px rgba(${r}, ${g}, ${b}, 0.5)`
-              }}
-            />
+              <div
+                className="color-swatch-box"
+                style={{
+                  backgroundColor: `rgb(${r}, ${g}, ${b})`,
+                  border: '1px solid var(--border-color)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)'
+                }}
+              />
           </div>
 
           {/* Mathematical Column Vector Presentation */}

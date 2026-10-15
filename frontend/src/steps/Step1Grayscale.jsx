@@ -50,6 +50,7 @@ export default function Step1Grayscale({ onSelectStep }) {
           className={`preset-pill-btn ${activePreset === 'black' ? 'active' : ''}`}
           onClick={() => handleSelectPreset('black')}
           type="button"
+          title="All pixels set to minimum intensity (0)"
         >
           <Square size={14} />
           <span>Black (0)</span>
@@ -58,6 +59,7 @@ export default function Step1Grayscale({ onSelectStep }) {
           className={`preset-pill-btn ${activePreset === 'white' ? 'active' : ''}`}
           onClick={() => handleSelectPreset('white')}
           type="button"
+          title="All pixels set to maximum intensity (255)"
         >
           <CheckSquare size={14} />
           <span>White (255)</span>
@@ -66,6 +68,7 @@ export default function Step1Grayscale({ onSelectStep }) {
           className={`preset-pill-btn ${activePreset === 'checkerboard' ? 'active' : ''}`}
           onClick={() => handleSelectPreset('checkerboard')}
           type="button"
+          title="Alternating black and white pattern"
         >
           <Grid size={14} />
           <span>Checkerboard</span>
@@ -74,6 +77,7 @@ export default function Step1Grayscale({ onSelectStep }) {
           className={`preset-pill-btn ${activePreset === 'gradient' ? 'active' : ''}`}
           onClick={() => handleSelectPreset('gradient')}
           type="button"
+          title="Diagonal luminance ramp"
         >
           <TrendingUp size={14} />
           <span>Gradient</span>
@@ -90,7 +94,7 @@ export default function Step1Grayscale({ onSelectStep }) {
       title="From Pixels to Matrices"
       subtitle="Every digital image is stored as a 2D numerical matrix of pixel light intensities."
       formula="I(x, y) ∈ [0, 255] ⊂ ℤ"
-      basicHint="Think of an image like a grid of tiny light bulbs: 0 means completely OFF, and 255 means fully ON."
+      basicHint="Think of an image like a grid of tiny light bulbs: 0 means completely OFF, and 255 means fully ON. Hover over any pixel or cell to inspect its value."
       advancedFormula="I: Ω → {0, 1, …, 255},  where Ω = {0, …, H-1} × {0, …, W-1}"
       controls={controls}
       onPrev={() => onSelectStep && onSelectStep(1)}
@@ -101,12 +105,14 @@ export default function Step1Grayscale({ onSelectStep }) {
           matrix={matrix}
           hoveredCell={hoveredCell}
           onHoverCell={setHoveredCell}
+          pixelSize={70}
           title="Digital Canvas (4×4 Pixels)"
         />
         <MatrixGrid
           matrix={matrix}
           hoveredCell={hoveredCell}
           onHoverCell={setHoveredCell}
+          editable={false}
           title="Numerical Matrix A"
         />
       </div>

@@ -1,28 +1,16 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Grid,
   Sun,
-  Moon,
-  Sparkles,
-  ArrowRight,
   ArrowLeftRight,
-  RotateCcw,
-  Sliders,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
-  Layers,
-  Info,
-  Maximize2,
-  Eye,
-  Shuffle,
   Equal,
-  Divide,
-  X,
   Upload,
-  Camera,
-  Image as ImageIcon
+  CheckCircle2,
+  Sparkles,
+  Sliders,
+  HelpCircle,
+  ImageIcon
 } from 'lucide-react';
 import {
   createEmptyMatrix,
@@ -33,12 +21,13 @@ import {
   normalizeMatrixForDisplay
 } from '../core/mathEngine';
 import StepFooter from '../components/layout/StepFooter';
+import ModuleDocumentation from '../components/experiment/ModuleDocumentation';
 
 // Presets for 4x4 Matrices
 const MULTIPLICATION_PRESETS = {
   gradients: {
     name: 'Gradients (H vs V)',
-    desc: 'Horizontal gradient in A against vertical gradient in B',
+    desc: 'Horizontal gradient in A against vertical in B',
     matrixA: [
       [30, 80, 140, 200],
       [30, 80, 140, 200],
@@ -54,7 +43,7 @@ const MULTIPLICATION_PRESETS = {
   },
   crossAndFrame: {
     name: 'Cross & Frame',
-    desc: 'Center plus sign in A with outer border frame in B',
+    desc: 'Center plus sign in A with outer frame in B',
     matrixA: [
       [20, 220, 220, 20],
       [220, 220, 220, 220],
@@ -69,7 +58,7 @@ const MULTIPLICATION_PRESETS = {
     ]
   },
   checkerboard: {
-    name: 'Checkerboard & Stripes',
+    name: 'Checker & Stripes',
     desc: 'Alternating tiles in A and column stripes in B',
     matrixA: [
       [230, 25, 230, 25],
@@ -85,8 +74,8 @@ const MULTIPLICATION_PRESETS = {
     ]
   },
   identityB: {
-    name: 'Identity Matrix I (Commuting)',
-    desc: 'Special case: B is the Identity Matrix I. AI = IA = A!',
+    name: 'Identity Matrix I',
+    desc: 'Commuting test case: AI = IA = A',
     matrixA: [
       [45, 120, 190, 80],
       [200, 50, 110, 220],
@@ -101,8 +90,8 @@ const MULTIPLICATION_PRESETS = {
     ]
   },
   scalarMultiple: {
-    name: 'Scalar Diagonal 2·I (Commuting)',
-    desc: 'Special case: B is 2·I. Both AB and BA equal 2·A!',
+    name: 'Scalar Diagonal 2·I',
+    desc: 'Commuting test case: AB = BA = 2·A',
     matrixA: [
       [30, 60, 90, 120],
       [40, 80, 120, 160],
@@ -119,7 +108,7 @@ const MULTIPLICATION_PRESETS = {
 };
 
 // Canvas renderer for a 4x4 matrix
-function CanvasMatrix4x4({ matrix, size = 120, highlightRow = -1, highlightCol = -1, title = '' }) {
+function CanvasMatrix4x4({ matrix, size = 110, highlightRow = -1, highlightCol = -1, highlightCell = null, title = '' }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -132,83 +121,89 @@ function CanvasMatrix4x4({ matrix, size = 120, highlightRow = -1, highlightCol =
 
     ctx.clearRect(0, 0, size, size);
 
+    const isLight = typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light';
+
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const val = clampPixel(matrix[r][c]);
         ctx.fillStyle = `rgb(${val}, ${val}, ${val})`;
         ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
 
-        // Grid lines
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        // Grid borders
+        ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)';
         ctx.lineWidth = 1;
         ctx.strokeRect(c * cellSize, r * cellSize, cellSize, cellSize);
 
-        // Highlight
-        if (r === highlightRow && c === highlightCol) {
-          ctx.strokeStyle = '#22d3ee';
-          ctx.lineWidth = 3;
+        // Highlight active cell or row/col
+        const isTargetCell = highlightCell && highlightCell.row === r && highlightCell.col === c;
+        if (isTargetCell) {
+          ctx.strokeStyle = isLight ? '#424F34' : '#FFFFFF';
+          ctx.lineWidth = 2.5;
           ctx.strokeRect(c * cellSize + 1.5, r * cellSize + 1.5, cellSize - 3, cellSize - 3);
+          ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.35)' : 'rgba(255, 255, 255, 0.3)';
+          ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
         } else if (r === highlightRow) {
-          ctx.fillStyle = 'rgba(34, 211, 238, 0.25)';
+          ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.22)' : 'rgba(255, 255, 255, 0.2)';
           ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
         } else if (c === highlightCol) {
-          ctx.fillStyle = 'rgba(168, 85, 247, 0.25)';
+          ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.22)' : 'rgba(255, 255, 255, 0.2)';
           ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
         }
       }
     }
-  }, [matrix, size, highlightRow, highlightCol]);
+  }, [matrix, size, highlightRow, highlightCol, highlightCell]);
 
   return (
-    <div className="canvas-matrix-box flex flex-col items-center gap-1.5">
+    <div className="step15-canvas-wrap">
       <canvas
         ref={canvasRef}
         width={size}
         height={size}
-        className="rounded-xl border border-white/10 shadow-lg"
-        style={{ width: `${size}px`, height: `${size}px`, imageRendering: 'pixelated' }}
+        className="step15-canvas"
+        style={{ width: `${size}px`, height: `${size}px` }}
       />
-      {title && <span className="text-xs font-mono text-gray-400 font-semibold">{title}</span>}
+      {title && <span className="step15-canvas-label">{title}</span>}
     </div>
   );
 }
 
-// Procedural Flower Generator on HTML5 Canvas
+// Procedural Botanical Flower Generator on HTML5 Canvas (Natural aesthetic, zero neon)
 function drawFlowerOnCanvas(ctx, width, height) {
-  // Deep background
-  const bgGrad = ctx.createRadialGradient(width / 2, height / 2, 10, width / 2, height / 2, width);
-  bgGrad.addColorStop(0, '#1a3320');
-  bgGrad.addColorStop(1, '#08140c');
+  // Rich botanical background
+  const bgGrad = ctx.createRadialGradient(width / 2, height / 2, 10, width / 2, height / 2, width * 0.7);
+  bgGrad.addColorStop(0, '#1E281F');
+  bgGrad.addColorStop(1, '#0C130D');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, width, height);
 
-  // Stems and soft leaves
+  // Stems and leaves
   ctx.save();
-  ctx.lineWidth = 12;
-  ctx.strokeStyle = '#2d6a4f';
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = '#3E5C33';
+  ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.moveTo(width / 2, height);
-  ctx.quadraticCurveTo(width / 2 - 15, height * 0.7, width / 2, height * 0.55);
+  ctx.quadraticCurveTo(width / 2 - 12, height * 0.72, width / 2, height * 0.52);
   ctx.stroke();
 
   // Leaf left
-  ctx.fillStyle = '#40916c';
+  ctx.fillStyle = '#4D733E';
   ctx.beginPath();
-  ctx.ellipse(width * 0.35, height * 0.72, 28, 12, -Math.PI / 6, 0, Math.PI * 2);
+  ctx.ellipse(width * 0.34, height * 0.72, 28, 12, -Math.PI / 5, 0, Math.PI * 2);
   ctx.fill();
 
   // Leaf right
-  ctx.fillStyle = '#52b788';
+  ctx.fillStyle = '#5C854A';
   ctx.beginPath();
-  ctx.ellipse(width * 0.65, height * 0.78, 26, 11, Math.PI / 5, 0, Math.PI * 2);
+  ctx.ellipse(width * 0.66, height * 0.76, 26, 11, Math.PI / 4, 0, Math.PI * 2);
   ctx.fill();
 
-  // Flower petals (radiating daisy / rose pattern)
+  // Flower petals (warm golden botanical tones)
   const cx = width / 2;
-  const cy = height * 0.45;
-  const numPetals = 8;
+  const cy = height * 0.44;
+  const numPetals = 12;
   const petalLength = width * 0.28;
-  const petalWidth = width * 0.12;
+  const petalWidth = width * 0.09;
 
   for (let i = 0; i < numPetals; i++) {
     const angle = (i * 2 * Math.PI) / numPetals;
@@ -217,9 +212,9 @@ function drawFlowerOnCanvas(ctx, width, height) {
     ctx.rotate(angle);
 
     const grad = ctx.createLinearGradient(0, 0, 0, -petalLength);
-    grad.addColorStop(0, '#f72585');
-    grad.addColorStop(0.5, '#b5179e');
-    grad.addColorStop(1, '#7209b7');
+    grad.addColorStop(0, '#B37D22');
+    grad.addColorStop(0.5, '#E2B23E');
+    grad.addColorStop(1, '#F7D76B');
     ctx.fillStyle = grad;
 
     ctx.beginPath();
@@ -235,33 +230,34 @@ function drawFlowerOnCanvas(ctx, width, height) {
     ctx.translate(cx, cy);
     ctx.rotate(angle);
 
-    const grad = ctx.createLinearGradient(0, 0, 0, -petalLength * 0.7);
-    grad.addColorStop(0, '#ff70a6');
-    grad.addColorStop(1, '#f72585');
+    const grad = ctx.createLinearGradient(0, 0, 0, -petalLength * 0.75);
+    grad.addColorStop(0, '#946014');
+    grad.addColorStop(0.6, '#D69E2E');
+    grad.addColorStop(1, '#F9E282');
     ctx.fillStyle = grad;
 
     ctx.beginPath();
-    ctx.ellipse(0, -petalLength * 0.35, petalWidth * 0.4, petalLength * 0.35, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -petalLength * 0.38, petalWidth * 0.4, petalLength * 0.38, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
 
-  // Flower center glowing pistil
-  const centerGrad = ctx.createRadialGradient(cx, cy, 3, cx, cy, width * 0.1);
-  centerGrad.addColorStop(0, '#ffea00');
-  centerGrad.addColorStop(0.6, '#ffaa00');
-  centerGrad.addColorStop(1, '#ff6000');
+  // Textured seed center
+  const centerGrad = ctx.createRadialGradient(cx, cy, 2, cx, cy, width * 0.1);
+  centerGrad.addColorStop(0, '#5C3810');
+  centerGrad.addColorStop(0.7, '#3A2006');
+  centerGrad.addColorStop(1, '#241404');
   ctx.fillStyle = centerGrad;
   ctx.beginPath();
   ctx.arc(cx, cy, width * 0.09, 0, Math.PI * 2);
   ctx.fill();
 
-  // Fine textured dots in flower center
-  ctx.fillStyle = '#7a3b00';
-  for (let d = 0; d < 18; d++) {
-    const r = (d % 3 + 1) * 5;
-    const a = d * 1.3;
-    ctx.fillRect(cx + r * Math.cos(a), cy + r * Math.sin(a), 2, 2);
+  // Pollen specks
+  ctx.fillStyle = '#D69E2E';
+  for (let d = 0; d < 22; d++) {
+    const r = (d % 4 + 1) * 4.5;
+    const a = d * 1.37;
+    ctx.fillRect(cx + r * Math.cos(a), cy + r * Math.sin(a), 1.5, 1.5);
   }
 
   ctx.restore();
@@ -279,7 +275,7 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
   // Selected cell for interactive dot-product breakdown: { row, col }
   const [selectedCell, setSelectedCell] = useState({ row: 0, col: 0 });
 
-  // Normalization mode for matrix multiplication image display: 'minmax' | 'theoretical' | 'clamp'
+  // Normalization mode for matrix multiplication image display: 'minmax' | 'clamp'
   const [normMode, setNormMode] = useState('minmax');
 
   // Multiplication calculated products
@@ -371,15 +367,14 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
   };
 
   // --- SHADOW MODULE STATE ---
-  // Shadow position: 'right' | 'left' | 'top' | 'bottom' | 'vignette' | 'diagonal'
   const [shadowPosition, setShadowPosition] = useState('right');
-  const [shadowStrength, setShadowStrength] = useState(0.5); // 0.5 = half brightness (as in prompt S = 0.5)
+  const [shadowStrength, setShadowStrength] = useState(0.5);
   const [isShadowRemoved, setIsShadowRemoved] = useState(false);
 
   // 4x4 Shadow Matrix S
   const shadowMatrixS = useMemo(() => {
     const s = createEmptyMatrix(4, 4, 1.0);
-    const factor = shadowStrength; // e.g. 0.5
+    const factor = shadowStrength;
 
     for (let r = 0; r < 4; r++) {
       for (let c = 0; c < 4; c++) {
@@ -410,7 +405,7 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
   const flowerShadedRef = useRef(null);
   const [flowerShadowRemoved, setFlowerShadowRemoved] = useState(false);
   const [flowerShadowStrength, setFlowerShadowStrength] = useState(0.5);
-  const [flowerShadowRegion, setFlowerShadowRegion] = useState('right'); // 'right', 'left', 'diagonal', 'vignette'
+  const [flowerShadowRegion, setFlowerShadowRegion] = useState('right');
   const fileInputRef = useRef(null);
 
   // Render flower canvases
@@ -419,8 +414,8 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
     const canvasShaded = flowerShadedRef.current;
     if (!canvasOrig || !canvasShaded) return;
 
-    const w = 240;
-    const h = 240;
+    const w = 220;
+    const h = 220;
     canvasOrig.width = w;
     canvasOrig.height = h;
     canvasShaded.width = w;
@@ -429,12 +424,11 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
     const ctxOrig = canvasOrig.getContext('2d');
     drawFlowerOnCanvas(ctxOrig, w, h);
 
-    // Copy to shaded canvas and apply Hadamard shadow channel-by-channel
     const ctxShaded = canvasShaded.getContext('2d');
     const imgData = ctxOrig.getImageData(0, 0, w, h);
     const data = imgData.data;
 
-    const factor = flowerShadowStrength; // e.g. 0.5
+    const factor = flowerShadowStrength;
 
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
@@ -452,8 +446,6 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
         const currentFactor = inShadow ? factor : 1.0;
 
         if (flowerShadowRemoved) {
-          // If recovered: B ⊘ S recovers original (approximate rounding)
-          // Shaded then divided back
           const rShaded = Math.round(data[idx] * currentFactor);
           const gShaded = Math.round(data[idx + 1] * currentFactor);
           const bShaded = Math.round(data[idx + 2] * currentFactor);
@@ -462,7 +454,6 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
           data[idx + 1] = clampPixel(currentFactor > 0 ? gShaded / currentFactor : gShaded);
           data[idx + 2] = clampPixel(currentFactor > 0 ? bShaded / currentFactor : bShaded);
         } else {
-          // Shaded: R' = R ⊙ S, G' = G ⊙ S, B' = B ⊙ S
           data[idx] = clampPixel(data[idx] * currentFactor);
           data[idx + 1] = clampPixel(data[idx + 1] * currentFactor);
           data[idx + 2] = clampPixel(data[idx + 2] * currentFactor);
@@ -473,7 +464,6 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
     ctxShaded.putImageData(imgData, 0, 0);
   }, [flowerShadowStrength, flowerShadowRegion, flowerShadowRemoved]);
 
-  // Handle custom image upload for flower
   const handleUploadFlower = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -484,7 +474,7 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
         const canvasOrig = flowerOriginalRef.current;
         if (!canvasOrig) return;
         const ctx = canvasOrig.getContext('2d');
-        ctx.drawImage(img, 0, 0, 240, 240);
+        ctx.drawImage(img, 0, 0, 220, 220);
         setFlowerShadowRemoved(false);
       };
       img.src = event.target.result;
@@ -494,63 +484,45 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
 
   return (
     <motion.div
-      className="step-module visual-lens-mult-module"
+      className="step-module"
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
-      {/* STEP HEADER */}
-      <div className="step-header-box mb-6">
-        <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span
-              className="modal-badge-tag"
-              style={{
-                background: 'rgba(34, 211, 238, 0.15)',
-                color: 'var(--accent-cyan)',
-                borderColor: 'rgba(34, 211, 238, 0.35)'
-              }}
-            >
-              Visual Lab 15
-            </span>
-            <span className="text-xs font-mono font-bold text-cyan-400">
-              C = A · B &nbsp;•&nbsp; Non-Commutative Geometry &amp; Hadamard Shadows
-            </span>
-          </div>
+      {/* 1. CLEAN COMPACT HEADER */}
+      <div className="step-header-box">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.35rem' }}>
+          <h2 className="step-heading" style={{ margin: 0 }}>
+            Matrix Multiplication &amp; Optical Shadows
+          </h2>
+          <span className="badge-tag-mini" style={{ fontSize: '0.78rem', padding: '0.2rem 0.55rem' }}>
+            Non-Commutative Product &amp; Optical Shadows
+          </span>
         </div>
 
-        <h2 className="step-heading">
-          Matrix Multiplication: What Happens When We Multiply Two Images?
-        </h2>
         <p className="step-description">
-          Unlike ordinary number multiplication where <code>a × b = b × a</code>, matrix multiplication mixes rows and columns directionally:
-          <strong> AB ≠ BA</strong>! Explore how pixel matrices interact under matrix multiplication, and contrast it with
-          the <strong>Hadamard element-wise product (A ⊙ S)</strong> used to cast and mathematically recover optical shadows.
+          Unlike scalar numbers where <code>a × b = b × a</code>, matrix multiplication combines rows and columns directionally:
+          <strong> AB ≠ BA</strong>. Explore how pixel matrices interact under matrix multiplication, and contrast it with
+          the element-wise <strong>Hadamard product (A ⊙ S)</strong> used to cast and mathematically recover optical shadows.
         </p>
 
         {/* TOP TAB SWITCHER */}
-        <div className="flex items-center gap-2 mt-3 p-1.5 rounded-xl bg-white/5 border border-white/10 w-fit">
+        <div className="step13-stage-nav" style={{ maxWidth: '480px', marginTop: '0.85rem' }}>
           <button
+            type="button"
             onClick={() => setActiveTab('multiplication')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
-              activeTab === 'multiplication'
-                ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20 font-bold'
-                : 'text-gray-300 hover:text-white hover:bg-white/5'
-            }`}
+            className={`step13-stage-btn ${activeTab === 'multiplication' ? 'active' : ''}`}
           >
-            <Grid size={16} />
+            <Grid size={14} />
             <span>1. Matrix Multiplication (AB vs BA)</span>
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('shadows')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
-              activeTab === 'shadows'
-                ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20 font-bold'
-                : 'text-gray-300 hover:text-white hover:bg-white/5'
-            }`}
+            className={`step13-stage-btn ${activeTab === 'shadows' ? 'active' : ''}`}
           >
-            <Sun size={16} />
-            <span>2. Creating &amp; Removing Shadows (A ⊙ S)</span>
+            <Sun size={14} />
+            <span>2. Optical Shadows (A ⊙ S)</span>
           </button>
         </div>
       </div>
@@ -559,176 +531,182 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
         /* ==============================================================
            PART 1: 4x4 MATRIX MULTIPLICATION (A * B vs B * A)
            ============================================================== */
-        <div className="space-y-6">
-          {/* Controls & Preset Selector */}
-          <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Sliders size={18} className="text-cyan-400" />
-                  Preset Matrices &amp; Special Cases
-                </h3>
-                <p className="text-xs text-gray-400">
-                  Select predefined 4×4 images or edit individual pixel intensity values below.
-                </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', marginTop: '1.1rem' }}>
+          {/* Card 1: Presets & Controls */}
+          <div className="step15-card">
+            <div className="step15-card-header">
+              <div className="step15-card-title">
+                <Sliders size={15} style={{ color: 'var(--text-secondary)' }} />
+                <span>Preset Matrices</span>
               </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                 <button
+                  type="button"
                   onClick={handleSwapAandB}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center gap-1.5 transition-all"
+                  className="icon-action-btn"
+                  style={{ padding: '0.25rem 0.55rem', fontSize: '0.76rem' }}
                   title="Swap A and B"
                 >
-                  <ArrowLeftRight size={14} />
+                  <ArrowLeftRight size={13} />
                   <span>Swap A ⇄ B</span>
                 </button>
                 <button
+                  type="button"
                   onClick={handleSetIdentityB}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 transition-all"
+                  className="icon-action-btn"
+                  style={{ padding: '0.25rem 0.55rem', fontSize: '0.76rem' }}
                   title="Test Commuting Case: B = Identity Matrix"
                 >
-                  <Equal size={14} />
-                  <span>Test AI = IA = A (Identity B)</span>
+                  <Equal size={13} />
+                  <span>Identity B (AI = IA = A)</span>
                 </button>
               </div>
             </div>
 
             {/* Presets Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 pt-1">
+            <div className="step15-presets-grid">
               {Object.entries(MULTIPLICATION_PRESETS).map(([key, item]) => (
                 <button
                   key={key}
+                  type="button"
                   onClick={() => handleSelectPreset(key)}
-                  className={`p-2.5 rounded-xl text-left border transition-all ${
-                    currentPresetKey === key
-                      ? 'bg-cyan-500/15 border-cyan-400/60 text-white shadow-md shadow-cyan-500/10'
-                      : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
-                  }`}
+                  className={`step15-preset-btn ${currentPresetKey === key ? 'active' : ''}`}
                 >
-                  <div className="font-semibold text-xs text-cyan-300">{item.name}</div>
-                  <div className="text-[10px] text-gray-400 line-clamp-1 mt-0.5">{item.desc}</div>
+                  <span className="step15-preset-title">{item.name}</span>
+                  <span className="step15-preset-desc">{item.desc}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* DUAL INPUT MATRICES: IMAGE A & IMAGE B */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* DUAL INPUT MATRICES: IMAGE A & IMAGE B (SIDE BY SIDE) */}
+          <div className="step15-grid-duo">
             {/* MATRIX A */}
-            <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-md bg-cyan-500/20 text-cyan-300 font-mono font-bold text-xs flex items-center justify-center border border-cyan-500/30">
-                    A
+            <div className="step15-card">
+              <div className="step15-card-header">
+                <div className="step15-card-title">
+                  <span style={{ color: 'var(--accent-primary, #697951)' }}>Image A &amp; Matrix A</span>
+                  <span className="badge-tag-mini" style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>
+                    4 × 4
                   </span>
-                  <span className="font-bold text-sm text-white">Image A (4 × 4 Matrix)</span>
                 </div>
-                <span className="text-[11px] font-mono text-cyan-400/80">Click cell to edit</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  Row {selectedCell.row} active
+                </span>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-4 justify-around">
+              <div className="step15-body-row">
                 <CanvasMatrix4x4
                   matrix={matrixA}
-                  size={120}
+                  size={110}
                   highlightRow={selectedCell.row}
-                  title="Canvas View A"
+                  title="Canvas A"
                 />
 
-                {/* 4x4 Numerical Matrix Grid */}
-                <div className="grid grid-cols-4 gap-1.5 p-2 rounded-xl bg-black/40 border border-white/10">
-                  {matrixA.map((row, r) =>
-                    row.map((val, c) => (
-                      <div
-                        key={`a-${r}-${c}`}
-                        className={`flex flex-col items-center justify-center w-11 h-11 rounded-lg border transition-all ${
-                          selectedCell.row === r
-                            ? 'bg-cyan-500/25 border-cyan-400 shadow-sm shadow-cyan-500/30'
-                            : 'bg-white/5 border-white/10 hover:border-cyan-400/50'
-                        }`}
-                      >
-                        <input
-                          type="number"
-                          min="0"
-                          max="255"
-                          value={val}
-                          onChange={(e) => handleCellChange('A', r, c, e.target.value)}
-                          className="w-full text-center bg-transparent text-xs font-mono font-bold text-white outline-none"
-                        />
-                        <span className="text-[8px] font-mono text-gray-400">({r},{c})</span>
-                      </div>
-                    ))
-                  )}
+                <div className="step15-matrix-bracket-wrap">
+                  <div className="step15-bracket-l" />
+                  <div className="step15-matrix-grid-4x4">
+                    {matrixA.map((row, r) =>
+                      row.map((val, c) => (
+                        <div
+                          key={`a-${r}-${c}`}
+                          className={`step15-cell ${selectedCell.row === r ? 'active-row' : ''}`}
+                        >
+                          <input
+                            type="number"
+                            min="0"
+                            max="255"
+                            value={val}
+                            onChange={(e) => handleCellChange('A', r, c, e.target.value)}
+                            className="step15-cell-input"
+                            aria-label={`A[${r},${c}]`}
+                          />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="step15-bracket-r" />
                 </div>
               </div>
             </div>
 
             {/* MATRIX B */}
-            <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-md bg-purple-500/20 text-purple-300 font-mono font-bold text-xs flex items-center justify-center border border-purple-500/30">
-                    B
+            <div className="step15-card">
+              <div className="step15-card-header">
+                <div className="step15-card-title">
+                  <span style={{ color: 'var(--accent-primary, #697951)' }}>Image B &amp; Matrix B</span>
+                  <span className="badge-tag-mini" style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>
+                    4 × 4
                   </span>
-                  <span className="font-bold text-sm text-white">Image B (4 × 4 Matrix)</span>
                 </div>
-                <span className="text-[11px] font-mono text-purple-400/80">Click cell to edit</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  Col {selectedCell.col} active
+                </span>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-4 justify-around">
+              <div className="step15-body-row">
                 <CanvasMatrix4x4
                   matrix={matrixB}
-                  size={120}
+                  size={110}
                   highlightCol={selectedCell.col}
-                  title="Canvas View B"
+                  title="Canvas B"
                 />
 
-                {/* 4x4 Numerical Matrix Grid */}
-                <div className="grid grid-cols-4 gap-1.5 p-2 rounded-xl bg-black/40 border border-white/10">
-                  {matrixB.map((row, r) =>
-                    row.map((val, c) => (
-                      <div
-                        key={`b-${r}-${c}`}
-                        className={`flex flex-col items-center justify-center w-11 h-11 rounded-lg border transition-all ${
-                          selectedCell.col === c
-                            ? 'bg-purple-500/25 border-purple-400 shadow-sm shadow-purple-500/30'
-                            : 'bg-white/5 border-white/10 hover:border-purple-400/50'
-                        }`}
-                      >
-                        <input
-                          type="number"
-                          min="0"
-                          max="255"
-                          value={val}
-                          onChange={(e) => handleCellChange('B', r, c, e.target.value)}
-                          className="w-full text-center bg-transparent text-xs font-mono font-bold text-white outline-none"
-                        />
-                        <span className="text-[8px] font-mono text-gray-400">({r},{c})</span>
-                      </div>
-                    ))
-                  )}
+                <div className="step15-matrix-bracket-wrap">
+                  <div className="step15-bracket-l" />
+                  <div className="step15-matrix-grid-4x4">
+                    {matrixB.map((row, r) =>
+                      row.map((val, c) => (
+                        <div
+                          key={`b-${r}-${c}`}
+                          className={`step15-cell ${selectedCell.col === c ? 'active-col' : ''}`}
+                        >
+                          <input
+                            type="number"
+                            min="0"
+                            max="255"
+                            value={val}
+                            onChange={(e) => handleCellChange('B', r, c, e.target.value)}
+                            className="step15-cell-input"
+                            aria-label={`B[${r},${c}]`}
+                          />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="step15-bracket-r" />
                 </div>
               </div>
             </div>
           </div>
 
           {/* INTERACTIVE ROW × COLUMN DOT-PRODUCT BREAKDOWN */}
-          <div className="glass-level-3 p-5 rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-cyan-950/20 via-black/40 to-purple-950/20 space-y-3">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <Sparkles size={18} className="text-cyan-400" />
-                <span className="font-bold text-sm text-white">
-                  Dot-Product Calculation for Element C[{dotProductBreakdown.row},{dotProductBreakdown.col}]
-                </span>
+          <div className="step15-dot-box">
+            <div className="step15-dot-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Sparkles size={14} style={{ color: 'var(--accent-primary, #697951)' }} />
+                <strong style={{ color: 'var(--text-primary)', fontSize: '0.82rem' }}>
+                  Dot-Product Calculation for Element C[{dotProductBreakdown.row}, {dotProductBreakdown.col}]
+                </strong>
               </div>
-              <div className="flex items-center gap-2 text-xs font-mono text-gray-400">
-                <span>Select Target Cell:</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.74rem' }}>Target Element:</span>
                 <select
                   value={`${selectedCell.row}-${selectedCell.col}`}
                   onChange={(e) => {
                     const [r, c] = e.target.value.split('-').map(Number);
                     setSelectedCell({ row: r, col: c });
                   }}
-                  className="bg-black/60 border border-white/20 rounded px-2 py-1 text-cyan-300 font-mono text-xs outline-none"
+                  style={{
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-primary)',
+                    borderRadius: '5px',
+                    padding: '0.15rem 0.4rem',
+                    fontSize: '0.74rem',
+                    fontFamily: 'var(--font-mono)',
+                    outline: 'none'
+                  }}
                 >
                   {[0, 1, 2, 3].map((r) =>
                     [0, 1, 2, 3].map((c) => (
@@ -741,53 +719,54 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
               </div>
             </div>
 
-            {/* Formula display */}
-            <div className="p-3.5 rounded-xl bg-black/60 border border-white/10 font-mono text-xs text-gray-300 space-y-2">
-              <div className="text-gray-400 text-[11px]">
-                Each element <span className="text-cyan-400">C[i,j]</span> = ∑<sub>k=0</sub><sup>3</sup> (Row i of A) × (Col j of B):
-              </div>
-              <div className="flex items-center gap-1.5 flex-wrap font-bold">
-                <span className="text-cyan-400">C[{dotProductBreakdown.row},{dotProductBreakdown.col}]</span>
-                <span>=</span>
-                {dotProductBreakdown.terms.map((t, idx) => (
-                  <span key={idx} className="flex items-center gap-1">
-                    <span className="text-cyan-300">({t.aVal}</span>
-                    <span className="text-gray-400">×</span>
-                    <span className="text-purple-300">{t.bVal})</span>
-                    {idx < 3 && <span className="text-gray-400">+</span>}
-                  </span>
-                ))}
-                <span>=</span>
-                {dotProductBreakdown.terms.map((t, idx) => (
-                  <span key={`val-${idx}`} className="flex items-center gap-1">
-                    <span className="text-emerald-400">{t.prod}</span>
-                    {idx < 3 && <span className="text-gray-400">+</span>}
-                  </span>
-                ))}
-                <span>=</span>
-                <span className="text-yellow-400 font-extrabold text-sm bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/30">
-                  {dotProductBreakdown.sum}
+            <div className="step15-dot-formula">
+              <span style={{ color: 'var(--text-muted)' }}>
+                C[{dotProductBreakdown.row},{dotProductBreakdown.col}] = (Row {dotProductBreakdown.row} of A) · (Col {dotProductBreakdown.col} of B) =
+              </span>
+              {dotProductBreakdown.terms.map((t, idx) => (
+                <span key={idx} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                  <span>({t.aVal} × {t.bVal})</span>
+                  {idx < 3 && <span style={{ color: 'var(--text-muted)' }}>+</span>}
                 </span>
-                <span className="text-gray-400 text-[11px]">
-                  (Normalized Display: {dotProductBreakdown.normVal})
+              ))}
+              <span>=</span>
+              {dotProductBreakdown.terms.map((t, idx) => (
+                <span key={`val-${idx}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                  <span>{t.prod}</span>
+                  {idx < 3 && <span style={{ color: 'var(--text-muted)' }}>+</span>}
                 </span>
-              </div>
+              ))}
+              <span>=</span>
+              <span className="step15-dot-sum-badge">
+                {dotProductBreakdown.sum}
+              </span>
+              <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginLeft: '0.3rem' }}>
+                (Normalized display: {dotProductBreakdown.normVal})
+              </span>
             </div>
           </div>
 
-          {/* DUAL RESULTS: AB vs BA */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Equal size={18} className="text-yellow-400" />
-                Multiplication Results: AB vs Reverse BA
-              </h3>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-gray-400">Display Normalization:</span>
+          {/* DUAL RESULTS: AB vs BA (SIDE BY SIDE) */}
+          <div className="step15-card">
+            <div className="step15-card-header">
+              <div className="step15-card-title">
+                <Equal size={15} style={{ color: 'var(--text-secondary)' }} />
+                <span>Multiplication Results: AB vs Reverse BA</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                <span>Display Scaling:</span>
                 <select
                   value={normMode}
                   onChange={(e) => setNormMode(e.target.value)}
-                  className="bg-black/60 border border-white/20 rounded px-2 py-1 text-xs text-white outline-none"
+                  style={{
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '5px',
+                    padding: '0.15rem 0.45rem',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.72rem',
+                    outline: 'none'
+                  }}
                 >
                   <option value="minmax">Min-Max Scale [0, 255]</option>
                   <option value="clamp">Clamp to [0, 255]</option>
@@ -795,257 +774,182 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="step15-grid-duo">
               {/* RESULT AB */}
-              <div className="glass-level-2 p-5 rounded-2xl border border-cyan-500/30 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded bg-cyan-500/20 text-cyan-300 font-mono font-bold text-xs border border-cyan-500/40">
-                      Product A × B
-                    </span>
-                    <span className="text-xs text-gray-400">Order: A first, then B</span>
-                  </div>
-                  <span className="text-[10px] font-mono text-cyan-400">
+              <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.80rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    Product AB (Order: A · B)
+                  </span>
+                  <span style={{ fontSize: '0.70rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
                     Min: {minAB} | Max: {maxAB}
                   </span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-4 justify-around">
+                <div className="step15-body-row">
                   <CanvasMatrix4x4
                     matrix={normAB}
-                    size={120}
-                    highlightRow={selectedCell.row}
-                    highlightCol={selectedCell.col}
+                    size={110}
+                    highlightCell={selectedCell}
                     title="Image AB"
                   />
 
-                  {/* 4x4 Matrix Table */}
-                  <div className="grid grid-cols-4 gap-1 p-2 rounded-xl bg-black/50 border border-white/10">
-                    {productAB.map((row, r) =>
-                      row.map((val, c) => (
-                        <div
-                          key={`ab-${r}-${c}`}
-                          onClick={() => setSelectedCell({ row: r, col: c })}
-                          className={`cursor-pointer flex flex-col items-center justify-center w-12 h-11 rounded-lg border transition-all ${
-                            selectedCell.row === r && selectedCell.col === c
-                              ? 'bg-cyan-500/30 border-cyan-400 shadow-md shadow-cyan-500/20'
-                              : 'bg-white/5 border-white/10 hover:border-cyan-400/50'
-                          }`}
-                        >
-                          <span className="text-[11px] font-mono font-bold text-white truncate max-w-[44px]">
-                            {val}
-                          </span>
-                          <span className="text-[8px] font-mono text-gray-400">
-                            norm:{normAB[r]?.[c]}
-                          </span>
-                        </div>
-                      ))
-                    )}
+                  <div className="step15-matrix-bracket-wrap">
+                    <div className="step15-bracket-l" />
+                    <div className="step15-matrix-grid-product">
+                      {productAB.map((row, r) =>
+                        row.map((val, c) => {
+                          const isTarget = selectedCell.row === r && selectedCell.col === c;
+                          return (
+                            <div
+                              key={`ab-${r}-${c}`}
+                              onClick={() => setSelectedCell({ row: r, col: c })}
+                              className={`step15-cell-product step15-cell-clickable ${isTarget ? 'active-target' : ''}`}
+                              title={`C[${r},${c}] = ${val} (Click to inspect dot product)`}
+                            >
+                              <span className="step15-cell-val" style={{ fontSize: '0.72rem' }}>
+                                {val}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                    <div className="step15-bracket-r" />
                   </div>
                 </div>
               </div>
 
               {/* RESULT BA */}
-              <div className="glass-level-2 p-5 rounded-2xl border border-purple-500/30 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded bg-purple-500/20 text-purple-300 font-mono font-bold text-xs border border-purple-500/40">
-                      Product B × A
+                <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.80rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      Product BA (Order: B · A)
                     </span>
-                    <span className="text-xs text-gray-400">Reversed Order: B first, then A</span>
+                    <span style={{ fontSize: '0.70rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                      Min: {minBA} | Max: {maxBA}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-mono text-purple-400">
-                    Min: {minBA} | Max: {maxBA}
+
+                  <div className="step15-body-row">
+                    <CanvasMatrix4x4
+                      matrix={normBA}
+                      size={110}
+                      highlightCell={selectedCell}
+                      title="Image BA"
+                    />
+
+                    <div className="step15-matrix-bracket-wrap">
+                      <div className="step15-bracket-l" />
+                      <div className="step15-matrix-grid-product">
+                        {productBA.map((row, r) =>
+                          row.map((val, c) => {
+                            const isTarget = selectedCell.row === r && selectedCell.col === c;
+                            return (
+                              <div
+                                key={`ba-${r}-${c}`}
+                                onClick={() => setSelectedCell({ row: r, col: c })}
+                                className={`step15-cell-product step15-cell-clickable ${isTarget ? 'active-target' : ''}`}
+                                title={`BA[${r},${c}] = ${val} (Click to inspect)`}
+                              >
+                                <span className="step15-cell-val" style={{ fontSize: '0.72rem' }}>
+                                  {val}
+                                </span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                      <div className="step15-bracket-r" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* COMMUTATIVITY ANALYSIS & DIFFERENCE MATRIX */}
+            <div className="step15-diff-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    Numerical Disparity Matrix Δ = |AB − BA|
+                  </span>
+                  <span
+                    className={`step15-status-badge ${diffMatrix.isIdentical ? 'is-commuting' : 'is-non-commuting'}`}
+                  >
+                    {diffMatrix.isIdentical ? 'AB = BA (Commuting)' : 'AB ≠ BA (Non-Commutative)'}
                   </span>
                 </div>
+                <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                  Total Disparity Index: <strong className={`step15-disparity-val ${diffMatrix.isIdentical ? 'is-zero' : 'is-diff'}`}>{diffMatrix.totalDiff.toLocaleString()}</strong>
+                </span>
+              </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-4 justify-around">
-                  <CanvasMatrix4x4
-                    matrix={normBA}
-                    size={120}
-                    highlightRow={selectedCell.row}
-                    highlightCol={selectedCell.col}
-                    title="Image BA"
-                  />
-
-                  {/* 4x4 Matrix Table */}
-                  <div className="grid grid-cols-4 gap-1 p-2 rounded-xl bg-black/50 border border-white/10">
-                    {productBA.map((row, r) =>
-                      row.map((val, c) => (
-                        <div
-                          key={`ba-${r}-${c}`}
-                          onClick={() => setSelectedCell({ row: r, col: c })}
-                          className={`cursor-pointer flex flex-col items-center justify-center w-12 h-11 rounded-lg border transition-all ${
-                            selectedCell.row === r && selectedCell.col === c
-                              ? 'bg-purple-500/30 border-purple-400 shadow-md shadow-purple-500/20'
-                              : 'bg-white/5 border-white/10 hover:border-purple-400/50'
-                          }`}
-                        >
-                          <span className="text-[11px] font-mono font-bold text-white truncate max-w-[44px]">
-                            {val}
-                          </span>
-                          <span className="text-[8px] font-mono text-gray-400">
-                            norm:{normBA[r]?.[c]}
-                          </span>
-                        </div>
-                      ))
-                    )}
-                  </div>
+              <div className="step15-matrix-bracket-wrap" style={{ margin: '0.35rem 0' }}>
+                <div className="step15-bracket-l" />
+                <div className="step15-matrix-grid-diff">
+                  {diffMatrix.diff.map((row, r) =>
+                    row.map((val, c) => (
+                      <div
+                        key={`delta-${r}-${c}`}
+                        className={`step15-diff-cell ${val === 0 ? 'is-zero' : 'is-diff'}`}
+                        title={`|AB[${r},${c}] − BA[${r},${c}]| = ${val}`}
+                      >
+                        <span className="step15-diff-val">
+                          {val}
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
+                <div className="step15-bracket-r" />
               </div>
             </div>
           </div>
-
-          {/* SIDE-BY-SIDE QUAD GALLERY: Image A | Image B | Image AB | Image BA */}
-          <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center justify-between">
-              <span>Compare All 4 Images Side-by-Side</span>
-              <span
-                className={`text-xs px-2.5 py-0.5 rounded-full font-mono font-bold border ${
-                  diffMatrix.isIdentical
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                    : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                }`}
-              >
-                {diffMatrix.isIdentical ? 'AB = BA (Commuting!)' : 'AB ≠ BA (Non-Commutative)'}
-              </span>
-            </h3>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-              <div className="p-3 rounded-xl bg-black/40 border border-white/10 flex flex-col items-center gap-2">
-                <CanvasMatrix4x4 matrix={matrixA} size={90} title="" />
-                <span className="text-xs font-mono font-bold text-cyan-300">Image A</span>
-              </div>
-              <div className="p-3 rounded-xl bg-black/40 border border-white/10 flex flex-col items-center gap-2">
-                <CanvasMatrix4x4 matrix={matrixB} size={90} title="" />
-                <span className="text-xs font-mono font-bold text-purple-300">Image B</span>
-              </div>
-              <div className="p-3 rounded-xl bg-black/40 border border-cyan-500/30 flex flex-col items-center gap-2">
-                <CanvasMatrix4x4 matrix={normAB} size={90} title="" />
-                <span className="text-xs font-mono font-bold text-cyan-400">Image AB</span>
-              </div>
-              <div className="p-3 rounded-xl bg-black/40 border border-purple-500/30 flex flex-col items-center gap-2">
-                <CanvasMatrix4x4 matrix={normBA} size={90} title="" />
-                <span className="text-xs font-mono font-bold text-purple-400">Image BA</span>
-              </div>
-            </div>
-
-            {/* Difference Heatmap Matrix |AB - BA| */}
-            <div className="p-4 rounded-xl bg-black/50 border border-white/10 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-gray-300">
-                  Numerical Difference Matrix Δ = |AB − BA|
-                </span>
-                <span className="font-mono text-gray-400">
-                  Total Disparity Index: <strong className="text-rose-400">{diffMatrix.totalDiff}</strong>
-                </span>
-              </div>
-
-              <div className="grid grid-cols-4 gap-1.5 max-w-sm mx-auto">
-                {diffMatrix.diff.map((row, r) =>
-                  row.map((val, c) => (
-                    <div
-                      key={`delta-${r}-${c}`}
-                      className={`h-9 rounded flex items-center justify-center font-mono text-xs font-bold ${
-                        val === 0
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-rose-500/25 text-rose-300 border border-rose-500/40'
-                      }`}
-                    >
-                      {val}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* GUIDED PEDAGOGICAL QUESTIONS */}
-          <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-3">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <HelpCircle size={18} className="text-amber-400" />
-              Guided Inquiry: Understanding Matrix Multiplication
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-              <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-1">
-                <span className="font-bold text-amber-300">1. Do AB and BA have the same dimensions?</span>
-                <p className="text-gray-300">
-                  <strong>Yes!</strong> Since A is 4×4 and B is 4×4, both AB and BA yield 4×4 matrices.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-1">
-                <span className="font-bold text-amber-300">2. Are their numerical values identical?</span>
-                <p className="text-gray-300">
-                  <strong>Generally No!</strong> Unless A and B are specially designed (such as when B is the Identity Matrix I),
-                  AB and BA have entirely different numerical entries.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-1">
-                <span className="font-bold text-amber-300">3. Do their resulting images look identical?</span>
-                <p className="text-gray-300">
-                  <strong>No!</strong> Notice how visual gradients, stripe orientations, and high-frequency textures
-                  flow horizontally in AB and vertically in BA.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-1">
-                <span className="font-bold text-amber-300">4. Does matrix multiplication behave like numbers?</span>
-                <p className="text-gray-300">
-                  <strong>No!</strong> Real numbers commute (<code>3 × 5 = 5 × 3</code>). Matrices are
-                  <strong> non-commutative</strong> (<code>AB ≠ BA</code>), because rows and columns are paired in opposite order!
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
+        ) : (
         /* ==============================================================
            PART 2: CREATING AND REMOVING SHADOWS (HADAMARD PRODUCT A ⊙ S)
            ============================================================== */
-        <div className="space-y-6">
-          {/* Theoretical Concept Card */}
-          <div className="glass-level-2 p-5 rounded-2xl border border-purple-500/20 bg-gradient-to-r from-purple-950/20 to-black/40 space-y-3">
-            <div className="flex items-center gap-2">
-              <Sun size={20} className="text-yellow-400" />
-              <h3 className="text-base font-bold text-white">
-                Optical Shadows via Hadamard Product (Element-Wise Multiplication)
-              </h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', marginTop: '1.1rem' }}>
+          {/* Concept Header Strip */}
+          <div className="step15-card">
+            <div className="step15-card-header">
+              <div className="step15-card-title">
+                <Sun size={15} style={{ color: 'var(--text-secondary)' }} />
+                <span>Optical Shadows via Hadamard Product (A ⊙ S)</span>
+              </div>
             </div>
-            <p className="text-xs text-gray-300 leading-relaxed">
-              When a physical shadow falls across an image, pixels in that region receive reduced illumination.
-              Instead of ordinary matrix multiplication, this is an <strong>element-wise Hadamard product (A ⊙ S)</strong>:
-              every pixel <code>A[i,j]</code> is multiplied by a local transmission factor <code>S[i,j]</code>.
-              Here, <strong>1.0</strong> means full light, <strong>0.5</strong> means half brightness, and <strong>0.0</strong> represents total darkness.
-            </p>
-            <div className="p-3 rounded-xl bg-black/60 border border-white/10 font-mono text-xs text-cyan-300 flex items-center justify-between flex-wrap gap-2">
-              <span>Creating Shadow: <strong>B = A ⊙ S</strong></span>
-              <span>Reversing Shadow: <strong>A = B ⊘ S</strong> (provided S &gt; 0)</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.5rem 0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
+              <span>Casting Shadow: <strong style={{ color: 'var(--accent-primary, #697951)' }}>B = A ⊙ S</strong></span>
+              <span>Inverting Shadow: <strong style={{ color: 'var(--accent-primary, #697951)' }}>A = B ⊘ S</strong></span>
             </div>
           </div>
 
           {/* 4x4 SHADOW CREATION & REVERSAL */}
-          <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-5">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div>
-                <h4 className="font-bold text-sm text-white">4×4 Grayscale Image Shadow Experiment</h4>
-                <p className="text-xs text-gray-400">
-                  Observe how shadow factor S modulates pixel intensity and how element-wise division recovers the original.
-                </p>
+          <div className="step15-card">
+            <div className="step15-card-header">
+              <div className="step15-card-title">
+                <span>4×4 Grayscale Image Shadow Experiment</span>
               </div>
 
-              {/* Shadow Region & Strength Controls */}
-              <div className="flex items-center gap-2 flex-wrap text-xs">
-                <span className="text-gray-400">Shadow Region:</span>
+              {/* Controls Bar */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', fontSize: '0.76rem' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Region:</span>
                 <select
                   value={shadowPosition}
                   onChange={(e) => {
                     setShadowPosition(e.target.value);
                     setIsShadowRemoved(false);
                   }}
-                  className="bg-black/60 border border-white/20 rounded px-2.5 py-1 text-white font-mono text-xs outline-none"
+                  style={{
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '5px',
+                    padding: '0.2rem 0.45rem',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.74rem',
+                    outline: 'none'
+                  }}
                 >
                   <option value="right">Right Half (c ≥ 2)</option>
                   <option value="left">Left Half (c &lt; 2)</option>
@@ -1055,8 +959,8 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
                   <option value="diagonal">Diagonal Corner</option>
                 </select>
 
-                <div className="flex items-center gap-1.5 ml-2">
-                  <span className="text-gray-400">Strength (S):</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Strength (S):</span>
                   <input
                     type="range"
                     min="0.1"
@@ -1067,171 +971,211 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
                       setShadowStrength(parseFloat(e.target.value));
                       setIsShadowRemoved(false);
                     }}
-                    className="w-20 accent-purple-400 cursor-pointer"
+                    className="det-cell-slider"
+                    style={{ width: '70px', '--slider-pct': `${((shadowStrength - 0.1) / 0.8) * 100}%` }}
                   />
-                  <span className="font-mono text-purple-300 font-bold">{shadowStrength.toFixed(1)}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {shadowStrength.toFixed(1)}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* 3 Panels: A -> S -> Shaded B (or Recovered A) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* 3 Panels: Original A -> Shadow Mask S -> Result B/A */}
+            <div className="step15-grid-trio">
               {/* ORIGINAL A */}
-              <div className="p-4 rounded-xl bg-black/40 border border-white/10 flex flex-col items-center gap-3">
-                <span className="text-xs font-mono font-bold text-cyan-300">1. Original Image A</span>
-                <CanvasMatrix4x4 matrix={matrixA} size={110} title="" />
-                <div className="grid grid-cols-4 gap-1">
-                  {matrixA.map((row, r) =>
-                    row.map((val, c) => (
-                      <span key={`oa-${r}-${c}`} className="w-8 h-6 flex items-center justify-center font-mono text-[10px] text-gray-300 bg-white/5 rounded">
-                        {val}
-                      </span>
-                    ))
-                  )}
+              <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '0.7rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  1. Original Image A
+                </span>
+                <CanvasMatrix4x4 matrix={matrixA} size={100} title="" />
+                <div className="step15-matrix-bracket-wrap">
+                  <div className="step15-bracket-l" />
+                  <div className="step15-matrix-grid-4x4" style={{ gridTemplateColumns: 'repeat(4, 30px)', gridTemplateRows: 'repeat(4, 28px)' }}>
+                    {matrixA.map((row, r) =>
+                      row.map((val, c) => (
+                        <div key={`oa-${r}-${c}`} className="step15-cell" style={{ width: '30px', height: '28px' }}>
+                          <span className="step15-cell-val" style={{ fontSize: '0.72rem' }}>{val}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="step15-bracket-r" />
                 </div>
               </div>
 
               {/* SHADOW MATRIX S */}
-              <div className="p-4 rounded-xl bg-black/40 border border-purple-500/20 flex flex-col items-center gap-3">
-                <span className="text-xs font-mono font-bold text-purple-300">2. Shadow Matrix S (Factor)</span>
+              <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '0.7rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  2. Shadow Mask S
+                </span>
                 {/* Visual Representation of S */}
-                <div className="w-[110px] h-[110px] grid grid-cols-4 gap-0.5 rounded-xl overflow-hidden border border-white/10">
+                <div style={{ width: '100px', height: '100px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gridTemplateRows: 'repeat(4, 1fr)', gap: '1px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
                   {shadowMatrixS.map((row, r) =>
                     row.map((val, c) => (
                       <div
                         key={`sm-${r}-${c}`}
-                        className="flex items-center justify-center text-[10px] font-mono font-bold text-white"
                         style={{
-                          backgroundColor: val === 1.0 ? '#ffffff' : `rgba(255, 255, 255, ${val})`,
-                          color: val > 0.4 ? '#000' : '#fff'
+                          backgroundColor: `rgb(${Math.round(val * 255)}, ${Math.round(val * 255)}, ${Math.round(val * 255)})`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.62rem',
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 700,
+                          color: val > 0.4 ? '#000000' : '#FFFFFF'
                         }}
                       >
-                        {val}
+                        {val.toFixed(1)}
                       </div>
                     ))
                   )}
                 </div>
-                <div className="grid grid-cols-4 gap-1">
-                  {shadowMatrixS.map((row, r) =>
-                    row.map((val, c) => (
-                      <span key={`os-${r}-${c}`} className="w-8 h-6 flex items-center justify-center font-mono text-[10px] text-purple-300 bg-purple-500/10 rounded">
-                        {val}
-                      </span>
-                    ))
-                  )}
+
+                <div className="step15-matrix-bracket-wrap">
+                  <div className="step15-bracket-l" />
+                  <div className="step15-matrix-grid-4x4" style={{ gridTemplateColumns: 'repeat(4, 30px)', gridTemplateRows: 'repeat(4, 28px)' }}>
+                    {shadowMatrixS.map((row, r) =>
+                      row.map((val, c) => (
+                        <div key={`os-${r}-${c}`} className="step15-cell" style={{ width: '30px', height: '28px' }}>
+                          <span className="step15-cell-val" style={{ fontSize: '0.72rem', color: val < 1.0 ? 'var(--accent-primary, #697951)' : 'var(--text-muted)' }}>
+                            {val}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="step15-bracket-r" />
                 </div>
               </div>
 
-              {/* SHADED B OR RECOVERED A */}
-              <div className="p-4 rounded-xl bg-black/40 border border-yellow-500/20 flex flex-col items-center gap-3">
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-xs font-mono font-bold text-yellow-300">
-                    {isShadowRemoved ? '3. Recovered Image (B ⊘ S)' : '3. Shaded Image B = A ⊙ S'}
+              {/* RESULT B OR RECOVERED A */}
+              <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '0.7rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {isShadowRemoved ? '3. Recovered (B ⊘ S)' : '3. Shaded B = A ⊙ S'}
                   </span>
                   <button
+                    type="button"
                     onClick={() => setIsShadowRemoved(!isShadowRemoved)}
-                    className={`px-2 py-0.5 rounded text-[11px] font-bold border transition-all ${
-                      isShadowRemoved
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                        : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40 hover:bg-yellow-500/30'
-                    }`}
+                    className="icon-action-btn"
+                    style={{
+                      fontSize: '0.72rem',
+                      padding: '0.18rem 0.45rem',
+                      borderColor: isShadowRemoved ? 'var(--accent-primary, #697951)' : undefined
+                    }}
                   >
                     {isShadowRemoved ? 'Show Shaded' : 'Remove Shadow'}
                   </button>
                 </div>
 
-                <CanvasMatrix4x4 matrix={isShadowRemoved ? recoveredMatrixA : shadedMatrixB} size={110} title="" />
+                <CanvasMatrix4x4 matrix={isShadowRemoved ? recoveredMatrixA : shadedMatrixB} size={100} title="" />
 
-                <div className="grid grid-cols-4 gap-1">
-                  {(isShadowRemoved ? recoveredMatrixA : shadedMatrixB).map((row, r) =>
-                    row.map((val, c) => (
-                      <span
-                        key={`res-${r}-${c}`}
-                        className={`w-8 h-6 flex items-center justify-center font-mono text-[10px] font-bold rounded ${
-                          isShadowRemoved
-                            ? 'text-emerald-300 bg-emerald-500/15'
-                            : shadowMatrixS[r][c] < 1.0
-                            ? 'text-yellow-300 bg-yellow-500/15'
-                            : 'text-gray-300 bg-white/5'
-                        }`}
-                      >
-                        {val}
-                      </span>
-                    ))
-                  )}
+                <div className="step15-matrix-bracket-wrap">
+                  <div className="step15-bracket-l" />
+                  <div className="step15-matrix-grid-4x4" style={{ gridTemplateColumns: 'repeat(4, 30px)', gridTemplateRows: 'repeat(4, 28px)' }}>
+                    {(isShadowRemoved ? recoveredMatrixA : shadedMatrixB).map((row, r) =>
+                      row.map((val, c) => (
+                        <div
+                          key={`res-${r}-${c}`}
+                          className="step15-cell"
+                          style={{
+                            width: '30px',
+                            height: '28px',
+                            background: isShadowRemoved
+                              ? 'rgba(105, 121, 81, 0.12)'
+                              : shadowMatrixS[r][c] < 1.0
+                              ? 'rgba(105, 121, 81, 0.08)'
+                              : undefined
+                          }}
+                        >
+                          <span
+                            className="step15-cell-val"
+                            style={{
+                              fontSize: '0.72rem',
+                              color: isShadowRemoved ? 'var(--accent-primary, #697951)' : undefined
+                            }}
+                          >
+                            {val}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="step15-bracket-r" />
                 </div>
               </div>
             </div>
 
-            {/* Arithmetic Recovery Note */}
-            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 text-xs text-gray-300 flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-emerald-400" />
+            {/* Recovery Summary */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.5rem 0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <CheckCircle2 size={15} style={{ color: 'var(--accent-primary, #697951)' }} />
                 <span>
-                  Exact Recovery Law: If original pixel is <code>100</code> and shadow factor is <code>0.5</code>,
-                  shaded pixel is <code>50</code>. Reversing via division: <code>50 / 0.5 = 100</code>!
+                  Mathematical Inversion: If original pixel is <code>100</code> and shadow factor is <code>0.5</code>, shaded pixel is <code>50</code>. Inversion: <code>50 / 0.5 = 100</code>.
                 </span>
               </div>
-              <span className="font-mono text-emerald-400 font-bold">100% Mathematical Recovery</span>
+              <span style={{ fontWeight: 700, color: 'var(--accent-primary, #697951)' }}>
+                100% Exact Recovery
+              </span>
             </div>
           </div>
 
-          {/* REAL PHOTOGRAPH: THE FLOWER EXPERIMENT */}
-          <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-3">
+          {/* REAL PHOTOGRAPH: BOTANICAL FLOWER EXPERIMENT */}
+          <div className="step15-card">
+            <div className="step15-card-header">
               <div>
-                <h4 className="font-bold text-sm text-white flex items-center gap-2">
-                  <ImageIcon size={18} className="text-pink-400" />
-                  Real Photograph Experiment: Casting &amp; Removing Shadows on a Flower
-                </h4>
-                <p className="text-xs text-gray-400">
-                  For a color photograph, the shadow matrix applies independently to Red, Green, and Blue channels:
-                  <code className="text-cyan-300 ml-1">R′ = R ⊙ S, &nbsp; G′ = G ⊙ S, &nbsp; B′ = B ⊙ S</code>
-                </p>
+                <div className="step15-card-title">
+                  <ImageIcon size={15} style={{ color: 'var(--text-secondary)' }} />
+                  <span>Real Photograph Experiment: Casting &amp; Inverting Shadows</span>
+                </div>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  For RGB photography, shadow factor applies across all 3 channels: R′ = R ⊙ S, G′ = G ⊙ S, B′ = B ⊙ S
+                </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                 <input
                   type="file"
                   ref={fileInputRef}
                   onChange={handleUploadFlower}
                   accept="image/*"
-                  className="hidden"
+                  style={{ display: 'none' }}
                 />
                 <button
+                  type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center gap-1.5 transition-all"
+                  className="icon-action-btn"
+                  style={{ padding: '0.25rem 0.55rem', fontSize: '0.76rem' }}
                 >
-                  <Upload size={14} />
-                  <span>Upload Your Flower</span>
+                  <Upload size={13} />
+                  <span>Upload Photo</span>
                 </button>
               </div>
             </div>
 
-            {/* Interactive Controls Bar */}
-            <div className="p-4 rounded-xl bg-black/40 border border-white/10 flex items-center justify-between flex-wrap gap-4 text-xs">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-gray-400">Shadow Region:</span>
+            {/* Toolbar */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.65rem', background: 'var(--bg-secondary)', padding: '0.55rem 0.85rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.76rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Region:</span>
                 {['right', 'left', 'diagonal', 'vignette'].map((reg) => (
                   <button
                     key={reg}
+                    type="button"
                     onClick={() => {
                       setFlowerShadowRegion(reg);
                       setFlowerShadowRemoved(false);
                     }}
-                    className={`px-2.5 py-1 rounded text-xs capitalize transition-all ${
-                      flowerShadowRegion === reg
-                        ? 'bg-purple-500 text-white font-bold'
-                        : 'bg-white/5 text-gray-400 hover:text-white'
-                    }`}
+                    className={`sub-chapter-pill ${flowerShadowRegion === reg ? 'active' : ''}`}
+                    style={{ fontSize: '0.72rem', padding: '0.15rem 0.45rem', textTransform: 'capitalize' }}
                   >
                     {reg}
                   </button>
                 ))}
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400">Shadow Strength (S):</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Strength (S):</span>
                 <input
                   type="range"
                   min="0.1"
@@ -1242,56 +1186,66 @@ export default function Step15MatrixMultiplicationShadows({ onSelectStep }) {
                     setFlowerShadowStrength(parseFloat(e.target.value));
                     setFlowerShadowRemoved(false);
                   }}
-                  className="w-24 accent-purple-400 cursor-pointer"
+                  className="det-cell-slider"
+                  style={{ width: '80px', '--slider-pct': `${((flowerShadowStrength - 0.1) / 0.7) * 100}%` }}
                 />
-                <span className="font-mono text-purple-300 font-bold">{flowerShadowStrength.toFixed(2)}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {flowerShadowStrength.toFixed(2)}
+                </span>
               </div>
 
               <button
+                type="button"
                 onClick={() => setFlowerShadowRemoved(!flowerShadowRemoved)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md ${
-                  flowerShadowRemoved
-                    ? 'bg-emerald-500 text-black shadow-emerald-500/20'
-                    : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-purple-500/20 hover:scale-105'
-                }`}
+                className="action-btn"
+                style={{ padding: '0.35rem 0.75rem', fontSize: '0.76rem', borderRadius: '6px' }}
               >
-                {flowerShadowRemoved ? 'Shadow Removed (Click to Reapply)' : 'Click to Remove Shadow (B ⊘ S)'}
+                {flowerShadowRemoved ? 'Shadow Inverted (Reapply Shadow)' : 'Invert Shadow (B ⊘ S)'}
               </button>
             </div>
 
-            {/* Visual Canvases Side by Side */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 justify-items-center pt-2">
-              <div className="flex flex-col items-center gap-2">
-                <span className="text-xs font-mono font-bold text-gray-300">Original Photograph</span>
+            {/* Canvases Side by Side */}
+            <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', padding: '0.5rem 0' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Original Photograph
+                </span>
                 <canvas
                   ref={flowerOriginalRef}
-                  className="rounded-2xl border-2 border-white/10 shadow-xl"
-                  style={{ width: '220px', height: '220px' }}
+                  className="step15-canvas"
+                  style={{ width: '200px', height: '200px', borderRadius: '10px' }}
                 />
               </div>
 
-              <div className="flex flex-col items-center gap-2">
-                <span className="text-xs font-mono font-bold text-yellow-300">
-                  {flowerShadowRemoved ? 'Restored Photograph (Approximate Division)' : 'Modified Photograph with Shadow (A ⊙ S)'}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  {flowerShadowRemoved ? 'Restored Photograph (B ⊘ S)' : 'Shaded Photograph (A ⊙ S)'}
                 </span>
                 <canvas
                   ref={flowerShadedRef}
-                  className={`rounded-2xl border-2 shadow-xl transition-all ${
-                    flowerShadowRemoved ? 'border-emerald-500/60 shadow-emerald-500/20' : 'border-yellow-500/50 shadow-yellow-500/20'
-                  }`}
-                  style={{ width: '220px', height: '220px' }}
+                  className="step15-canvas"
+                  style={{
+                    width: '200px',
+                    height: '200px',
+                    borderRadius: '10px',
+                    borderColor: flowerShadowRemoved ? 'var(--accent-primary, #697951)' : undefined
+                  }}
                 />
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 text-[11px] text-gray-400 leading-relaxed">
-              <strong>Why is real photographic recovery approximate?</strong> In digital cameras, pixel intensities
-              are stored as discrete 8-bit integers (0 to 255). Dividing by <code>S</code> recovers the true brightness, but
-              subtle sensor noise and rounding (quantization error) mean the restoration is an extremely close approximation rather than bit-for-bit identical!
-            </div>
+            <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+              <strong>Digital quantization note:</strong> Digital photography quantizes pixel intensities into discrete 8-bit integers (0 to 255).
+              Division by <code>S</code> mathematically reverses the darkening, with subtle rounding error (sensor quantization) in deep shadows.
+            </p>
           </div>
         </div>
       )}
+
+      {/* STANDARDIZED EDUCATIONAL DOCUMENTATION */}
+      <div style={{ marginTop: '1.25rem' }}>
+        <ModuleDocumentation stepNumber={15} defaultOpen={false} />
+      </div>
 
       {/* FOOTER NAVIGATION */}
       <StepFooter stepNumber={15} onSelectStep={onSelectStep} />

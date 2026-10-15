@@ -1,62 +1,50 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
-  Scan, 
-  Scissors, 
   Minus, 
   Equal, 
   Filter, 
   Sparkles, 
   RotateCcw, 
   Shuffle, 
-  Blend, 
-  Eye, 
-  Sliders, 
   AlertCircle,
   Camera,
   Upload,
-  Layers,
-  ArrowRight,
   Move,
   PlusCircle,
   MinusCircle,
   CheckCircle2,
-  HelpCircle,
   Video,
   VideoOff,
   Image as ImageIcon,
-  Zap,
   Grid,
-  Activity,
-  Maximize2,
-  Undo2,
-  ZoomIn
+  Volume2
 } from 'lucide-react';
-import { clampPixel, createEmptyMatrix, subtractMatrices, thresholdMatrix } from '../core/mathEngine';
+import { clampPixel, subtractMatrices, thresholdMatrix } from '../core/mathEngine';
 import StepFooter from '../components/layout/StepFooter';
+import ModuleDocumentation from '../components/experiment/ModuleDocumentation';
 
-// Presets representing 3 core scenarios: Added, Removed, Moved
+// Presets representing 4 core change detection scenarios with high-contrast photographic values
 const CHANGE_PRESETS = {
   objectAdded: {
     id: 'objectAdded',
     name: 'Object Added (+)',
     badge: 'Added',
     type: 'added',
-    badgeColor: '#10B981',
     scenario: 'Coffee Mug Placed on Clean Desk',
-    desc: 'Scene A shows a wooden tabletop. In Scene B, a coffee mug is placed in the center-right.',
+    desc: 'Scene A shows a wooden tabletop. In Scene B, a bright ceramic mug is placed in the center-right.',
     defaultT: 25,
     matrixA: [
-      [75, 78, 72, 80],
-      [72, 70, 75, 78],
-      [76, 74, 72, 75],
-      [78, 80, 76, 74]
+      [145, 148, 142, 150],
+      [142, 140, 145, 148],
+      [146, 144, 142, 145],
+      [148, 150, 146, 144]
     ],
     matrixB: [
-      [75, 78,  72,  80],
-      [72, 70, 235, 235],
-      [76, 74, 235, 235],
-      [78, 80,  76,  74]
+      [145, 148, 142, 150],
+      [142, 140, 240, 240],
+      [146, 144, 240, 240],
+      [148, 150, 146, 144]
     ]
   },
   objectRemoved: {
@@ -64,78 +52,83 @@ const CHANGE_PRESETS = {
     name: 'Object Removed (−)',
     badge: 'Removed',
     type: 'removed',
-    badgeColor: '#EF4444',
     scenario: 'Keys Missing from Entry Table',
-    desc: 'Scene A has a bright set of keys on the table. In Scene B, the keys were picked up and removed.',
+    desc: 'Scene A has bright keys on the table. In Scene B, the keys were picked up and removed.',
     defaultT: 25,
     matrixA: [
-      [55,  52,  56, 50],
-      [52, 230, 230, 52],
-      [56, 230, 230, 56],
-      [50,  55,  52, 54]
+      [135, 132, 136, 130],
+      [132, 245, 245, 132],
+      [136, 245, 245, 136],
+      [130, 135, 132, 134]
     ],
     matrixB: [
-      [55, 52, 56, 50],
-      [52, 54, 52, 52],
-      [56, 52, 55, 56],
-      [50, 55, 52, 54]
+      [135, 132, 136, 130],
+      [132, 134, 132, 132],
+      [136, 132, 135, 136],
+      [130, 135, 132, 134]
     ]
   },
   objectMoved: {
     id: 'objectMoved',
     name: 'Object Moved (⇄)',
-    badge: 'Motion / Moved',
+    badge: 'Moved',
     type: 'moved',
-    badgeColor: '#38BDF8',
-    scenario: 'Chess Pawn Shifted to New Square',
-    desc: 'Scene A shows a white piece at Top-Left (0, 0). In Scene B, it moved to Bottom-Right (2, 2). Subtraction reveals two change hotspots!',
+    scenario: 'Chess Piece Shifted to New Square',
+    desc: 'Scene A shows a piece at Top-Left (0, 0). In Scene B, it moved to Bottom-Right (2, 2). Subtraction reveals two change hotspots!',
     defaultT: 30,
     matrixA: [
-      [240, 240, 48, 48],
-      [240, 240, 48, 48],
-      [48,   48, 48, 48],
-      [48,   48, 48, 48]
+      [240, 240, 125, 125],
+      [240, 240, 125, 125],
+      [125, 125, 125, 125],
+      [125, 125, 125, 125]
     ],
     matrixB: [
-      [48, 48,  48,  48],
-      [48, 48,  48,  48],
-      [48, 48, 240, 240],
-      [48, 48, 240, 240]
+      [125, 125, 125, 125],
+      [125, 125, 125, 125],
+      [125, 125, 240, 240],
+      [125, 125, 240, 240]
     ]
   },
   securityDoor: {
     id: 'securityDoor',
-    name: 'Security Cam Intruder',
+    name: 'Security Cam',
     badge: 'Surveillance',
     type: 'added',
-    badgeColor: '#A855F7',
     scenario: 'Person Walking Through Hallway',
     desc: 'Surveillance camera monitors empty corridor. Subtraction detects intruder stepping into doorway.',
     defaultT: 25,
     matrixA: [
-      [35, 45, 55, 65],
-      [35, 45, 55, 65],
-      [35, 45, 55, 65],
-      [35, 45, 55, 65]
+      [110, 125, 140, 155],
+      [110, 125, 140, 155],
+      [110, 125, 140, 155],
+      [110, 125, 140, 155]
     ],
     matrixB: [
-      [35,  45,  55, 65],
-      [35, 215, 215, 65],
-      [35, 215, 215, 65],
-      [35,  45,  55, 65]
+      [110, 125, 140, 155],
+      [110, 235, 235, 155],
+      [110, 235, 235, 155],
+      [110, 125, 140, 155]
     ]
   }
 };
 
+const THRESHOLD_PRESETS = [
+  { val: 0, label: 'T = 0 (Raw)' },
+  { val: 12, label: 'T = 12 (Low)' },
+  { val: 25, label: 'T = 25 (Optimal)' },
+  { val: 50, label: 'T = 50 (High)' },
+  { val: 100, label: 'T = 100 (Strict)' }
+];
+
 /**
- * Compact Canvas Component with change highlight bounding box & glow
+ * Compact Canvas Component with change highlight bounding box & theme consistency
+ * Avoids solid black fills and uses the theme primary accent for changes
  */
 function PipelineCanvas({
   matrix,
   hoveredCell,
   onHoverCell,
-  pixelSize = 26,
-  highlightColor = 'var(--accent-purple)',
+  pixelSize = 20,
   title,
   mode = 'normal', // 'normal', 'diff', 'highlightOverlay', 'mask'
   threshold = 25,
@@ -148,14 +141,13 @@ function PipelineCanvas({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !rows || !cols) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const width = cols * pixelSize;
     const height = rows * pixelSize;
 
-    // Retina display crispness
     const dpr = window.devicePixelRatio || 1;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
@@ -168,27 +160,34 @@ function PipelineCanvas({
 
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
 
-    // Track bounding box of changed pixels if in highlight mode
     let minR = rows, maxR = -1, minC = cols, maxC = -1;
     let hasChanges = false;
 
     // 1. Draw base pixel tiles
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        let val = matrix[r][c];
+        const val = matrix[r][c];
 
         if (mode === 'mask') {
-          val = val === 1 ? 255 : 0;
-          ctx.fillStyle = val === 255 ? '#10B981' : (isLight ? '#E5E7EB' : '#111827');
+          // Binary Change Mask M: Changed is Primary Accent, Unchanged is Neutral Card Surface
+          const isChanged = val === 1 || val === 255;
+          if (isChanged) {
+            ctx.fillStyle = isLight ? '#697951' : '#FFFFFF';
+          } else {
+            ctx.fillStyle = isLight ? '#FAF9F2' : '#130F0D';
+          }
         } else if (mode === 'diff') {
+          // Difference Matrix D: Unchanged is Neutral Card Surface, Nonzero gets subtle or accent tint
           const isChanged = val > threshold;
           if (isChanged) {
-            ctx.fillStyle = `rgb(${Math.min(255, val * 1.5)}, ${Math.min(240, val * 1.2)}, 255)`;
+            ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.45)' : 'rgba(255, 255, 255, 0.45)';
+          } else if (val > 0) {
+            ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.12)' : 'rgba(255, 255, 255, 0.1)';
           } else {
-            ctx.fillStyle = `rgb(${val}, ${val}, ${val})`;
+            ctx.fillStyle = isLight ? '#FAF9F2' : '#130F0D';
           }
         } else if (mode === 'highlightOverlay') {
-          // Highlight overlay over Image B
+          // Highlight Overlay over Scene 2: Grayscale base + Primary Accent tint on changed cluster
           const delta = Math.abs((matrixB?.[r]?.[c] ?? 0) - (matrixA?.[r]?.[c] ?? 0));
           const isChanged = delta > threshold;
           const baseB = matrixB ? matrixB[r][c] : val;
@@ -200,64 +199,50 @@ function PipelineCanvas({
             if (c < minC) minC = c;
             if (c > maxC) maxC = c;
 
-            // Determine if pixel got brighter (added) or darker (removed)
-            const signedDelta = (matrixB?.[r]?.[c] ?? 0) - (matrixA?.[r]?.[c] ?? 0);
-            if (signedDelta > 0) {
-              // Added: Emerald tint
-              ctx.fillStyle = `rgba(16, 185, 129, 0.85)`;
-            } else {
-              // Removed: Amber/Rose tint
-              ctx.fillStyle = `rgba(239, 68, 68, 0.85)`;
-            }
+            // Soft theme accent tint
+            ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.45)' : 'rgba(255, 255, 255, 0.45)';
           } else {
-            // Unchanged: standard grayscale pixel
             ctx.fillStyle = `rgb(${baseB}, ${baseB}, ${baseB})`;
           }
         } else {
+          // Normal grayscale tile
           ctx.fillStyle = `rgb(${val}, ${val}, ${val})`;
         }
 
         ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
 
-        // Grid lines
-        ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.18)' : 'rgba(255, 255, 255, 0.2)';
+        // Subtle tile borders
+        ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.15)';
         ctx.lineWidth = 1;
         ctx.strokeRect(c * pixelSize + 0.5, r * pixelSize + 0.5, pixelSize - 1, pixelSize - 1);
 
-        // Highlight hovered cell
+        // Synchronized hover highlight using theme accent
         if (hoveredCell && hoveredCell.row === r && hoveredCell.col === c) {
-          ctx.lineWidth = 2.5;
-          ctx.strokeStyle = highlightColor;
-          ctx.strokeRect(c * pixelSize + 1.5, r * pixelSize + 1.5, pixelSize - 3, pixelSize - 3);
-          ctx.fillStyle = 'rgba(6, 182, 212, 0.25)';
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = isLight ? '#424F34' : '#FFFFFF';
+          ctx.strokeRect(c * pixelSize + 1, r * pixelSize + 1, pixelSize - 2, pixelSize - 2);
+          ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.2)' : 'rgba(255, 255, 255, 0.18)';
           ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
         }
       }
     }
 
-    // 2. In highlight mode, draw an animated bounding box around changed cluster
+    // 2. In highlight mode, draw subtle bounding box around changed cluster
     if (mode === 'highlightOverlay' && hasChanges && maxR >= minR && maxC >= minC) {
       const boxX = minC * pixelSize;
       const boxY = minR * pixelSize;
       const boxW = (maxC - minC + 1) * pixelSize;
       const boxH = (maxR - minR + 1) * pixelSize;
 
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#10B981';
-      ctx.setLineDash([4, 2]);
-      ctx.strokeRect(boxX + 1, boxY + 1, boxW - 2, boxH - 2);
-      ctx.setLineDash([]); // reset dash
-
-      // Corner tags
-      ctx.fillStyle = '#10B981';
-      ctx.fillRect(boxX, boxY, 5, 5);
-      ctx.fillRect(boxX + boxW - 5, boxY, 5, 5);
-      ctx.fillRect(boxX, boxY + boxH - 5, 5, 5);
-      ctx.fillRect(boxX + boxW - 5, boxY + boxH - 5, 5, 5);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = isLight ? '#424F34' : '#FFFFFF';
+      ctx.setLineDash([3, 2]);
+      ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxW - 1, boxH - 1);
+      ctx.setLineDash([]);
     }
 
     ctx.restore();
-  }, [matrix, hoveredCell, rows, cols, pixelSize, highlightColor, mode, threshold, matrixA, matrixB]);
+  }, [matrix, hoveredCell, rows, cols, pixelSize, mode, threshold, matrixA, matrixB]);
 
   const handleMouseMove = (e) => {
     if (!onHoverCell || !canvasRef.current) return;
@@ -285,6 +270,288 @@ function PipelineCanvas({
   );
 }
 
+/**
+ * Matrix Bracket Wrapper - Clean brackets matching Step 8 and Step 9
+ */
+function MatrixBracketWrapper({ children, onMouseLeave }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 'fit-content',
+        margin: '0.65rem auto 0.25rem'
+      }}
+      onMouseLeave={onMouseLeave}
+    >
+      <div
+        style={{
+          width: '7px',
+          alignSelf: 'stretch',
+          border: '2.5px solid var(--border-color)',
+          borderRight: 'none',
+          borderRadius: '7px 0 0 7px',
+          marginRight: '5px'
+        }}
+      />
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 40px)',
+          gap: '5px',
+          width: 'fit-content'
+        }}
+      >
+        {children}
+      </div>
+      <div
+        style={{
+          width: '7px',
+          alignSelf: 'stretch',
+          border: '2.5px solid var(--border-color)',
+          borderLeft: 'none',
+          borderRadius: '0 7px 7px 0',
+          marginLeft: '5px'
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * Clean Editable Matrix Cell matching Step 8 and Step 9
+ * Highlights changed cells with soft accent tint instead of solid black or bright colors
+ */
+const Step10EditableCell = React.memo(function Step10EditableCell({
+  value,
+  row,
+  col,
+  isHovered,
+  isChanged = false,
+  badgeText = null,
+  onChange,
+  onHover
+}) {
+  const [text, setText] = useState(String(value));
+  const isFocusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isFocusedRef.current) {
+      setText(String(value));
+    }
+  }, [value]);
+
+  const handleChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    setText(raw);
+    if (raw !== '') {
+      const num = Math.min(255, Math.max(0, parseInt(raw, 10)));
+      onChange && onChange(row, col, num);
+    }
+  };
+
+  const handleBlur = () => {
+    isFocusedRef.current = false;
+    let finalVal = 0;
+    if (text !== '') {
+      const parsed = parseInt(text, 10);
+      if (!isNaN(parsed)) {
+        finalVal = Math.min(255, Math.max(0, parsed));
+      }
+    }
+    setText(String(finalVal));
+    onChange && onChange(row, col, finalVal);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const current = parseInt(text, 10) || 0;
+      const step = e.shiftKey ? 15 : 5;
+      const next = Math.min(255, current + step);
+      setText(String(next));
+      onChange && onChange(row, col, next);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const current = parseInt(text, 10) || 0;
+      const step = e.shiftKey ? 15 : 5;
+      const next = Math.max(0, current - step);
+      setText(String(next));
+      onChange && onChange(row, col, next);
+    } else if (e.key === 'Enter') {
+      e.target.blur();
+    }
+  };
+
+  return (
+    <div
+      style={{
+        width: '40px',
+        height: '40px',
+        borderRadius: '7px',
+        border: `1px solid ${
+          isHovered
+            ? 'var(--accent-primary)'
+            : isChanged
+            ? 'var(--border-hover)'
+            : 'var(--border-color)'
+        }`,
+        background: isHovered
+          ? 'var(--bg-hover)'
+          : isChanged
+          ? 'var(--accent-subtle)'
+          : 'var(--bg-secondary)',
+        boxShadow: isHovered ? '0 0 0 1px var(--border-hover)' : 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        transition: 'all 0.15s ease'
+      }}
+      onMouseEnter={onHover}
+      onTouchStart={onHover}
+      onWheel={(e) => {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 5 : -5;
+        const current = parseInt(text, 10) || 0;
+        const next = Math.min(255, Math.max(0, current + delta));
+        setText(String(next));
+        onChange && onChange(row, col, next);
+      }}
+    >
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        maxLength={3}
+        value={text}
+        onFocus={(e) => {
+          isFocusedRef.current = true;
+          onHover && onHover();
+          e.target.select();
+        }}
+        onBlur={handleBlur}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        style={{
+          width: '100%',
+          height: '100%',
+          textAlign: 'center',
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          color: 'var(--text-primary)',
+          fontWeight: isChanged ? 800 : 700,
+          fontSize: '0.92rem',
+          fontFamily: 'var(--font-mono)',
+          fontVariantNumeric: 'tabular-nums',
+          cursor: 'pointer'
+        }}
+        aria-label={`Cell [${row}, ${col}]`}
+      />
+      {badgeText && isChanged && (
+        <span
+          style={{
+            position: 'absolute',
+            bottom: '1px',
+            fontSize: '0.52rem',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 800,
+            color: 'var(--text-secondary)',
+            lineHeight: 1,
+            pointerEvents: 'none'
+          }}
+        >
+          {badgeText}
+        </span>
+      )}
+    </div>
+  );
+});
+
+/**
+ * Result Matrix Cell (Read-Only) for Card 3 (D) and Card 4 (M)
+ * Displays unchanged pixels with neutral background, and differences with soft primary accent
+ */
+const Step10ResultCell = React.memo(function Step10ResultCell({
+  value,
+  row,
+  col,
+  isHovered,
+  isHighlighted = false,
+  isNonZero = false,
+  badgeText = null,
+  onHover
+}) {
+  return (
+    <div
+      style={{
+        width: '40px',
+        height: '40px',
+        borderRadius: '7px',
+        border: `1px solid ${
+          isHovered
+            ? 'var(--accent-primary)'
+            : isHighlighted
+            ? 'var(--accent-primary)'
+            : 'var(--border-color)'
+        }`,
+        background: isHovered
+          ? 'var(--bg-hover)'
+          : isHighlighted
+          ? 'var(--accent-subtle)'
+          : isNonZero
+          ? 'var(--bg-tertiary)'
+          : 'var(--bg-secondary)',
+        boxShadow: isHovered ? '0 0 0 1px var(--border-hover)' : 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        transition: 'all 0.15s ease',
+        cursor: 'pointer'
+      }}
+      onMouseEnter={onHover}
+      onTouchStart={onHover}
+    >
+      <span
+        style={{
+          color: isHighlighted
+            ? 'var(--text-primary)'
+            : isNonZero
+            ? 'var(--text-secondary)'
+            : value === 0 || value === '0'
+            ? 'var(--text-muted)'
+            : 'var(--text-primary)',
+          fontWeight: isHighlighted ? 800 : isNonZero ? 700 : 600,
+          fontSize: '0.92rem',
+          fontFamily: 'var(--font-mono)',
+          fontVariantNumeric: 'tabular-nums'
+        }}
+      >
+        {value}
+      </span>
+      {badgeText && isHighlighted && (
+        <span
+          style={{
+            position: 'absolute',
+            bottom: '1px',
+            fontSize: '0.52rem',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 800,
+            color: 'var(--accent-primary)',
+            lineHeight: 1
+          }}
+        >
+          {badgeText}
+        </span>
+      )}
+    </div>
+  );
+});
+
 export default function Step10FindWhatChanged({ onSelectStep }) {
   // Main view mode: 'matrix' (4x4 numerical pipeline) or 'photoLab' (custom photos upload/camera)
   const [activeTab, setActiveTab] = useState('matrix');
@@ -299,11 +566,11 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
   // Threshold T for change detection
   const [threshold, setThreshold] = useState(25);
 
-  // Sensor Noise Level: 0 (clean), 3 (low), 6 (medium), 12 (high)
+  // Sensor Noise Level: 0 (clean), 4 (subtle), 10 (heavy)
   const [noiseLevel, setNoiseLevel] = useState(0);
 
-  // Card 4 View: 'highlight' (Scene B + Glowing Overlay), 'diffMask' (Binary Mask), 'signed' (B - A with + / -)
-  const [card4View, setCard4View] = useState('highlight');
+  // Card 4 View: 'diffMask' (Binary Mask 1/0), 'highlight' (Overlay Scene B), 'signed' (B - A with + / -)
+  const [card4View, setCard4View] = useState('diffMask');
 
   // Synchronized hovered cell: { row, col, x, y }
   const [hoveredCell, setHoveredCell] = useState(null);
@@ -318,7 +585,7 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
   const [photoMatrixB, setPhotoMatrixB] = useState(null);
   const [photoThreshold, setPhotoThreshold] = useState(30);
   const [isCameraActive, setIsCameraActive] = useState(false);
-  const [cameraStep, setCameraStep] = useState(1); // 1 = capturing photo 1, 2 = capturing photo 2
+  const [cameraStep, setCameraStep] = useState(1);
   const [cameraError, setCameraError] = useState(null);
 
   const videoRef = useRef(null);
@@ -330,7 +597,7 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
     if (noiseLevel === 0) return matrixB;
     return matrixB.map((row, r) =>
       row.map((val, c) => {
-        const jitter = Math.sin(r * 3.7 + c * 5.9) * noiseLevel;
+        const jitter = Math.sin((r + 1) * 3.7 + (c + 2) * 5.3) * noiseLevel;
         return clampPixel(val + Math.round(jitter));
       })
     );
@@ -352,69 +619,47 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
     const cols = matrixA[0].length;
     let changedCount = 0;
     let totalPixels = rows * cols;
-    let maxDelta = 0;
     let posDeltaCount = 0;
     let negDeltaCount = 0;
-
-    let minR = rows, maxR = -1, minC = cols, maxC = -1;
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const delta = matrixD[r][c];
-        if (delta > maxDelta) maxDelta = delta;
-
         if (delta > threshold) {
           changedCount++;
-          if (r < minR) minR = r;
-          if (r > maxR) maxR = r;
-          if (c < minC) minC = c;
-          if (c > maxC) maxC = c;
-
-          const signed = matrixB[r][c] - matrixA[r][c];
+          const signed = noisyMatrixB[r][c] - matrixA[r][c];
           if (signed > 0) posDeltaCount++;
           else if (signed < 0) negDeltaCount++;
         }
       }
     }
 
-    // Determine classification
     let classification = 'No Significant Change';
     let classBadge = 'Static';
-    let classColor = 'var(--text-muted)';
 
     if (changedCount > 0) {
       if (posDeltaCount > 0 && negDeltaCount > 0) {
         classification = 'Object Moved (Displacement)';
         classBadge = '⇄ Moved / Motion';
-        classColor = '#38BDF8';
       } else if (posDeltaCount >= negDeltaCount) {
         classification = 'Object Added (Brightness Gain)';
         classBadge = '+ Object Added';
-        classColor = '#10B981';
       } else {
         classification = 'Object Removed (Returned to BG)';
         classBadge = '− Object Removed';
-        classColor = '#EF4444';
       }
     }
 
     const pctChanged = ((changedCount / totalPixels) * 100).toFixed(0);
-    const hasBoundingBox = maxR >= minR && maxC >= minC;
 
     return {
       changedCount,
       totalPixels,
       pctChanged,
-      maxDelta,
-      posDeltaCount,
-      negDeltaCount,
       classification,
-      classBadge,
-      classColor,
-      hasBoundingBox,
-      boundingBox: hasBoundingBox ? { minR, maxR, minC, maxC } : null
+      classBadge
     };
-  }, [matrixA, matrixB, matrixD, threshold]);
+  }, [matrixA, noisyMatrixB, matrixD, threshold]);
 
   // Handle cell value change in Scene 1 (A)
   const handleCellChangeA = (r, c, val) => {
@@ -450,6 +695,46 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
     const tempA = matrixA.map(row => [...row]);
     setMatrixA(matrixB.map(row => [...row]));
     setMatrixB(tempA);
+  };
+
+  // Randomize Scene and altered object with realistic medium-tone background
+  const handleRandomize = () => {
+    const rows = 4;
+    const cols = 4;
+    const bgBase = Math.floor(Math.random() * 35) + 125; // 125 to 160
+    const newA = Array.from({ length: rows }, () =>
+      Array.from({ length: cols }, () => bgBase + Math.floor(Math.random() * 10) - 5)
+    );
+    const newB = newA.map(row => [...row]);
+
+    const type = Math.floor(Math.random() * 3);
+    const startR = Math.floor(Math.random() * 2);
+    const startC = Math.floor(Math.random() * 2);
+
+    if (type === 0) {
+      // Added
+      for (let r = startR; r < startR + 2; r++) {
+        for (let c = startC; c < startC + 2; c++) {
+          newB[r][c] = Math.min(255, bgBase + 85 + Math.floor(Math.random() * 25));
+        }
+      }
+    } else if (type === 1) {
+      // Removed
+      for (let r = startR; r < startR + 2; r++) {
+        for (let c = startC; c < startC + 2; c++) {
+          newA[r][c] = Math.min(255, bgBase + 85 + Math.floor(Math.random() * 25));
+        }
+      }
+    } else {
+      // Moved
+      newA[0][0] = 240; newA[0][1] = 240;
+      newA[1][0] = 240; newA[1][1] = 240;
+      newB[2][2] = 240; newB[2][3] = 240;
+      newB[3][2] = 240; newB[3][3] = 240;
+    }
+
+    setMatrixA(newA);
+    setMatrixB(newB);
   };
 
   // Hovered Info
@@ -488,7 +773,6 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
             const red = imgData[idx];
             const green = imgData[idx + 1];
             const blue = imgData[idx + 2];
-            // Standard luminance formula
             const gray = clampPixel(0.299 * red + 0.587 * green + 0.114 * blue);
             row.push(gray);
           }
@@ -500,7 +784,6 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
     });
   };
 
-  // Handle file uploads
   const handleFileUpload = (e, slot) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -521,40 +804,35 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
     reader.readAsDataURL(file);
   };
 
-  // Load procedural demo sample photos
   const loadSamplePhotos = async (scenarioType) => {
-    // Generate two synthetic canvas pictures
     const createSampleCanvas = (hasObject, isMoved) => {
       const canvas = document.createElement('canvas');
       canvas.width = 160;
       canvas.height = 160;
       const ctx = canvas.getContext('2d');
 
-      // Tabletop background with wood texture
-      ctx.fillStyle = '#4B3621';
+      // Light wood desk texture with balanced contrast
+      ctx.fillStyle = '#C8B097';
       ctx.fillRect(0, 0, 160, 160);
-      ctx.fillStyle = '#5C4033';
+      ctx.fillStyle = '#B8A087';
       for (let i = 0; i < 160; i += 20) {
         ctx.fillRect(0, i, 160, 10);
       }
 
-      // Add object if specified
       if (hasObject) {
         const objX = isMoved ? 115 : 45;
         const objY = isMoved ? 110 : 45;
-        // Bright mug
         ctx.beginPath();
         ctx.arc(objX, objY, 26, 0, Math.PI * 2);
-        ctx.fillStyle = '#F3F4F6';
+        ctx.fillStyle = '#FFFFFF';
         ctx.fill();
         ctx.strokeStyle = '#D1D5DB';
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 3;
         ctx.stroke();
 
-        // Mug coffee center
         ctx.beginPath();
         ctx.arc(objX, objY, 18, 0, Math.PI * 2);
-        ctx.fillStyle = '#271506';
+        ctx.fillStyle = '#423326';
         ctx.fill();
       }
 
@@ -580,7 +858,6 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
       setPhotoMatrixA(matA);
       setPhotoMatrixB(matB);
     } else {
-      // Moved
       const urlA = createSampleCanvas(true, false);
       const urlB = createSampleCanvas(true, true);
       setPhotoA(urlA);
@@ -592,7 +869,6 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
     }
   };
 
-  // Re-process photo matrices when resolution changes
   useEffect(() => {
     if (photoA) {
       processImageToMatrix(photoA, photoLabResolution).then(setPhotoMatrixA);
@@ -602,7 +878,6 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
     }
   }, [photoLabResolution]);
 
-  // Webcam capture functionality
   const startCamera = async () => {
     setCameraError(null);
     try {
@@ -615,7 +890,7 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
       }
       setIsCameraActive(true);
       setCameraStep(1);
-    } catch (err) {
+    } catch {
       setCameraError('Camera access denied or unavailable. You can still upload photos from disk!');
       setIsCameraActive(false);
     }
@@ -652,13 +927,11 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
     }
   };
 
-  // Photo Lab Difference Matrix
   const photoMatrixD = useMemo(() => {
     if (!photoMatrixA || !photoMatrixB) return null;
     return subtractMatrices(photoMatrixA, photoMatrixB, true);
   }, [photoMatrixA, photoMatrixB]);
 
-  // Photo Lab Stats
   const photoStats = useMemo(() => {
     if (!photoMatrixD) return null;
     let changed = 0;
@@ -684,39 +957,28 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
     >
       {/* STEP HEADER */}
       <div className="step-header-box">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.45rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-            <span className="modal-badge-tag" style={{ margin: 0, background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', borderColor: 'rgba(56, 189, 248, 0.35)' }}>
-              Visual Lab 10
-            </span>
-            <span style={{ fontSize: '0.85rem', color: '#38BDF8', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-              Change Detection Pipeline: D = |A − B|
-            </span>
-          </div>
-        </div>
-
-        <h2 className="step-heading">Visual Lab 10: Change Detection</h2>
+        <h2 className="step-heading">Change Detection</h2>
         <p className="step-description">
-          Take two photographs of the same scene where an object has been <strong>added</strong>, <strong>removed</strong>, or <strong>moved</strong>. Represent them as matrices <strong>A</strong> and <strong>B</strong>, and calculate the absolute difference <code>D = |A − B|</code>. Pixels that stayed the same yield values near zero, while altered regions produce large differences. You can also upload or take your own two photographs!
+          Take two photographs or matrices of the same scene: <strong>Scene 1 (A)</strong> and <strong>Scene 2 (B)</strong>. Compute the element-wise absolute difference <code>D = |A − B|</code> to isolate altered regions. Applying sensitivity threshold <strong>T</strong> creates a binary change mask: <strong>M(x, y) = 1 if D(x, y) &gt; T, else 0</strong>.
         </p>
 
         {/* Mode Switcher Tabs */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.9rem' }}>
+        <div className="addition-mode-toggle" style={{ marginTop: '0.85rem' }}>
           <button
-            className={`preset-btn ${activeTab === 'matrix' ? 'active' : ''}`}
+            type="button"
+            className={`mode-btn ${activeTab === 'matrix' ? 'active' : ''}`}
             onClick={() => setActiveTab('matrix')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.45rem 1rem' }}
           >
-            <Grid size={15} />
+            <Grid size={14} />
             <span>Interactive Matrix Pipeline (4×4)</span>
           </button>
           <button
-            className={`preset-btn ${activeTab === 'photoLab' ? 'active' : ''}`}
+            type="button"
+            className={`mode-btn ${activeTab === 'photoLab' ? 'active' : ''}`}
             onClick={() => setActiveTab('photoLab')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.45rem 1rem' }}
           >
-            <Camera size={15} />
-            <span>Photo Change Detection Lab (Upload / Camera)</span>
+            <Camera size={14} />
+            <span>Photo Change Detection Lab</span>
           </button>
         </div>
       </div>
@@ -724,22 +986,22 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
       {activeTab === 'matrix' ? (
         <>
           {/* TOP CONTROLS CARD */}
-          <div className="top-control-card subtraction-controls-card">
+          <div className="subtraction-controls-card">
             <div className="subtraction-controls-grid">
               
               {/* Part 1: Threshold Slider & Presets */}
               <div className="slider-group" style={{ marginBottom: 0 }}>
-                <div className="slider-label" style={{ marginBottom: '0.35rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Filter size={16} color="var(--accent-cyan)" />
+                <div className="threshold-label-row">
+                  <div className="threshold-title-wrap">
+                    <Filter size={15} style={{ color: 'var(--text-secondary)' }} />
                     <span>Change Sensitivity Threshold (T):</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                    <span className="font-mono" style={{ color: 'var(--accent-cyan)', fontSize: '1.25rem', fontWeight: '800' }}>
+                  <div className="threshold-val-wrap">
+                    <span className="threshold-num-large font-mono">
                       {threshold}
                     </span>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                      (|A − B| &gt; {threshold} ➔ Change)
+                    <span className="threshold-formula-sub">
+                      (|A − B| &gt; {threshold} ➔ Change 1)
                     </span>
                   </div>
                 </div>
@@ -755,742 +1017,492 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
                   onInput={(e) => setThreshold(parseInt(e.target.value, 10))}
                   style={{ 
                     '--slider-pct': `${(threshold / 150) * 100}%`, 
-                    '--slider-color': 'var(--accent-cyan)' 
+                    '--slider-color': 'var(--text-primary)' 
                   }}
                 />
 
-                {/* Quick Threshold Presets */}
-                <div className="alpha-presets-row">
-                  <button 
-                    className={`mini-preset-pill ${threshold === 0 ? 'active' : ''}`}
-                    onClick={() => setThreshold(0)}
-                    title="T = 0 (Detect all differences including tiny noise)"
-                  >
-                    T = 0 (Raw)
-                  </button>
-                  <button 
-                    className={`mini-preset-pill ${threshold === 15 ? 'active' : ''}`}
-                    onClick={() => setThreshold(15)}
-                    title="T = 15 (High sensitivity)"
-                  >
-                    T = 15 (Sensitive)
-                  </button>
-                  <button 
-                    className={`mini-preset-pill ${threshold === 25 ? 'active' : ''}`}
-                    onClick={() => setThreshold(25)}
-                    title="T = 25 (Recommended default)"
-                  >
-                    T = 25 (Balanced)
-                  </button>
-                  <button 
-                    className={`mini-preset-pill ${threshold === 50 ? 'active' : ''}`}
-                    onClick={() => setThreshold(50)}
-                    title="T = 50 (High contrast only)"
-                  >
-                    T = 50 (High)
-                  </button>
+                {/* Synchronized Threshold Presets Strip */}
+                <div className="threshold-presets-strip">
+                  {THRESHOLD_PRESETS.map((p) => (
+                    <button
+                      key={p.val}
+                      type="button"
+                      className={`threshold-preset-pill ${threshold === p.val ? 'active' : ''}`}
+                      onClick={() => setThreshold(p.val)}
+                      title={`Set threshold to ${p.val}`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Part 2: Presets & Noise Simulator */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              {/* Part 2: Sensor Noise & Presets */}
+              <div className="subtraction-right-controls">
                 <div className="control-row-group">
-                  <span className="control-row-label">
-                    Scenarios:
-                  </span>
-                  <div className="addition-presets-strip" style={{ flexWrap: 'wrap' }}>
+                  <div className="control-row-label-wrap">
+                    <Volume2 size={14} style={{ color: 'var(--text-secondary)' }} />
+                    <span>Camera Noise &amp; Light Jitter:</span>
+                  </div>
+                  
+                  <div className="noise-pill-group">
+                    <button
+                      type="button"
+                      className={`noise-btn ${noiseLevel === 0 ? 'active' : ''}`}
+                      onClick={() => setNoiseLevel(0)}
+                      title="Ideal: No sensor noise"
+                    >
+                      0 (Ideal)
+                    </button>
+                    <button
+                      type="button"
+                      className={`noise-btn ${noiseLevel === 4 ? 'active' : ''}`}
+                      onClick={() => setNoiseLevel(4)}
+                      title="Subtle sensor noise: ±4"
+                    >
+                      &plusmn;4 (Subtle)
+                    </button>
+                    <button
+                      type="button"
+                      className={`noise-btn ${noiseLevel === 10 ? 'active' : ''}`}
+                      onClick={() => setNoiseLevel(10)}
+                      title="Heavy lighting noise: ±10"
+                    >
+                      &plusmn;10 (Heavy)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Presets and Actions Row */}
+                <div className="control-row-group">
+                  <div className="presets-pill-group">
+                    <span className="control-row-label-wrap" style={{ marginRight: '0.15rem' }}>
+                      Scenarios:
+                    </span>
                     {Object.entries(CHANGE_PRESETS).map(([key, data]) => (
                       <button
                         key={key}
+                        type="button"
                         className={`preset-btn mini-btn ${currentPresetKey === key ? 'active' : ''}`}
                         onClick={() => handleSelectPreset(key)}
                         title={data.desc}
-                        style={{
-                          borderColor: currentPresetKey === key ? data.badgeColor : undefined,
-                          color: currentPresetKey === key ? data.badgeColor : undefined
-                        }}
                       >
                         {data.name}
                       </button>
                     ))}
                   </div>
-                </div>
 
-                {/* Camera Sensor Noise Simulation */}
-                <div className="control-row-group" style={{ alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span className="control-row-label">Camera Sensor Noise:</span>
-                    <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>(Real photography jitter)</span>
-                  </div>
-                  <div className="noise-pill-group">
-                    <button
-                      className={`noise-btn ${noiseLevel === 0 ? 'active' : ''}`}
-                      onClick={() => setNoiseLevel(0)}
-                      title="Noise = 0 (Ideal perfect math)"
+                  <div className="action-btn-group">
+                    <button 
+                      type="button"
+                      className="icon-action-btn" 
+                      onClick={handleRandomize}
+                      title="Generate random scene change"
                     >
-                      ±0
+                      <Shuffle size={13} />
+                      <span>Random</span>
                     </button>
-                    <button
-                      className={`noise-btn ${noiseLevel === 3 ? 'active' : ''}`}
-                      onClick={() => setNoiseLevel(3)}
-                      title="Noise = ±3 (Realistic sensor noise)"
+                    <button 
+                      type="button"
+                      className="icon-action-btn" 
+                      onClick={handleSwapScenes}
+                      title="Swap Scene A and Scene B"
                     >
-                      ±3
+                      <Move size={13} />
+                      <span>Swap</span>
                     </button>
-                    <button
-                      className={`noise-btn ${noiseLevel === 7 ? 'active' : ''}`}
-                      onClick={() => setNoiseLevel(7)}
-                      title="Noise = ±7 (Dim lighting / webcam)"
+                    <button 
+                      type="button"
+                      className="icon-action-btn" 
+                      onClick={handleReset}
+                      title="Reset to default preset"
                     >
-                      ±7
-                    </button>
-                    <button
-                      className={`noise-btn ${noiseLevel === 14 ? 'active' : ''}`}
-                      onClick={() => setNoiseLevel(14)}
-                      title="Noise = ±14 (Heavy sensor grain)"
-                    >
-                      ±14
+                      <RotateCcw size={13} />
                     </button>
                   </div>
                 </div>
 
-                {/* Actions: Swap & Reset */}
-                <div style={{ display: 'flex', gap: '0.45rem', marginTop: '0.15rem' }}>
-                  <button
-                    className="preset-btn mini-btn"
-                    onClick={handleSwapScenes}
-                    title="Swap Scene A and Scene B"
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
-                  >
-                    <Move size={12} />
-                    <span>Swap A ⇄ B</span>
-                  </button>
-                  <button
-                    className="preset-btn mini-btn"
-                    onClick={handleReset}
-                    title="Reset to default preset values"
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
-                  >
-                    <RotateCcw size={12} />
-                    <span>Reset</span>
-                  </button>
-                </div>
               </div>
             </div>
           </div>
 
-          {/* PIPELINE CARDS: Image 1 → Image 2 → Subtract → Highlight the Change */}
-          <div className="addition-pipeline-row">
+          {/* THRESHOLD LOGIC & NOISE STATUS BAR */}
+          <div className="subtraction-logic-bar">
+            <div className="logic-bar-left">
+              <Sparkles size={14} style={{ flexShrink: 0, color: 'var(--text-secondary)' }} />
+              {hoveredInfo ? (
+                <span style={{ fontFamily: 'var(--font-mono)' }}>
+                  Cell ({hoveredInfo.row + 1}, {hoveredInfo.col + 1}):{' '}
+                  A = <strong>{hoveredInfo.valA}</strong> &minus; B = <strong>{hoveredInfo.valB}</strong> &rarr;{' '}
+                  D = |{hoveredInfo.valA} &minus; {hoveredInfo.valB}| = <strong>{hoveredInfo.valD}</strong>{' '}
+                  ({hoveredInfo.valD} {hoveredInfo.isAboveT ? '>' : '\u2264'} T={threshold}) &rarr;{' '}
+                  <strong>M = {hoveredInfo.isAboveT ? `1 (Change Detected: ${hoveredInfo.signedDiff > 0 ? '+' : ''}${hoveredInfo.signedDiff})` : '0 (Static)'}</strong>
+                </span>
+              ) : (
+                <span>
+                  <strong>Threshold Logic:</strong> D(x, y) = |A(x, y) &minus; B(x, y)|. If D &gt; {threshold}, M(x, y) = 1 (Change Detected). Otherwise M(x, y) = 0 (Static). Hover any cell to inspect!
+                </span>
+              )}
+            </div>
+            {noiseLevel > 0 && (
+              <span className="noise-alert-badge" title="Sensor noise alters unchanged background pixels">
+                <AlertCircle size={12} />
+                Noise Active: Sensor jitter (2&ndash;{noiseLevel})
+              </span>
+            )}
+          </div>
+
+          {/* =========================================================================
+              THE 4-COLUMN HORIZONTAL LINE PIPELINE:
+              SCENE 1 (A)  ➖  SCENE 2 (B)  🟰  DIFFERENCE (D)  ➔  CHANGE MASK (M)
+              Identical to Visual Lab 09
+             ========================================================================= */}
+          <div className="subtraction-horizontal-line-container">
             
-            {/* COLUMN 1: IMAGE 1 (A) */}
-            <div className="addition-column-card card-mat-a">
-              <div className="addition-column-header">
-                <div className="col-header-left">
-                  <span className="matrix-title-badge badge-a">A</span>
-                  <div>
-                    <h3 className="addition-card-title">Image 1 (A)</h3>
-                    <span className="addition-card-subtitle">Initial Scene State</span>
-                  </div>
+            {/* COLUMN 1: SCENE 1 (A) */}
+            <div className="addition-column-card glass-level-2">
+              <div className="matrix-header">
+                <div className="matrix-header-title-row">
+                  <h3 className="matrix-title-text">Scene 1 (A)</h3>
                 </div>
-                <div className="col-header-right">
-                  <span className="matrix-dims">4 × 4</span>
+                <div className="matrix-header-badge-wrap">
+                  <span className="matrix-dims-badge">4 × 4</span>
                 </div>
               </div>
 
-              <div className="addition-card-body">
-                <div className="canvas-subrow">
-                  <PipelineCanvas
-                    matrix={matrixA}
-                    hoveredCell={hoveredCell}
-                    onHoverCell={setHoveredCell}
-                    pixelSize={24}
-                    highlightColor="var(--accent-purple)"
-                    title="Scene 1 (Reference A)"
-                  />
-                  <div className="canvas-subrow-info">
-                    <span className="subrow-label">Scene 1 (A)</span>
-                    <span className="subrow-hint">Before any alteration</span>
-                    <div className="subrow-actions">
-                      <span className="badge-tag-mini">Editable</span>
-                    </div>
+              <div className="canvas-subrow">
+                <PipelineCanvas
+                  matrix={matrixA}
+                  hoveredCell={hoveredCell}
+                  onHoverCell={setHoveredCell}
+                  pixelSize={20}
+                  title="Scene 1 (Reference A)"
+                />
+                <div className="canvas-subrow-info">
+                  <span className="subrow-label">Scene 1 (A)</span>
+                  <span className="subrow-hint">Initial state before change</span>
+                  <div className="subrow-actions">
+                    <span className="badge-tag-mini">Editable</span>
                   </div>
                 </div>
+              </div>
 
-                {/* 4x4 Grid for A */}
-                <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': 'var(--accent-purple)' }}>
-                  <div className="matrix-left-bracket" style={{ borderColor: 'var(--accent-purple)' }} />
-                  <div className="matrix-with-indices">
-                    <div className="matrix-col-indices-row">
-                      {matrixA[0].map((_, cIdx) => (
-                        <span key={`col-a-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
-                      ))}
-                    </div>
-                    <div className="matrix-body-row">
-                      <div className="matrix-row-indices-col">
-                        {matrixA.map((_, rIdx) => (
-                          <span key={`row-a-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
-                        ))}
-                      </div>
-                      <div 
-                        className="matrix-grid compact-grid"
-                        style={{ gridTemplateColumns: `repeat(${matrixA[0].length}, 1fr)` }}
-                        onMouseLeave={() => setHoveredCell(null)}
-                      >
-                        {matrixA.map((row, i) =>
-                          row.map((val, j) => {
-                            const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                            return (
-                              <div
-                                key={`a-${i}-${j}`}
-                                className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                                style={{
-                                  '--cell-accent': 'var(--accent-purple)',
-                                  borderColor: isHovered ? 'var(--accent-purple)' : undefined,
-                                  background: `linear-gradient(135deg, rgba(${val},${val},${val},0.16) 0%, var(--bg-secondary) 100%)`
-                                }}
-                                onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                                onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                                onWheel={(e) => {
-                                  e.preventDefault();
-                                  const delta = e.deltaY < 0 ? 5 : -5;
-                                  handleCellChangeA(i, j, Math.min(255, Math.max(0, val + delta)));
-                                }}
-                              >
-                                <div className="editable-cell-inner compact-inner">
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={val}
-                                    onFocus={(e) => e.target.select()}
-                                    onChange={(e) => {
-                                      const parsed = parseInt(e.target.value);
-                                      const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
-                                      handleCellChangeA(i, j, valid);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-                                        e.preventDefault();
-                                        handleCellChangeA(i, j, Math.min(255, val + 5));
-                                      } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-                                        e.preventDefault();
-                                        handleCellChangeA(i, j, Math.max(0, val - 5));
-                                      }
-                                    }}
-                                    className="matrix-cell-input compact-input"
-                                    style={{ color: 'var(--accent-purple)' }}
-                                  />
-                                  <div className="stepper-arrow-buttons compact-steppers">
-                                    <button
-                                      type="button"
-                                      className="stepper-arrow-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCellChangeA(i, j, Math.min(255, val + 10));
-                                      }}
-                                      title="+10"
-                                    >
-                                      ▲
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="stepper-arrow-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCellChangeA(i, j, Math.max(0, val - 10));
-                                      }}
-                                      title="-10"
-                                    >
-                                      ▼
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="matrix-right-bracket" style={{ borderColor: 'var(--accent-purple)' }} />
-                </div>
+              {/* 4x4 Numerical Matrix Grid */}
+              <MatrixBracketWrapper onMouseLeave={() => setHoveredCell(null)}>
+                {matrixA.map((row, i) =>
+                  row.map((val, j) => (
+                    <Step10EditableCell
+                      key={`a-${i}-${j}`}
+                      value={val}
+                      row={i}
+                      col={j}
+                      isHovered={hoveredCell && hoveredCell.row === i && hoveredCell.col === j}
+                      onChange={handleCellChangeA}
+                      onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                    />
+                  ))
+                )}
+              </MatrixBracketWrapper>
+
+              <div className="matrix-footer-hint" style={{ marginTop: '0.45rem' }}>
+                <span>Click to edit • Use ▲ ▼ keys</span>
               </div>
             </div>
 
-            {/* OPERATOR 1: ➔ COMPARE */}
+            {/* OPERATOR 1: ➖ COMPARE */}
             <div className="addition-operator-divider">
-              <div className="operator-badge minus-badge" title="Subtract matrices element-by-element">
-                <Minus size={20} strokeWidth={2.8} />
+              <div className="operator-badge" title="Subtract matrices element-by-element: [A - B]">
+                <Minus size={18} strokeWidth={2.6} />
               </div>
               <span className="operator-label">Compare</span>
             </div>
 
-            {/* COLUMN 2: IMAGE 2 (B) */}
-            <div className="addition-column-card card-mat-b">
-              <div className="addition-column-header">
-                <div className="col-header-left">
-                  <span className="matrix-title-badge badge-b">B</span>
-                  <div>
-                    <h3 className="addition-card-title">Image 2 (B)</h3>
-                    <span className="addition-card-subtitle" style={{ color: '#F59E0B' }}>
-                      Modified Scene
-                    </span>
-                  </div>
+            {/* COLUMN 2: SCENE 2 (B) */}
+            <div className="addition-column-card glass-level-2">
+              <div className="matrix-header">
+                <div className="matrix-header-title-row">
+                  <h3 className="matrix-title-text">Scene 2 (B)</h3>
                 </div>
-                <div className="col-header-right">
-                  <span className="matrix-dims">4 × 4</span>
+                <div className="matrix-header-badge-wrap">
+                  <span className="matrix-dims-badge">4 × 4</span>
                 </div>
               </div>
 
-              <div className="addition-card-body">
-                <div className="canvas-subrow">
-                  <PipelineCanvas
-                    matrix={noisyMatrixB}
-                    hoveredCell={hoveredCell}
-                    onHoverCell={setHoveredCell}
-                    pixelSize={24}
-                    highlightColor="#F59E0B"
-                    title="Scene 2 (Modified B)"
-                  />
-                  <div className="canvas-subrow-info">
-                    <span className="subrow-label">Scene 2 (B)</span>
-                    <span className="subrow-hint">Object added, removed, or moved</span>
-                    <div className="subrow-actions">
-                      <span className="badge-tag-mini" style={{ color: '#F59E0B', borderColor: 'rgba(245, 158, 11, 0.3)' }}>
-                        Editable
-                      </span>
-                    </div>
+              <div className="canvas-subrow">
+                <PipelineCanvas
+                  matrix={noisyMatrixB}
+                  hoveredCell={hoveredCell}
+                  onHoverCell={setHoveredCell}
+                  pixelSize={20}
+                  title="Scene 2 (Modified B)"
+                />
+                <div className="canvas-subrow-info">
+                  <span className="subrow-label">Scene 2 (B)</span>
+                  <span className="subrow-hint">Object added, removed, or moved</span>
+                  <div className="subrow-actions">
+                    <span className="badge-tag-mini">Editable</span>
                   </div>
                 </div>
+              </div>
 
-                {/* 4x4 Grid for B */}
-                <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': '#F59E0B' }}>
-                  <div className="matrix-left-bracket" style={{ borderColor: '#F59E0B' }} />
-                  <div className="matrix-with-indices">
-                    <div className="matrix-col-indices-row">
-                      {matrixB[0].map((_, cIdx) => (
-                        <span key={`col-b-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
-                      ))}
-                    </div>
-                    <div className="matrix-body-row">
-                      <div className="matrix-row-indices-col">
-                        {matrixB.map((_, rIdx) => (
-                          <span key={`row-b-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
-                        ))}
-                      </div>
-                      <div 
-                        className="matrix-grid compact-grid"
-                        style={{ gridTemplateColumns: `repeat(${matrixB[0].length}, 1fr)` }}
-                        onMouseLeave={() => setHoveredCell(null)}
-                      >
-                        {noisyMatrixB.map((row, i) =>
-                          row.map((val, j) => {
-                            const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                            return (
-                              <div
-                                key={`b-${i}-${j}`}
-                                className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                                style={{
-                                  '--cell-accent': '#F59E0B',
-                                  borderColor: isHovered ? '#F59E0B' : undefined,
-                                  background: `linear-gradient(135deg, rgba(${val},${val},${val},0.16) 0%, var(--bg-secondary) 100%)`
-                                }}
-                                onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                                onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                                onWheel={(e) => {
-                                  e.preventDefault();
-                                  const delta = e.deltaY < 0 ? 5 : -5;
-                                  handleCellChangeB(i, j, Math.min(255, Math.max(0, val + delta)));
-                                }}
-                              >
-                                <div className="editable-cell-inner compact-inner">
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={val}
-                                    onFocus={(e) => e.target.select()}
-                                    onChange={(e) => {
-                                      const parsed = parseInt(e.target.value);
-                                      const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
-                                      handleCellChangeB(i, j, valid);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-                                        e.preventDefault();
-                                        handleCellChangeB(i, j, Math.min(255, val + 5));
-                                      } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-                                        e.preventDefault();
-                                        handleCellChangeB(i, j, Math.max(0, val - 5));
-                                      }
-                                    }}
-                                    className="matrix-cell-input compact-input"
-                                    style={{ color: '#F59E0B' }}
-                                  />
-                                  <div className="stepper-arrow-buttons compact-steppers">
-                                    <button
-                                      type="button"
-                                      className="stepper-arrow-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCellChangeB(i, j, Math.min(255, val + 10));
-                                      }}
-                                      title="+10"
-                                    >
-                                      ▲
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="stepper-arrow-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCellChangeB(i, j, Math.max(0, val - 10));
-                                      }}
-                                      title="-10"
-                                    >
-                                      ▼
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="matrix-right-bracket" style={{ borderColor: '#F59E0B' }} />
-                </div>
+              {/* 4x4 Numerical Matrix Grid */}
+              <MatrixBracketWrapper onMouseLeave={() => setHoveredCell(null)}>
+                {noisyMatrixB.map((row, i) =>
+                  row.map((val, j) => {
+                    const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                    const isChanged = Math.abs(val - matrixA[i][j]) > threshold;
+                    const badgeText = isChanged ? (val > matrixA[i][j] ? '+Δ' : '−Δ') : null;
+                    return (
+                      <Step10EditableCell
+                        key={`b-${i}-${j}`}
+                        value={val}
+                        row={i}
+                        col={j}
+                        isHovered={isHovered}
+                        isChanged={isChanged}
+                        badgeText={badgeText}
+                        onChange={handleCellChangeB}
+                        onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                      />
+                    );
+                  })
+                )}
+              </MatrixBracketWrapper>
+
+              <div className="matrix-footer-hint" style={{ marginTop: '0.45rem' }}>
+                <span>{noiseLevel > 0 ? `±${noiseLevel} sensor noise active` : 'Click to edit scene 2'}</span>
               </div>
             </div>
 
             {/* OPERATOR 2: 🟰 SUBTRACT */}
             <div className="addition-operator-divider">
-              <div className="operator-badge equals-badge" title="Difference Matrix D = |A - B|">
-                <Equal size={20} strokeWidth={2.8} />
+              <div className="operator-badge" title="Difference Matrix D = |A - B|">
+                <Equal size={18} strokeWidth={2.6} />
               </div>
-              <span className="operator-label">Subtract</span>
+              <span className="operator-label">Difference</span>
             </div>
 
             {/* COLUMN 3: DIFFERENCE (D) */}
-            <div className="addition-column-card card-diff-d">
-              <div className="addition-column-header">
-                <div className="col-header-left">
-                  <span className="matrix-title-badge badge-d">D</span>
-                  <div>
-                    <h3 className="addition-card-title">Difference Image (D)</h3>
-                    <span className="addition-card-subtitle" style={{ color: 'var(--accent-cyan)' }}>
-                      D = |A − B|
-                    </span>
-                  </div>
+            <div className="addition-column-card glass-level-2">
+              <div className="matrix-header">
+                <div className="matrix-header-title-row">
+                  <h3 className="matrix-title-text">Difference (D)</h3>
                 </div>
-                <div className="col-header-right">
-                  <span className="matrix-dims" style={{ borderColor: 'rgba(6, 182, 212, 0.4)', color: 'var(--accent-cyan)', background: 'rgba(6, 182, 212, 0.12)' }}>
-                    4 × 4
-                  </span>
+                <div className="matrix-header-badge-wrap">
+                  <span className="matrix-dims-badge">4 × 4</span>
                 </div>
               </div>
 
-              <div className="addition-card-body">
-                <div className="canvas-subrow">
-                  <PipelineCanvas
-                    matrix={matrixD}
-                    hoveredCell={hoveredCell}
-                    onHoverCell={setHoveredCell}
-                    pixelSize={24}
-                    highlightColor="var(--accent-cyan)"
-                    mode="diff"
-                    threshold={threshold}
-                    title="Difference Matrix Heatmap (D)"
-                  />
-                  <div className="canvas-subrow-info">
-                    <span className="subrow-label">Delta Magnitudes</span>
-                    <span className="subrow-hint">Blue glow: D &gt; {threshold}</span>
-                    <div className="subrow-actions">
-                      <span className="badge-tag-mini" style={{ color: 'var(--accent-cyan)', borderColor: 'rgba(6, 182, 212, 0.3)' }}>
-                        Live |A − B|
-                      </span>
-                    </div>
+              <div className="canvas-subrow">
+                <PipelineCanvas
+                  matrix={matrixD}
+                  hoveredCell={hoveredCell}
+                  onHoverCell={setHoveredCell}
+                  pixelSize={20}
+                  mode="diff"
+                  threshold={threshold}
+                  title="Difference Matrix Heatmap (D)"
+                />
+                <div className="canvas-subrow-info">
+                  <span className="subrow-label">Delta |A − B|</span>
+                  <span className="subrow-hint">Altered when D &gt; {threshold}</span>
+                  <div className="subrow-actions">
+                    <span className="badge-tag-mini">D = |A − B|</span>
                   </div>
                 </div>
+              </div>
 
-                {/* 4x4 Grid for D */}
-                <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': 'var(--accent-cyan)' }}>
-                  <div className="matrix-left-bracket" style={{ borderColor: 'var(--accent-cyan)' }} />
-                  <div className="matrix-with-indices">
-                    <div className="matrix-col-indices-row">
-                      {matrixD[0].map((_, cIdx) => (
-                        <span key={`col-d-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
-                      ))}
-                    </div>
-                    <div className="matrix-body-row">
-                      <div className="matrix-row-indices-col">
-                        {matrixD.map((_, rIdx) => (
-                          <span key={`row-d-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
-                        ))}
-                      </div>
-                      <div 
-                        className="matrix-grid compact-grid"
-                        style={{ gridTemplateColumns: `repeat(${matrixD[0].length}, 1fr)` }}
-                        onMouseLeave={() => setHoveredCell(null)}
-                      >
-                        {matrixD.map((row, i) =>
-                          row.map((val, j) => {
-                            const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                            const exceedsT = val > threshold;
-                            return (
-                              <div
-                                key={`d-${i}-${j}`}
-                                className={`matrix-cell result-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                                style={{
-                                  '--cell-accent': 'var(--accent-cyan)',
-                                  borderColor: isHovered ? 'var(--accent-cyan)' : undefined,
-                                  background: exceedsT 
-                                    ? `linear-gradient(135deg, rgba(6, 182, 212, 0.28) 0%, var(--bg-secondary) 100%)`
-                                    : `linear-gradient(135deg, rgba(0, 0, 0, 0.2) 0%, var(--bg-secondary) 100%)`
-                                }}
-                                onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                                onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                              >
-                                <span 
-                                  className="matrix-cell-val compact-val" 
-                                  style={{ 
-                                    color: exceedsT ? '#38BDF8' : 'var(--text-muted)',
-                                    fontWeight: exceedsT ? '800' : '600'
-                                  }}
-                                >
-                                  {val}
-                                </span>
-                                {exceedsT && (
-                                  <span className="delta-fg-indicator" title={`Delta ${val} > T (${threshold})`}>
-                                    Δ
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="matrix-right-bracket" style={{ borderColor: 'var(--accent-cyan)' }} />
-                </div>
+              {/* 4x4 Numerical Matrix Grid */}
+              <MatrixBracketWrapper onMouseLeave={() => setHoveredCell(null)}>
+                {matrixD.map((row, i) =>
+                  row.map((val, j) => {
+                    const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                    const exceedsT = val > threshold;
+                    const isNonZero = val > 0 && !exceedsT;
+                    return (
+                      <Step10ResultCell
+                        key={`d-${i}-${j}`}
+                        value={val}
+                        row={i}
+                        col={j}
+                        isHovered={isHovered}
+                        isHighlighted={exceedsT}
+                        isNonZero={isNonZero}
+                        badgeText={exceedsT ? '>T' : null}
+                        onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                      />
+                    );
+                  })
+                )}
+              </MatrixBracketWrapper>
+
+              <div className="matrix-footer-hint" style={{ marginTop: '0.45rem' }}>
+                <span>Values &gt; {threshold} highlight altered pixels</span>
               </div>
             </div>
 
             {/* OPERATOR 3: ➔ HIGHLIGHT CHANGE */}
             <div className="addition-operator-divider">
-              <div className="operator-badge filter-badge" title="Highlight differences where D > T">
-                <Scan size={18} strokeWidth={2.6} />
+              <div className="operator-badge" title={`Threshold Test: D(x, y) > ${threshold}`}>
+                <Filter size={17} strokeWidth={2.5} />
               </div>
-              <span className="operator-label">Highlight</span>
+              <span className="operator-label">&gt; T({threshold})</span>
             </div>
 
-            {/* COLUMN 4: HIGHLIGHT THE CHANGE */}
-            <div className="addition-column-card card-mask-m" style={{ borderColor: 'rgba(16, 185, 129, 0.4)' }}>
-              <div className="addition-column-header">
-                <div className="col-header-left">
-                  <span className="matrix-title-badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', borderColor: 'rgba(16, 185, 129, 0.35)' }}>
-                    ★
-                  </span>
-                  <div>
-                    <h3 className="addition-card-title">Highlight the Change</h3>
-                    <span className="addition-card-subtitle" style={{ color: '#10B981' }}>
-                      Change & Motion Detected
-                    </span>
-                  </div>
+            {/* COLUMN 4: CHANGE MASK (M) */}
+            <div className="addition-column-card glass-level-2">
+              <div className="matrix-header">
+                <div className="matrix-header-title-row">
+                  <h3 className="matrix-title-text">Change Mask (M)</h3>
                 </div>
-                <div className="col-header-right">
-                  <span className="matrix-dims" style={{ borderColor: 'rgba(16, 185, 129, 0.35)', color: '#10B981', background: 'rgba(16, 185, 129, 0.1)' }}>
-                    {changeAnalysis.pctChanged}% Δ
-                  </span>
+                <div className="matrix-header-badge-wrap">
+                  <span className="matrix-dims-badge">4 × 4</span>
                 </div>
               </div>
 
-              <div className="addition-card-body">
-                {/* View Selector Bar */}
-                <div className="mask-view-toggle-bar">
-                  <button
-                    type="button"
-                    className={`mask-toggle-pill ${card4View === 'highlight' ? 'active' : ''}`}
-                    onClick={() => setCard4View('highlight')}
-                    title="View Image 2 with Neon Highlight Overlay"
-                  >
-                    <Eye size={12} />
-                    <span>Overlay</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`mask-toggle-pill ${card4View === 'diffMask' ? 'active' : ''}`}
-                    onClick={() => setCard4View('diffMask')}
-                    title="View Binary Change Mask (1 = Change, 0 = Static)"
-                  >
-                    <Grid size={12} />
-                    <span>Mask (M)</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`mask-toggle-pill ${card4View === 'signed' ? 'active' : ''}`}
-                    onClick={() => setCard4View('signed')}
-                    title="View Signed Difference (B - A)"
-                  >
-                    <Sliders size={12} />
-                    <span>Signed Δ</span>
-                  </button>
-                </div>
-
-                <div className="canvas-subrow">
-                  <PipelineCanvas
-                    matrix={card4View === 'diffMask' ? matrixM : noisyMatrixB}
-                    matrixA={matrixA}
-                    matrixB={noisyMatrixB}
-                    hoveredCell={hoveredCell}
-                    onHoverCell={setHoveredCell}
-                    pixelSize={24}
-                    highlightColor="#10B981"
-                    mode={card4View === 'highlight' ? 'highlightOverlay' : card4View === 'diffMask' ? 'mask' : 'normal'}
-                    threshold={threshold}
-                    title="Highlighted Change Visualizer"
-                  />
-                  <div className="canvas-subrow-info">
-                    <span className="subrow-label" style={{ color: changeAnalysis.classColor, fontWeight: 700 }}>
-                      {changeAnalysis.classBadge}
-                    </span>
-                    <span className="subrow-hint">
-                      {changeAnalysis.changedCount} / {changeAnalysis.totalPixels} cells altered
-                    </span>
-                    <div className="subrow-actions">
-                      <span className="status-live-indicator" style={{ color: '#10B981' }}>
-                        <span className="pulse-dot" style={{ background: '#10B981' }}></span> Live Tracking
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4x4 Grid for Card 4 */}
-                <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': '#10B981' }}>
-                  <div className="matrix-left-bracket" style={{ borderColor: '#10B981' }} />
-                  <div className="matrix-with-indices">
-                    <div className="matrix-col-indices-row">
-                      {matrixM[0].map((_, cIdx) => (
-                        <span key={`col-m-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
-                      ))}
-                    </div>
-                    <div className="matrix-body-row">
-                      <div className="matrix-row-indices-col">
-                        {matrixM.map((_, rIdx) => (
-                          <span key={`row-m-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
-                        ))}
-                      </div>
-                      <div 
-                        className="matrix-grid compact-grid"
-                        style={{ gridTemplateColumns: `repeat(${matrixM[0].length}, 1fr)` }}
-                        onMouseLeave={() => setHoveredCell(null)}
+              <div className="canvas-subrow">
+                <PipelineCanvas
+                  matrix={card4View === 'diffMask' ? matrixM : noisyMatrixB}
+                  matrixA={matrixA}
+                  matrixB={noisyMatrixB}
+                  hoveredCell={hoveredCell}
+                  onHoverCell={setHoveredCell}
+                  pixelSize={20}
+                  mode={card4View === 'highlight' ? 'highlightOverlay' : card4View === 'diffMask' ? 'mask' : 'normal'}
+                  threshold={threshold}
+                  title="Highlighted Change Visualizer"
+                />
+                <div className="canvas-subrow-info">
+                  <span className="subrow-label">
+                    {changeAnalysis.classification}
+                  </span>
+                  <span className="subrow-hint">
+                    {changeAnalysis.changedCount} / {changeAnalysis.totalPixels} cells altered ({changeAnalysis.pctChanged}%)
+                  </span>
+                  <div className="subrow-actions">
+                    <div className="subrow-toggle-group">
+                      <button
+                        type="button"
+                        className={`subrow-toggle-pill ${card4View === 'diffMask' ? 'active' : ''}`}
+                        onClick={() => setCard4View('diffMask')}
+                        title="View Binary Change Mask (1/0)"
                       >
-                        {matrixM.map((row, i) =>
-                          row.map((val, j) => {
-                            const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                            const isChanged = val === 1;
-                            const signedVal = noisyMatrixB[i][j] - matrixA[i][j];
-
-                            return (
-                              <div
-                                key={`c4-${i}-${j}`}
-                                className={`matrix-cell result-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                                style={{
-                                  '--cell-accent': '#10B981',
-                                  borderColor: isHovered ? '#10B981' : isChanged ? 'rgba(16, 185, 129, 0.5)' : undefined,
-                                  background: isChanged 
-                                    ? (signedVal > 0 
-                                        ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, var(--bg-secondary) 100%)' 
-                                        : 'linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, var(--bg-secondary) 100%)')
-                                    : 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, var(--bg-secondary) 100%)'
-                                }}
-                                onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                                onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                              >
-                                <span 
-                                  className="matrix-cell-val compact-val"
-                                  style={{ 
-                                    color: isChanged ? (signedVal > 0 ? '#10B981' : '#EF4444') : 'var(--text-muted)',
-                                    fontWeight: isChanged ? '800' : '600'
-                                  }}
-                                >
-                                  {card4View === 'diffMask' ? val : card4View === 'signed' ? (signedVal > 0 ? `+${signedVal}` : `${signedVal}`) : (isChanged ? 'Δ' : '·')}
-                                </span>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
+                        Mask (M)
+                      </button>
+                      <button
+                        type="button"
+                        className={`subrow-toggle-pill ${card4View === 'highlight' ? 'active' : ''}`}
+                        onClick={() => setCard4View('highlight')}
+                        title="View Scene 2 with Highlight Overlay"
+                      >
+                        Overlay
+                      </button>
+                      <button
+                        type="button"
+                        className={`subrow-toggle-pill ${card4View === 'signed' ? 'active' : ''}`}
+                        onClick={() => setCard4View('signed')}
+                        title="View Signed Difference (B - A)"
+                      >
+                        Signed Δ
+                      </button>
                     </div>
                   </div>
-                  <div className="matrix-right-bracket" style={{ borderColor: '#10B981' }} />
                 </div>
+              </div>
+
+              {/* 4x4 Numerical Matrix Grid */}
+              <MatrixBracketWrapper onMouseLeave={() => setHoveredCell(null)}>
+                {card4View === 'diffMask' ? (
+                  matrixM.map((row, i) =>
+                    row.map((val, j) => {
+                      const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                      const isChanged = val === 1;
+                      return (
+                        <Step10ResultCell
+                          key={`m-${i}-${j}`}
+                          value={val}
+                          row={i}
+                          col={j}
+                          isHovered={isHovered}
+                          isHighlighted={isChanged}
+                          badgeText={isChanged ? 'CHG' : null}
+                          onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                        />
+                      );
+                    })
+                  )
+                ) : card4View === 'signed' ? (
+                  matrixD.map((row, i) =>
+                    row.map((val, j) => {
+                      const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                      const isChanged = val > threshold;
+                      const signedVal = noisyMatrixB[i][j] - matrixA[i][j];
+                      const displayVal = signedVal > 0 ? `+${signedVal}` : `${signedVal}`;
+                      return (
+                        <Step10ResultCell
+                          key={`s-${i}-${j}`}
+                          value={displayVal}
+                          row={i}
+                          col={j}
+                          isHovered={isHovered}
+                          isHighlighted={isChanged}
+                          isNonZero={val > 0 && !isChanged}
+                          badgeText={isChanged ? (signedVal > 0 ? '+Δ' : '−Δ') : null}
+                          onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                        />
+                      );
+                    })
+                  )
+                ) : (
+                  noisyMatrixB.map((row, i) =>
+                    row.map((val, j) => {
+                      const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                      const isChanged = matrixM[i][j] === 1;
+                      return (
+                        <Step10ResultCell
+                          key={`ov-${i}-${j}`}
+                          value={isChanged ? val : 0}
+                          row={i}
+                          col={j}
+                          isHovered={isHovered}
+                          isHighlighted={isChanged}
+                          badgeText={isChanged ? 'CHG' : null}
+                          onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                        />
+                      );
+                    })
+                  )
+                )}
+              </MatrixBracketWrapper>
+
+              <div className="matrix-footer-hint" style={{ marginTop: '0.45rem' }}>
+                <span>{card4View === 'diffMask' ? '1 = Altered Pixel (Mask M)' : card4View === 'signed' ? 'Signed Difference (B − A)' : 'Altered pixels extracted from B'}</span>
               </div>
             </div>
-          </div>
-
-          {/* REAL-TIME MATHEMATICAL INSPECTOR & HOVER HUD */}
-          <div className="hover-calculation-card">
-            {hoveredInfo ? (
-              <div className="hover-calc-content">
-                <div className="calc-cell-target">
-                  <span className="font-mono">Pixel ({hoveredInfo.row}, {hoveredInfo.col})</span>
-                </div>
-                <div className="calc-formula-row">
-                  <span className="calc-part" style={{ color: 'var(--accent-purple)' }}>
-                    Image 1: <strong>{hoveredInfo.valA}</strong>
-                  </span>
-                  <span className="calc-op">−</span>
-                  <span className="calc-part" style={{ color: '#F59E0B' }}>
-                    Image 2: <strong>{hoveredInfo.valB}</strong>
-                  </span>
-                  <span className="calc-op">=</span>
-                  <span className="calc-part" style={{ color: 'var(--accent-cyan)' }}>
-                    Delta |A−B|: <strong>{hoveredInfo.valD}</strong>
-                  </span>
-                  <span className="calc-op">➔</span>
-                  <span 
-                    className="calc-part" 
-                    style={{ 
-                      color: hoveredInfo.isAboveT ? '#10B981' : 'var(--text-muted)',
-                      fontWeight: 700 
-                    }}
-                  >
-                    {hoveredInfo.isAboveT 
-                      ? `CHANGE DETECTED (${hoveredInfo.valD} > ${threshold}) [${hoveredInfo.signedDiff > 0 ? '+' : ''}${hoveredInfo.signedDiff}]` 
-                      : `Unchanged / Static (${hoveredInfo.valD} ≤ ${threshold})`}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="hover-calc-placeholder">
-                <HelpCircle size={15} color="var(--text-muted)" />
-                <span>Hover or scroll over any matrix cell above to inspect the element-by-element subtraction mathematics</span>
-              </div>
-            )}
           </div>
         </>
       ) : (
         /* -------------------------------------------------------------
            CUSTOM PHOTO LAB (UPLOAD OR SNAP 2 PHOTOGRAPHS)
            ------------------------------------------------------------- */
-        <div className="top-control-card" style={{ padding: '1.5rem', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+        <div className="subtraction-controls-card" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
             <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Camera size={19} color="#38BDF8" />
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                <Camera size={18} style={{ color: 'var(--accent-primary)' }} />
                 <span>Custom Photography Laboratory: Find What Changed</span>
               </h3>
-              <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.25rem 0 0' }}>
                 Upload two photos or snap them with your webcam to watch matrix subtraction detect changes automatically!
               </p>
             </div>
 
             {/* Resolution selector for downsampled matrix */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>Analysis Resolution:</span>
+              <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Grid Resolution:</span>
               <div className="noise-pill-group">
                 <button
+                  type="button"
                   className={`noise-btn ${photoLabResolution === 8 ? 'active' : ''}`}
                   onClick={() => setPhotoLabResolution(8)}
                   title="8x8 Matrix (64 numerical cells)"
@@ -1498,6 +1510,7 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
                   8 × 8
                 </button>
                 <button
+                  type="button"
                   className={`noise-btn ${photoLabResolution === 16 ? 'active' : ''}`}
                   onClick={() => setPhotoLabResolution(16)}
                   title="16x16 Matrix (256 numerical cells)"
@@ -1509,33 +1522,36 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
           </div>
 
           {/* Quick Demo Sample Photo Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.25rem', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: '10px' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Try Ready-Made Test Photos:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.25rem', padding: '0.65rem 0.85rem', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Demo Photos:</span>
             <button
+              type="button"
               className="preset-btn mini-btn"
               onClick={() => loadSamplePhotos('added')}
               title="Desk without Coffee Mug ➔ Coffee Mug Added"
               style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
             >
-              <PlusCircle size={13} color="#10B981" />
+              <PlusCircle size={13} style={{ color: 'var(--accent-primary)' }} />
               <span>Coffee Mug Added</span>
             </button>
             <button
+              type="button"
               className="preset-btn mini-btn"
               onClick={() => loadSamplePhotos('removed')}
               title="Desk with Coffee Mug ➔ Coffee Mug Removed"
               style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
             >
-              <MinusCircle size={13} color="#EF4444" />
+              <MinusCircle size={13} style={{ color: 'var(--accent-primary)' }} />
               <span>Mug Removed</span>
             </button>
             <button
+              type="button"
               className="preset-btn mini-btn"
               onClick={() => loadSamplePhotos('moved')}
               title="Mug shifted across the desk"
               style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
             >
-              <Move size={13} color="#38BDF8" />
+              <Move size={13} style={{ color: 'var(--accent-primary)' }} />
               <span>Mug Moved (Motion)</span>
             </button>
 
@@ -1543,18 +1559,20 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
               {!isCameraActive ? (
                 <button
-                  className="preset-btn mini-btn"
+                  type="button"
+                  className="icon-action-btn"
                   onClick={startCamera}
-                  style={{ background: 'rgba(56, 189, 248, 0.15)', borderColor: '#38BDF8', color: '#38BDF8', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                 >
                   <Video size={13} />
                   <span>Use Webcam</span>
                 </button>
               ) : (
                 <button
-                  className="preset-btn mini-btn"
+                  type="button"
+                  className="icon-action-btn"
                   onClick={stopCamera}
-                  style={{ background: 'rgba(239, 68, 68, 0.15)', borderColor: '#EF4444', color: '#EF4444', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                 >
                   <VideoOff size={13} />
                   <span>Stop Camera</span>
@@ -1565,38 +1583,39 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
 
           {/* Camera Error banner if any */}
           {cameraError && (
-            <div style={{ padding: '0.65rem 1rem', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', color: '#EF4444', fontSize: '0.82rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <AlertCircle size={15} />
+            <div style={{ padding: '0.65rem 0.85rem', background: 'var(--accent-subtle)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.8rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <AlertCircle size={15} style={{ color: 'var(--accent-primary)' }} />
               <span>{cameraError}</span>
             </div>
           )}
 
           {/* Active Webcam Streaming Card */}
           {isCameraActive && (
-            <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--accent-cyan)', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ position: 'relative', width: '220px', height: '220px', borderRadius: '10px', overflow: 'hidden', border: '2px solid var(--border-color)', background: '#000' }}>
+            <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ position: 'relative', width: '220px', height: '220px', borderRadius: '10px', overflow: 'hidden', border: '2px solid var(--border-color)', background: 'var(--bg-card)' }}>
                 <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', bottom: '8px', left: '8px', right: '8px', textAlign: 'center', background: 'rgba(0,0,0,0.6)', padding: '4px', borderRadius: '6px', fontSize: '0.75rem', color: '#FFF' }}>
+                <div style={{ position: 'absolute', bottom: '8px', left: '8px', right: '8px', textAlign: 'center', background: 'rgba(0,0,0,0.7)', padding: '4px', borderRadius: '6px', fontSize: '0.74rem', color: '#FFF', fontFamily: 'var(--font-mono)' }}>
                   {cameraStep === 1 ? 'Step 1: Snap Scene 1' : 'Step 2: Move an item & Snap Scene 2!'}
                 </div>
               </div>
               <button
-                className="mode-btn active"
+                type="button"
+                className="preset-btn mini-btn"
                 onClick={capturePhotoFromCamera}
-                style={{ background: '#38BDF8', color: '#000', fontWeight: 700, padding: '0.55rem 1.25rem', borderRadius: '9999px', display: 'flex', alignItems: 'center', gap: '0.45rem' }}
+                style={{ padding: '0.45rem 1rem', display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: 700 }}
               >
-                <Camera size={16} />
-                <span>{cameraStep === 1 ? '📸 Capture Photo 1 (Reference)' : '📸 Capture Photo 2 (After Change)'}</span>
+                <Camera size={15} />
+                <span>{cameraStep === 1 ? 'Capture Photo 1 (Reference)' : 'Capture Photo 2 (After Change)'}</span>
               </button>
             </div>
           )}
 
           {/* PHOTO SLOTS: PHOTO 1 & PHOTO 2 UPLOAD TILES */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
             
             {/* Slot A: Photo 1 */}
-            <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--accent-purple)' }}>Photo 1 (Scene A - Before)</span>
+            <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.65rem' }}>
+              <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)' }}>Photo 1 (Scene A - Before)</span>
               
               {photoA ? (
                 <div style={{ position: 'relative', width: '140px', height: '140px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
@@ -1604,8 +1623,8 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
                 </div>
               ) : (
                 <div style={{ width: '140px', height: '140px', borderRadius: '8px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', color: 'var(--text-muted)' }}>
-                  <ImageIcon size={28} />
-                  <span style={{ fontSize: '0.74rem' }}>No Photo Selected</span>
+                  <ImageIcon size={26} />
+                  <span style={{ fontSize: '0.72rem' }}>No Photo Selected</span>
                 </div>
               )}
 
@@ -1617,6 +1636,7 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
                 onChange={(e) => handleFileUpload(e, 'A')}
               />
               <button
+                type="button"
                 className="preset-btn mini-btn"
                 onClick={() => fileInputRefA.current?.click()}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
@@ -1627,8 +1647,8 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
             </div>
 
             {/* Slot B: Photo 2 */}
-            <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#F59E0B' }}>Photo 2 (Scene B - After)</span>
+            <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.65rem' }}>
+              <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)' }}>Photo 2 (Scene B - After)</span>
               
               {photoB ? (
                 <div style={{ position: 'relative', width: '140px', height: '140px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
@@ -1636,8 +1656,8 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
                 </div>
               ) : (
                 <div style={{ width: '140px', height: '140px', borderRadius: '8px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', color: 'var(--text-muted)' }}>
-                  <ImageIcon size={28} />
-                  <span style={{ fontSize: '0.74rem' }}>No Photo Selected</span>
+                  <ImageIcon size={26} />
+                  <span style={{ fontSize: '0.72rem' }}>No Photo Selected</span>
                 </div>
               )}
 
@@ -1649,6 +1669,7 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
                 onChange={(e) => handleFileUpload(e, 'B')}
               />
               <button
+                type="button"
                 className="preset-btn mini-btn"
                 onClick={() => fileInputRefB.current?.click()}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
@@ -1661,25 +1682,25 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
 
           {/* Photo Difference Results Pipeline */}
           {photoMatrixA && photoMatrixB && photoMatrixD ? (
-            <div style={{ padding: '1.25rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+            <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
-                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                   Live Matrix Difference: D = |A − B| ({photoLabResolution}×{photoLabResolution} Grid)
                 </span>
                 
                 {/* Threshold Slider for Photos */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Filter Threshold:</span>
+                  <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Filter Threshold:</span>
                   <input
                     type="range"
                     min="5"
                     max="100"
                     value={photoThreshold}
-                    onChange={(e) => setPhotoThreshold(parseInt(e.target.value))}
+                    onChange={(e) => setPhotoThreshold(parseInt(e.target.value, 10))}
                     style={{ width: '90px' }}
                   />
-                  <span className="font-mono" style={{ color: 'var(--accent-cyan)', fontSize: '0.85rem', fontWeight: 700 }}>
+                  <span className="font-mono" style={{ color: 'var(--text-primary)', fontSize: '0.85rem', fontWeight: 700 }}>
                     {photoThreshold}
                   </span>
                 </div>
@@ -1690,11 +1711,10 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
                 
                 {/* Canvas 1: Photo Matrix A */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-purple)' }}>Photo Matrix A</span>
+                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Photo Matrix A</span>
                   <PipelineCanvas
                     matrix={photoMatrixA}
                     pixelSize={photoLabResolution === 8 ? 16 : 8}
-                    highlightColor="var(--accent-purple)"
                     title="Photo A Grayscale Matrix"
                   />
                 </div>
@@ -1703,11 +1723,10 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
 
                 {/* Canvas 2: Photo Matrix B */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#F59E0B' }}>Photo Matrix B</span>
+                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Photo Matrix B</span>
                   <PipelineCanvas
                     matrix={photoMatrixB}
                     pixelSize={photoLabResolution === 8 ? 16 : 8}
-                    highlightColor="#F59E0B"
                     title="Photo B Grayscale Matrix"
                   />
                 </div>
@@ -1716,13 +1735,12 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
 
                 {/* Canvas 3: Difference Matrix D */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>Difference (D)</span>
+                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Difference (D)</span>
                   <PipelineCanvas
                     matrix={photoMatrixD}
                     pixelSize={photoLabResolution === 8 ? 16 : 8}
                     mode="diff"
                     threshold={photoThreshold}
-                    highlightColor="var(--accent-cyan)"
                     title="Photo Difference Heatmap"
                   />
                 </div>
@@ -1731,7 +1749,7 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
 
                 {/* Canvas 4: Highlight Changes on Photo B */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10B981' }}>Highlight What Changed</span>
+                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Detected Change</span>
                   <PipelineCanvas
                     matrix={photoMatrixB}
                     matrixA={photoMatrixA}
@@ -1739,7 +1757,6 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
                     pixelSize={photoLabResolution === 8 ? 16 : 8}
                     mode="highlightOverlay"
                     threshold={photoThreshold}
-                    highlightColor="#10B981"
                     title="Changes Highlighted on Photo B"
                   />
                 </div>
@@ -1747,68 +1764,35 @@ export default function Step10FindWhatChanged({ onSelectStep }) {
 
               {/* Detection Summary Banner */}
               {photoStats && (
-                <div style={{ marginTop: '1.25rem', padding: '0.85rem 1.15rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div style={{ marginTop: '1rem', padding: '0.65rem 0.95rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                    <CheckCircle2 size={18} color="#10B981" />
+                    <CheckCircle2 size={16} style={{ color: 'var(--accent-primary)' }} />
                     <div>
-                      <div style={{ fontWeight: 700, color: '#10B981', fontSize: '0.9rem' }}>
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.84rem' }}>
                         Change Detection Complete!
                       </div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
                         Detected <strong>{photoStats.changed}</strong> changed matrix pixels out of {photoStats.total} ({photoStats.pct}% of scene).
                       </div>
                     </div>
                   </div>
-                  <span style={{ padding: '0.3rem 0.75rem', background: '#10B981', color: '#000', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700 }}>
-                    {photoStats.pct}% Area Altered
+                  <span className="badge-tag-mini" style={{ padding: '0.2rem 0.5rem', fontSize: '0.72rem' }}>
+                    {photoStats.pct}% Altered
                   </span>
                 </div>
               )}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              Choose a sample pair above or upload both Photo 1 and Photo 2 to run matrix subtraction!
+            <div style={{ textAlign: 'center', padding: '1.25rem', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+              Choose a demo photo pair above or upload Photo 1 and Photo 2 to run change detection!
             </div>
           )}
         </div>
       )}
 
-      {/* EDUCATIONAL THEORY ACCORDION */}
-      <div className="explanation-accordion-card">
-        <h3 className="explanation-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Sparkles size={18} color="var(--accent-purple)" />
-          <span>Real-World Mathematics: How Difference Matrices Detect Changes</span>
-        </h3>
-        
-        <div className="math-concept-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1.25rem', marginTop: '0.85rem' }}>
-          
-          <div className="math-concept-box">
-            <h4 style={{ color: 'var(--accent-purple)', fontSize: '0.92rem', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span>1. Absolute Difference D = |A − B|</span>
-            </h4>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Subtracting image matrices element-by-element reveals changes between temporal frames. If an object is introduced or moves, <code>A(x, y) ≠ B(x, y)</code>, resulting in non-zero delta values at those coordinates while stationary background stays near 0.
-            </p>
-          </div>
-
-          <div className="math-concept-box">
-            <h4 style={{ color: 'var(--accent-cyan)', fontSize: '0.92rem', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span>2. Why Threshold T is Vital</span>
-            </h4>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              In real-world cameras, two consecutive photos of an empty room never yield an exact 0 difference because of sensor thermal noise, minor lighting flickers, and shadow shifts. The threshold <code>T</code> eliminates background noise so only meaningful physical alterations trigger detection.
-            </p>
-          </div>
-
-          <div className="math-concept-box">
-            <h4 style={{ color: '#10B981', fontSize: '0.92rem', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span>3. Surveillance & Video Compression</span>
-            </h4>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Security cameras use frame difference matrices to trigger motion alarms and store footage only when delta exceeds <code>T</code>. Furthermore, modern video formats (MPEG/H.264/H.265) transmit frame difference matrices instead of full pictures, reducing streaming bandwidth by over 95%!
-            </p>
-          </div>
-        </div>
+      {/* STANDARDIZED EDUCATIONAL DOCUMENTATION */}
+      <div style={{ marginTop: '1.25rem' }}>
+        <ModuleDocumentation stepNumber={10} />
       </div>
 
       <StepFooter stepNumber={10} onSelectStep={onSelectStep} />

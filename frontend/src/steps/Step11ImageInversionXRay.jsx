@@ -1,107 +1,91 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { 
+  Minus, 
+  Equal, 
+  Filter, 
   Sparkles, 
   RotateCcw, 
   Shuffle, 
-  Blend, 
-  Scissors, 
-  Scan, 
-  Eye, 
-  Sliders, 
-  AlertCircle,
-  Camera,
-  Upload,
-  Layers,
   ArrowRight,
-  Plus,
-  Minus,
-  Equal,
-  HelpCircle,
-  Video,
-  VideoOff,
+  Camera, 
+  Upload, 
+  Video, 
+  VideoOff, 
   Image as ImageIcon,
+  Grid,
   CheckCircle2,
-  Activity,
-  Maximize2,
-  Undo2,
-  ZoomIn,
-  Zap,
-  Info
+  AlertCircle
 } from 'lucide-react';
 import { clampPixel, createEmptyMatrix, invertMatrix } from '../core/mathEngine';
 import StepFooter from '../components/layout/StepFooter';
+import ModuleDocumentation from '../components/experiment/ModuleDocumentation';
 
-// Presets representing diverse imagery for inversion
+// Presets representing diverse imagery for inversion with clear photographic contrast
 const INVERSION_PRESETS = {
   handSkeleton: {
     id: 'handSkeleton',
     name: 'Hand Radiograph',
     category: 'Anatomy Silhouette',
-    desc: 'Simulated silhouette of human hand with dense bone structure on dark tissue background',
-    // Original Grayscale Matrix A: Dark background (20-30), skin tissue (90-110), dense bone (220-245)
+    desc: 'Dense bone structure on soft tissue background. Inversion turns bone to radiopaque absorption and tissue to luminous exposure.',
     matrixA: [
-      [25,  25,  25,  25],
-      [25, 235, 235,  25],
-      [25, 235, 235,  25],
-      [25, 110, 110,  25]
-    ],
-    // High-resolution rendering data for the original canvas
-    renderType: 'hand'
+      [125, 125, 125, 125],
+      [125, 240, 240, 125],
+      [125, 240, 240, 125],
+      [125, 160, 160, 125]
+    ]
   },
   botanicalLeaf: {
     id: 'botanicalLeaf',
     name: 'Botanical Leaf',
-    category: 'Nature',
-    desc: 'Intricate leaf structure with dark veins and luminous blade edges',
+    category: 'Nature Structure',
+    desc: 'Leaf structure with delicate veins and luminous blade edges.',
     matrixA: [
-      [35,  180, 180,  35],
-      [180,  45,  45, 180],
-      [180,  45,  45, 180],
-      [35,  180, 180,  35]
-    ],
-    renderType: 'leaf'
+      [125, 230, 230, 125],
+      [230, 135, 135, 230],
+      [230, 135, 135, 230],
+      [125, 230, 230, 125]
+    ]
   },
   mechanicalGear: {
     id: 'mechanicalGear',
     name: 'Mechanical Gear',
-    category: 'Engineering',
-    desc: 'Machine cog with dark metallic core and polished teeth',
+    category: 'Engineering Part',
+    desc: 'Machine cog with dark core and polished metallic teeth.',
     matrixA: [
-      [220,  50,  50, 220],
-      [50,  240, 240,  50],
-      [50,  240, 240,  50],
-      [220,  50,  50, 220]
-    ],
-    renderType: 'gear'
+      [235, 130, 130, 235],
+      [130, 245, 245, 130],
+      [130, 245, 245, 130],
+      [235, 130, 130, 235]
+    ]
   },
   contrastSteps: {
     id: 'contrastSteps',
-    name: 'Numerical Gradient',
-    category: 'Mathematical Steps',
-    desc: 'Pure mathematical step values showing explicit 0 ➔ 255 and 255 ➔ 0 arithmetic flips',
+    name: 'Gradient Steps',
+    category: 'Mathematical Scale',
+    desc: 'Pure mathematical step values showing explicit symmetrical flips across 127.5.',
     matrixA: [
-      [0,    50, 100, 128],
-      [150, 180, 210, 255],
-      [255, 210, 180, 150],
-      [128, 100,  50,   0]
-    ],
-    renderType: 'gradient'
+      [30,   80, 130, 160],
+      [175, 195, 215, 245],
+      [245, 215, 195, 175],
+      [160, 130,  80,  30]
+    ]
   }
 };
 
 /**
- * Compact Pipeline Canvas Component
+ * Compact High-DPI Pipeline Canvas Component (Theme-Consistent Grayscale)
+ * Eliminates solid black fills and uses theme-defined surfaces and accents
  */
 function PipelineCanvas({
   matrix,
   hoveredCell,
   onHoverCell,
-  pixelSize = 24,
-  highlightColor = 'var(--accent-purple)',
+  pixelSize = 20,
   title,
-  themeMode = 'grayscale', // 'colorOriginal', 'grayscale', 'inverted', 'xrayCool'
-  renderType = 'gradient'
+  mode = 'normal', // 'normal', 'ceiling255', 'inverted', 'xray'
+  inversionFactor = 1.0,
+  matrixOriginal = null
 }) {
   const canvasRef = useRef(null);
   const rows = matrix.length;
@@ -109,7 +93,7 @@ function PipelineCanvas({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !rows || !cols) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -130,56 +114,43 @@ function PipelineCanvas({
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const val = matrix[r][c];
+        let val = matrix[r][c];
 
-        if (themeMode === 'colorOriginal') {
-          // Color rendering representation
-          if (renderType === 'hand') {
-            // Flesh / warm amber tone
-            ctx.fillStyle = `rgb(${Math.min(255, val + 40)}, ${Math.max(0, val - 10)}, ${Math.max(0, val - 30)})`;
-          } else if (renderType === 'leaf') {
-            // Green botanical tone
-            ctx.fillStyle = `rgb(${Math.max(0, val - 40)}, ${Math.min(255, val + 35)}, ${Math.max(0, val - 30)})`;
-          } else if (renderType === 'gear') {
-            // Metallic brass/gold
-            ctx.fillStyle = `rgb(${Math.min(255, val + 30)}, ${Math.min(255, val + 15)}, ${Math.max(0, val - 40)})`;
-          } else {
-            // Rainbow gradient
-            const hue = (val / 255) * 260;
-            ctx.fillStyle = `hsl(${hue}, 75%, ${Math.max(15, Math.min(85, val / 3))}%)`;
+        if (mode === 'ceiling255') {
+          // Peak White Ceiling: Clean white pixel
+          ctx.fillStyle = '#FFFFFF';
+        } else if (mode === 'xray') {
+          // X-Ray Negative with dynamic blend factor k
+          if (matrixOriginal) {
+            const orig = matrixOriginal[r][c];
+            const inv = 255 - orig;
+            val = clampPixel(Math.round((1 - inversionFactor) * orig + inversionFactor * inv));
           }
-        } else if (themeMode === 'xrayCool') {
-          // Radiographic cyan/cool blue glow
-          // Dense regions (high value in inverted) glow cyan-white, dark regions deep navy
-          const blueVal = Math.min(255, Math.round(val * 1.15));
-          const cyanVal = Math.min(255, Math.round(val * 1.05));
-          const redVal = Math.round(val * 0.7);
-          ctx.fillStyle = `rgb(${redVal}, ${cyanVal}, ${blueVal})`;
+          ctx.fillStyle = `rgb(${val}, ${val}, ${val})`;
         } else {
-          // Standard grayscale
           ctx.fillStyle = `rgb(${val}, ${val}, ${val})`;
         }
 
         ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
 
-        // Grid border lines
-        ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.16)' : 'rgba(255, 255, 255, 0.18)';
+        // Subtle tile borders (NO heavy or bright borders)
+        ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.15)';
         ctx.lineWidth = 1;
         ctx.strokeRect(c * pixelSize + 0.5, r * pixelSize + 0.5, pixelSize - 1, pixelSize - 1);
 
-        // Highlight hovered cell
+        // Synchronized hover highlight using theme accent
         if (hoveredCell && hoveredCell.row === r && hoveredCell.col === c) {
-          ctx.lineWidth = 2.5;
-          ctx.strokeStyle = highlightColor;
-          ctx.strokeRect(c * pixelSize + 1.5, r * pixelSize + 1.5, pixelSize - 3, pixelSize - 3);
-          ctx.fillStyle = 'rgba(6, 182, 212, 0.25)';
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = isLight ? '#424F34' : '#FFFFFF';
+          ctx.strokeRect(c * pixelSize + 1, r * pixelSize + 1, pixelSize - 2, pixelSize - 2);
+          ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.2)' : 'rgba(255, 255, 255, 0.18)';
           ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
         }
       }
     }
 
     ctx.restore();
-  }, [matrix, hoveredCell, rows, cols, pixelSize, highlightColor, themeMode, renderType]);
+  }, [matrix, hoveredCell, rows, cols, pixelSize, mode, inversionFactor, matrixOriginal]);
 
   const handleMouseMove = (e) => {
     if (!onHoverCell || !canvasRef.current) return;
@@ -198,7 +169,7 @@ function PipelineCanvas({
     <div className="compact-canvas-wrapper" onMouseLeave={() => onHoverCell && onHoverCell(null)}>
       <canvas
         ref={canvasRef}
-        className={`compact-pixel-canvas ${themeMode === 'xrayCool' ? 'radiograph-canvas-cool' : ''}`}
+        className="compact-pixel-canvas"
         onMouseMove={handleMouseMove}
         onClick={handleMouseMove}
         title={title}
@@ -207,8 +178,251 @@ function PipelineCanvas({
   );
 }
 
+/**
+ * Matrix Bracket Wrapper - Clean brackets matching Step 8, 9, 10
+ */
+function MatrixBracketWrapper({ children, onMouseLeave }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 'fit-content',
+        margin: '0.65rem auto 0.25rem'
+      }}
+      onMouseLeave={onMouseLeave}
+    >
+      <div
+        style={{
+          width: '7px',
+          alignSelf: 'stretch',
+          border: '2.5px solid var(--border-color)',
+          borderRight: 'none',
+          borderRadius: '7px 0 0 7px',
+          marginRight: '5px'
+        }}
+      />
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 40px)',
+          gap: '5px',
+          width: 'fit-content'
+        }}
+      >
+        {children}
+      </div>
+      <div
+        style={{
+          width: '7px',
+          alignSelf: 'stretch',
+          border: '2.5px solid var(--border-color)',
+          borderLeft: 'none',
+          borderRadius: '0 7px 7px 0',
+          marginLeft: '5px'
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * Clean Editable Matrix Cell matching Step 8, 9, 10
+ */
+const Step11EditableCell = React.memo(function Step11EditableCell({
+  value,
+  row,
+  col,
+  isHovered,
+  onChange,
+  onHover
+}) {
+  const [text, setText] = useState(String(value));
+  const isFocusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isFocusedRef.current) {
+      setText(String(value));
+    }
+  }, [value]);
+
+  const handleChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    setText(raw);
+    if (raw !== '') {
+      const num = Math.min(255, Math.max(0, parseInt(raw, 10)));
+      onChange && onChange(row, col, num);
+    }
+  };
+
+  const handleBlur = () => {
+    isFocusedRef.current = false;
+    let finalVal = 0;
+    if (text !== '') {
+      const parsed = parseInt(text, 10);
+      if (!isNaN(parsed)) {
+        finalVal = Math.min(255, Math.max(0, parsed));
+      }
+    }
+    setText(String(finalVal));
+    onChange && onChange(row, col, finalVal);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const current = parseInt(text, 10) || 0;
+      const step = e.shiftKey ? 15 : 5;
+      const next = Math.min(255, current + step);
+      setText(String(next));
+      onChange && onChange(row, col, next);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const current = parseInt(text, 10) || 0;
+      const step = e.shiftKey ? 15 : 5;
+      const next = Math.max(0, current - step);
+      setText(String(next));
+      onChange && onChange(row, col, next);
+    } else if (e.key === 'Enter') {
+      e.target.blur();
+    }
+  };
+
+  return (
+    <div
+      style={{
+        width: '40px',
+        height: '40px',
+        borderRadius: '7px',
+        border: `1px solid ${isHovered ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+        background: isHovered ? 'var(--bg-hover)' : 'var(--bg-secondary)',
+        boxShadow: isHovered ? '0 0 0 1px var(--border-hover)' : 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        transition: 'all 0.15s ease'
+      }}
+      onMouseEnter={onHover}
+      onTouchStart={onHover}
+      onWheel={(e) => {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 5 : -5;
+        const current = parseInt(text, 10) || 0;
+        const next = Math.min(255, Math.max(0, current + delta));
+        setText(String(next));
+        onChange && onChange(row, col, next);
+      }}
+    >
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        maxLength={3}
+        value={text}
+        onFocus={(e) => {
+          isFocusedRef.current = true;
+          onHover && onHover();
+          e.target.select();
+        }}
+        onBlur={handleBlur}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        style={{
+          width: '100%',
+          height: '100%',
+          textAlign: 'center',
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          color: 'var(--text-primary)',
+          fontWeight: 700,
+          fontSize: '0.92rem',
+          fontFamily: 'var(--font-mono)',
+          fontVariantNumeric: 'tabular-nums',
+          cursor: 'pointer'
+        }}
+        aria-label={`Cell [${row}, ${col}]`}
+      />
+    </div>
+  );
+});
+
+/**
+ * Result Matrix Cell (Read-Only) for Card 2 (255), Card 3 (A'), and Card 4 (X-Ray)
+ */
+const Step11ResultCell = React.memo(function Step11ResultCell({
+  value,
+  row,
+  col,
+  isHovered,
+  isHighlighted = false,
+  badgeText = null,
+  onHover
+}) {
+  return (
+    <div
+      style={{
+        width: '40px',
+        height: '40px',
+        borderRadius: '7px',
+        border: `1px solid ${
+          isHovered
+            ? 'var(--accent-primary)'
+            : isHighlighted
+            ? 'var(--accent-primary)'
+            : 'var(--border-color)'
+        }`,
+        background: isHovered
+          ? 'var(--bg-hover)'
+          : isHighlighted
+          ? 'var(--accent-subtle)'
+          : 'var(--bg-secondary)',
+        boxShadow: isHovered ? '0 0 0 1px var(--border-hover)' : 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        transition: 'all 0.15s ease',
+        cursor: 'pointer'
+      }}
+      onMouseEnter={onHover}
+      onTouchStart={onHover}
+    >
+      <span
+        style={{
+          color: 'var(--text-primary)',
+          fontWeight: isHighlighted ? 800 : 700,
+          fontSize: '0.92rem',
+          fontFamily: 'var(--font-mono)',
+          fontVariantNumeric: 'tabular-nums'
+        }}
+      >
+        {value}
+      </span>
+      {badgeText && isHighlighted && (
+        <span
+          style={{
+            position: 'absolute',
+            bottom: '1px',
+            fontSize: '0.52rem',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 800,
+            color: 'var(--accent-primary)',
+            lineHeight: 1
+          }}
+        >
+          {badgeText}
+        </span>
+      )}
+    </div>
+  );
+});
+
 export default function Step11ImageInversionXRay({ onSelectStep }) {
-  // Active Tab: 'matrix' (4x4 pipeline) or 'photoLab' (upload/camera)
+  // Active Tab: 'matrix' (4-Stage Pipeline) or 'photoLab' (Upload / Camera)
   const [activeTab, setActiveTab] = useState('matrix');
 
   // Selected Preset
@@ -220,8 +434,8 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
   // Inversion factor k in [0, 1] (Default 1.0 = Full 255 - A inversion)
   const [inversionFactor, setInversionFactor] = useState(1.0);
 
-  // X-ray Visual Effect Style in Stage 4: 'xrayCool' (Medical Cyan Glow) or 'classicNegative' (Monochrome)
-  const [xrayColorMode, setXrayColorMode] = useState('xrayCool');
+  // Card 4 View Toggle: 'negative' (A' = 255 - A), 'blend' ((1-k)A + k(255-A)), 'shift' (Symmetrical Delta)
+  const [card4View, setCard4View] = useState('negative');
 
   // Synchronized hovered cell
   const [hoveredCell, setHoveredCell] = useState(null);
@@ -238,65 +452,84 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
   const videoRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Inverted Matrix A' = 255 - A (weighted by inversionFactor)
+  // Matrix of uniform 255 ceiling
+  const matrix255 = useMemo(() => {
+    return Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => 255));
+  }, []);
+
+  // Inverted Matrix A' = 255 - A
   const matrixInverted = useMemo(() => {
+    return invertMatrix(matrixA, 1.0);
+  }, [matrixA]);
+
+  // Dynamically blended Matrix = clamp((1 - k)A + k(255 - A))
+  const matrixBlended = useMemo(() => {
     return invertMatrix(matrixA, inversionFactor);
   }, [matrixA, inversionFactor]);
 
   // Matrix editing handlers
-  const handleCellChangeA = (r, c, val) => {
-    const next = matrixA.map(row => [...row]);
-    next[r][c] = Math.min(255, Math.max(0, val));
-    setMatrixA(next);
-  };
+  const handleCellChangeA = useCallback((r, c, val) => {
+    setMatrixA(prev => {
+      const next = prev.map(row => [...row]);
+      next[r][c] = Math.min(255, Math.max(0, val));
+      return next;
+    });
+  }, []);
 
   // Preset Selection
-  const handleSelectPreset = (key) => {
+  const handleSelectPreset = useCallback((key) => {
     setCurrentPresetKey(key);
     const p = INVERSION_PRESETS[key];
-    setMatrixA(p.matrixA.map(row => [...row]));
-    setInversionFactor(1.0);
-  };
+    if (p) {
+      setMatrixA(p.matrixA.map(row => [...row]));
+      setInversionFactor(1.0);
+    }
+  }, []);
 
   // Reset to default preset values
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     handleSelectPreset(currentPresetKey);
     setInversionFactor(1.0);
-  };
+  }, [currentPresetKey, handleSelectPreset]);
 
-  // Randomize values
-  const handleRandomize = () => {
-    const rows = matrixA.length;
-    const cols = matrixA[0].length;
+  // Randomize values with pleasant medium-tone range
+  const handleRandomize = useCallback(() => {
+    const rows = 4;
+    const cols = 4;
+    const bgBase = Math.floor(Math.random() * 40) + 120;
     const rand = createEmptyMatrix(rows, cols);
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        rand[r][c] = Math.round(Math.random() * 255);
+        rand[r][c] = bgBase + Math.floor(Math.random() * 20) - 10;
       }
     }
+    // Add bright feature
+    rand[1][1] = 240;
+    rand[1][2] = 240;
+    rand[2][1] = 240;
+    rand[2][2] = 240;
     setMatrixA(rand);
-  };
+  }, []);
 
-  // Hovered Cell Info
+  // Hovered Cell Info Calculation
   const hoveredInfo = useMemo(() => {
     if (!hoveredCell) return null;
     const { row, col } = hoveredCell;
     const origVal = matrixA[row]?.[col] ?? 0;
     const invertedVal = matrixInverted[row]?.[col] ?? (255 - origVal);
-    const mathDiff = 255 - origVal;
 
     let commentary = '';
-    if (origVal < 50) {
-      commentary = `Dark Shadow (${origVal}) flips to Luminous Highlight (${invertedVal})`;
+    if (origVal < 60) {
+      commentary = `Dark shadow (${origVal}) flips to luminous highlight (${invertedVal})`;
     } else if (origVal > 200) {
-      commentary = `Bright Highlight (${origVal}) flips to Deep Black (${invertedVal})`;
+      commentary = `Bright highlight (${origVal}) flips to dense absorption (${invertedVal})`;
     } else if (Math.abs(origVal - 128) <= 15) {
-      commentary = `Midpoint Gray (${origVal}) flips to (~${invertedVal}) — near the invariant center!`;
+      commentary = `Midtone gray (${origVal}) maps to (${invertedVal}) — near invariant midpoint`;
     } else {
       commentary = `Midtone (${origVal}) symmetrically mirrors across 127.5 to (${invertedVal})`;
     }
 
-    return { row, col, origVal, invertedVal, mathDiff, commentary };
+    return { row, col, origVal, invertedVal, commentary };
   }, [hoveredCell, matrixA, matrixInverted]);
 
   // -----------------------------------------------------------------
@@ -330,7 +563,6 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
     });
   };
 
-  // Upload handler
   const handlePhotoUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -345,7 +577,6 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
     reader.readAsDataURL(file);
   };
 
-  // Camera capture
   const startCamera = async () => {
     setCameraError(null);
     try {
@@ -355,8 +586,8 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
         videoRef.current.play();
       }
       setIsCameraActive(true);
-    } catch (err) {
-      setCameraError('Camera access denied or unavailable. You can still upload images from your device!');
+    } catch {
+      setCameraError('Camera access denied or unavailable. You can still upload images from your device.');
       setIsCameraActive(false);
     }
   };
@@ -384,7 +615,6 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
     stopCamera();
   };
 
-  // Procedural demo photo loader
   const loadDemoPhoto = async (type) => {
     const canvas = document.createElement('canvas');
     canvas.width = 180;
@@ -392,41 +622,28 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
     const ctx = canvas.getContext('2d');
 
     if (type === 'hand') {
-      // Dark radiograph background
-      ctx.fillStyle = '#111827';
+      ctx.fillStyle = '#C8B097';
       ctx.fillRect(0, 0, 180, 180);
-
-      // Palm & fingers silhouette
-      ctx.fillStyle = '#9CA3AF';
+      ctx.fillStyle = '#E5D6C5';
       ctx.beginPath();
       ctx.ellipse(90, 115, 45, 50, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Fingers
       const fingerPositions = [55, 78, 102, 125];
+      ctx.fillStyle = '#FFFFFF';
       fingerPositions.forEach(fx => {
         ctx.beginPath();
         ctx.roundRect(fx - 9, 30, 18, 70, 9);
         ctx.fill();
       });
-
-      // Dense bone highlights (white)
-      ctx.fillStyle = '#FFFFFF';
-      fingerPositions.forEach(fx => {
-        ctx.beginPath();
-        ctx.roundRect(fx - 4, 38, 8, 55, 4);
-        ctx.fill();
-      });
     } else {
-      // Botanical leaf
-      ctx.fillStyle = '#064E3B';
+      ctx.fillStyle = '#C8B097';
       ctx.fillRect(0, 0, 180, 180);
-      ctx.fillStyle = '#34D399';
+      ctx.fillStyle = '#E5D6C5';
       ctx.beginPath();
       ctx.ellipse(90, 90, 35, 70, 0.4, 0, Math.PI * 2);
       ctx.fill();
-      // Stem
-      ctx.strokeStyle = '#065F46';
+      ctx.strokeStyle = '#FFFFFF';
       ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.moveTo(70, 150);
@@ -440,14 +657,12 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
     setCustomMatrixA(mat);
   };
 
-  // Re-process custom matrix when resolution changes
   useEffect(() => {
     if (customPhotoUrl) {
       processImageToGrayscaleMatrix(customPhotoUrl, photoResolution).then(setCustomMatrixA);
     }
   }, [photoResolution]);
 
-  // Custom photo inverted matrix
   const customMatrixInverted = useMemo(() => {
     if (!customMatrixA) return null;
     return invertMatrix(customMatrixA, 1.0);
@@ -462,50 +677,28 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
     >
       {/* STEP HEADER */}
       <div className="step-header-box">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.45rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-            <span className="modal-badge-tag" style={{ margin: 0, background: 'rgba(6, 182, 212, 0.15)', color: 'var(--accent-cyan)', borderColor: 'rgba(6, 182, 212, 0.35)' }}>
-              Visual Lab 11
-            </span>
-            <span style={{ fontSize: '0.85rem', color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-              Point Transformation: A′ = 255 − A
-            </span>
-          </div>
-        </div>
-
-        <h2 className="step-heading">Visual Lab 11: Image Inversion</h2>
+        <h2 className="step-heading">Image Inversion</h2>
         <p className="step-description">
-          Convert an image into a grayscale intensity matrix <strong>A</strong>, then reverse its pixel intensities: <code>A′ = 255 − A</code>. Consequently, <strong>0 → 255</strong> and <strong>255 → 0</strong>. Dark regions become bright and bright regions become dark, producing a familiar negative / X-ray-like visual appearance. Inspect individual pixels before and after to observe how a single subtraction transforms the entire image!
+          Invert 8-bit image matrices by subtracting each pixel from the maximum intensity ceiling: <code>A′ = 255 − A</code>. Optical absorption shadows flip into luminous highlights, while highlights become dark, revealing hidden internal structures like medical X-ray radiographs and photographic film negatives.
         </p>
 
-        {/* SCIENTIFIC / MEDICAL DISCLAIMER */}
-        <div className="xray-disclaimer-card">
-          <div className="xray-disclaimer-header">
-            <Info size={17} />
-            <span>Scientific & Medical Clarification: X-Ray-like Visual Effect</span>
-          </div>
-          <p className="xray-disclaimer-text">
-            This digital negative is an <strong>X-ray-like visual effect</strong> generated through element-by-element matrix inversion (<code>A′ = 255 − A</code>), <strong>not an authentic clinical X-ray</strong>. Genuine medical radiography shoots penetrating electromagnetic photons through anatomical matter, where high-density materials (such as calcium in bone) absorb more radiation than softer muscle tissue to cast anatomical density shadows.
-          </p>
-        </div>
-
         {/* Mode Switcher Tabs */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.9rem' }}>
+        <div className="addition-mode-toggle" style={{ marginTop: '0.85rem' }}>
           <button
-            className={`preset-btn ${activeTab === 'matrix' ? 'active' : ''}`}
+            type="button"
+            className={`mode-btn ${activeTab === 'matrix' ? 'active' : ''}`}
             onClick={() => setActiveTab('matrix')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.45rem 1rem' }}
           >
-            <Sliders size={15} />
-            <span>4-Stage Comparison Pipeline (4×4 Grid)</span>
+            <Grid size={14} />
+            <span>Interactive Matrix Pipeline (4×4)</span>
           </button>
           <button
-            className={`preset-btn ${activeTab === 'photoLab' ? 'active' : ''}`}
+            type="button"
+            className={`mode-btn ${activeTab === 'photoLab' ? 'active' : ''}`}
             onClick={() => setActiveTab('photoLab')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.45rem 1rem' }}
           >
-            <Camera size={15} />
-            <span>Photo Inversion Laboratory (Upload / Camera)</span>
+            <Camera size={14} />
+            <span>Photo Inversion Lab (Upload / Camera)</span>
           </button>
         </div>
       </div>
@@ -513,22 +706,22 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
       {activeTab === 'matrix' ? (
         <>
           {/* TOP CONTROLS CARD */}
-          <div className="top-control-card subtraction-controls-card">
+          <div className="subtraction-controls-card">
             <div className="subtraction-controls-grid">
               
-              {/* Part 1: Inversion Transition Slider */}
+              {/* Part 1: Inversion Blend Factor (k) Slider & Presets */}
               <div className="slider-group" style={{ marginBottom: 0 }}>
-                <div className="slider-label" style={{ marginBottom: '0.35rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Sliders size={16} color="var(--accent-cyan)" />
+                <div className="threshold-label-row">
+                  <div className="threshold-title-wrap">
+                    <Filter size={15} style={{ color: 'var(--text-secondary)' }} />
                     <span>Inversion Blend Factor (k):</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                    <span className="font-mono" style={{ color: 'var(--accent-cyan)', fontSize: '1.25rem', fontWeight: '800' }}>
+                  <div className="threshold-val-wrap">
+                    <span className="threshold-num-large font-mono">
                       {(inversionFactor * 100).toFixed(0)}%
                     </span>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                      {inversionFactor === 1.0 ? '(Full A′ = 255 − A)' : inversionFactor === 0.0 ? '(Original A)' : '(Partial Flip)'}
+                    <span className="threshold-formula-sub">
+                      {inversionFactor === 1.0 ? '(A′ = 255 − A)' : inversionFactor === 0.0 ? '(Original A)' : `(k = ${inversionFactor.toFixed(2)})`}
                     </span>
                   </div>
                 </div>
@@ -544,46 +737,44 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
                   onInput={(e) => setInversionFactor(parseFloat(e.target.value))}
                   style={{ 
                     '--slider-pct': `${inversionFactor * 100}%`, 
-                    '--slider-color': 'var(--accent-cyan)' 
+                    '--slider-color': 'var(--text-primary)' 
                   }}
+                  aria-label="Inversion blend factor slider"
                 />
 
-                {/* Quick Presets for Inversion Factor */}
-                <div className="alpha-presets-row">
-                  <button 
-                    className={`mini-preset-pill ${inversionFactor === 0.0 ? 'active' : ''}`}
-                    onClick={() => setInversionFactor(0.0)}
-                    title="0% (Unchanged Original)"
-                  >
-                    0% (Original)
-                  </button>
-                  <button 
-                    className={`mini-preset-pill ${inversionFactor === 0.5 ? 'active' : ''}`}
-                    onClick={() => setInversionFactor(0.5)}
-                    title="50% (Midway Flat Gray Point)"
-                  >
-                    50% (Neutral 128)
-                  </button>
-                  <button 
-                    className={`mini-preset-pill ${inversionFactor === 1.0 ? 'active' : ''}`}
-                    onClick={() => setInversionFactor(1.0)}
-                    title="100% (Complete Negative / X-Ray)"
-                  >
-                    100% (Full Invert)
-                  </button>
+                {/* 5 Inversion Blend Presets */}
+                <div className="threshold-presets-strip">
+                  {[
+                    { val: 0.0, label: '0% (Orig)' },
+                    { val: 0.25, label: '25% Subtle' },
+                    { val: 0.5, label: '50% Neutral' },
+                    { val: 0.75, label: '75% Heavy' },
+                    { val: 1.0, label: '100% Invert' }
+                  ].map((p) => (
+                    <button
+                      key={p.val}
+                      type="button"
+                      className={`threshold-preset-pill ${inversionFactor === p.val ? 'active' : ''}`}
+                      onClick={() => setInversionFactor(p.val)}
+                      title={`Set blend factor to ${(p.val * 100).toFixed(0)}%`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Part 2: Presets & X-Ray Radiograph View Toggles */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              {/* Part 2: Presets & Action Buttons */}
+              <div className="subtraction-right-controls">
                 <div className="control-row-group">
-                  <span className="control-row-label">
-                    Subject Presets:
-                  </span>
-                  <div className="addition-presets-strip" style={{ flexWrap: 'wrap' }}>
+                  <div className="presets-pill-group">
+                    <span className="control-row-label-wrap" style={{ marginRight: '0.15rem' }}>
+                      Subjects:
+                    </span>
                     {Object.entries(INVERSION_PRESETS).map(([key, data]) => (
                       <button
                         key={key}
+                        type="button"
                         className={`preset-btn mini-btn ${currentPresetKey === key ? 'active' : ''}`}
                         onClick={() => handleSelectPreset(key)}
                         title={data.desc}
@@ -592,527 +783,401 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
                       </button>
                     ))}
                   </div>
-                </div>
 
-                {/* X-Ray Radiographic Styling */}
-                <div className="control-row-group" style={{ alignItems: 'center' }}>
-                  <span className="control-row-label">Effect Tint:</span>
-                  <div className="noise-pill-group">
-                    <button
-                      className={`noise-btn ${xrayColorMode === 'xrayCool' ? 'active' : ''}`}
-                      onClick={() => setXrayColorMode('xrayCool')}
-                      title="Medical Cyan/Blue Radiographic Illuminator"
-                      style={{ color: xrayColorMode === 'xrayCool' ? 'var(--accent-cyan)' : undefined }}
+                  <div className="action-btn-group">
+                    <button 
+                      type="button"
+                      className="icon-action-btn" 
+                      onClick={handleRandomize}
+                      title="Generate random matrix values"
                     >
-                      Cyan Radiograph
+                      <Shuffle size={13} />
+                      <span>Random</span>
                     </button>
-                    <button
-                      className={`noise-btn ${xrayColorMode === 'classicNegative' ? 'active' : ''}`}
-                      onClick={() => setXrayColorMode('classicNegative')}
-                      title="Monochrome Photographic Film Negative"
+                    <button 
+                      type="button"
+                      className="icon-action-btn" 
+                      onClick={handleReset}
+                      title="Reset to default preset"
                     >
-                      B&W Film Negative
+                      <RotateCcw size={13} />
                     </button>
                   </div>
                 </div>
-
-                {/* Action Buttons: Reset & Random */}
-                <div style={{ display: 'flex', gap: '0.45rem', marginTop: '0.15rem' }}>
-                  <button
-                    className="preset-btn mini-btn"
-                    onClick={handleRandomize}
-                    title="Generate Random Intensity Matrix"
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
-                  >
-                    <Shuffle size={12} />
-                    <span>Random Matrix</span>
-                  </button>
-                  <button
-                    className="preset-btn mini-btn"
-                    onClick={handleReset}
-                    title="Reset to default preset values"
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
-                  >
-                    <RotateCcw size={12} />
-                    <span>Reset</span>
-                  </button>
-                </div>
               </div>
+
             </div>
           </div>
 
-          {/* 4-STAGE PIPELINE: Original → Grayscale → Invert Pixel Values → X-ray-like Effect */}
-          <div className="addition-pipeline-row">
+          {/* THRESHOLD LOGIC & NOISE STATUS BAR */}
+          <div className="subtraction-logic-bar">
+            <div className="logic-bar-left">
+              <Sparkles size={14} style={{ flexShrink: 0, color: 'var(--text-secondary)' }} />
+              {hoveredInfo ? (
+                <span style={{ fontFamily: 'var(--font-mono)' }}>
+                  Cell ({hoveredInfo.row + 1}, {hoveredInfo.col + 1}):{' '}
+                  Original A = <strong>{hoveredInfo.origVal}</strong> &rarr;{' '}
+                  Inverted A′ = 255 &minus; {hoveredInfo.origVal} = <strong>{hoveredInfo.invertedVal}</strong>{' '}
+                  <span style={{ color: 'var(--text-muted)' }}>({hoveredInfo.commentary})</span>
+                </span>
+              ) : (
+                <span>
+                  <strong>Inversion Rule:</strong> A′(x, y) = 255 &minus; A(x, y). Dark shadows (0) flip to luminous highlights (255); invariant midtone 128 maps to 127. Hover any cell to inspect!
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* =========================================================================
+              THE 4-COLUMN HORIZONTAL LINE PIPELINE:
+              SCENE (A)  ➖  PEAK CEILING (255)  🟰  INVERTED MATRIX (A′)  ➔  X-RAY FILM
+              Identical to Visual Labs 09 and 10
+             ========================================================================= */}
+          <div className="subtraction-horizontal-line-container">
             
-            {/* STAGE 1: ORIGINAL IMAGE */}
-            <div className="addition-column-card" style={{ borderColor: 'rgba(168, 85, 247, 0.35)' }}>
-              <div className="addition-column-header">
-                <div className="col-header-left">
-                  <span className="matrix-title-badge" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#A855F7', borderColor: 'rgba(168, 85, 247, 0.35)' }}>
-                    1
-                  </span>
-                  <div>
-                    <h3 className="addition-card-title">Original Image</h3>
-                    <span className="addition-card-subtitle" style={{ color: '#A855F7' }}>
-                      Color / Physical Scene
-                    </span>
-                  </div>
+            {/* COLUMN 1: SCENE IMAGE (A) */}
+            <div className="addition-column-card glass-level-2">
+              <div className="matrix-header">
+                <div className="matrix-header-title-row">
+                  <h3 className="matrix-title-text">Scene Image (A)</h3>
                 </div>
-                <div className="col-header-right">
-                  <span className="matrix-dims">Scene</span>
+                <div className="matrix-header-badge-wrap">
+                  <span className="matrix-dims-badge">4 × 4</span>
                 </div>
               </div>
 
-              <div className="addition-card-body">
-                <div className="canvas-subrow">
-                  <PipelineCanvas
-                    matrix={matrixA}
-                    hoveredCell={hoveredCell}
-                    onHoverCell={setHoveredCell}
-                    pixelSize={24}
-                    highlightColor="#A855F7"
-                    themeMode="colorOriginal"
-                    renderType={INVERSION_PRESETS[currentPresetKey]?.renderType || 'gradient'}
-                    title="Original Scene Representation"
-                  />
-                  <div className="canvas-subrow-info">
-                    <span className="subrow-label">Visual Subject</span>
-                    <span className="subrow-hint">{INVERSION_PRESETS[currentPresetKey]?.category}</span>
-                    <div className="subrow-actions">
-                      <span className="badge-tag-mini" style={{ color: '#A855F7', borderColor: 'rgba(168, 85, 247, 0.3)' }}>
-                        Source Image
-                      </span>
-                    </div>
+              <div className="canvas-subrow">
+                <PipelineCanvas
+                  matrix={matrixA}
+                  hoveredCell={hoveredCell}
+                  onHoverCell={setHoveredCell}
+                  pixelSize={20}
+                  title="Original Scene Representation (A)"
+                />
+                <div className="canvas-subrow-info">
+                  <span className="subrow-label">{INVERSION_PRESETS[currentPresetKey]?.name}</span>
+                  <span className="subrow-hint">Luminance range [0, 255]</span>
+                  <div className="subrow-actions">
+                    <span className="badge-tag-mini">Editable</span>
                   </div>
                 </div>
+              </div>
 
-                {/* Info swatch */}
-                <div style={{ padding: '0.65rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.76rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
-                  Natural scene containing optical light reflections before digital intensity quantization.
-                </div>
+              {/* 4x4 Numerical Matrix Grid */}
+              <MatrixBracketWrapper onMouseLeave={() => setHoveredCell(null)}>
+                {matrixA.map((row, i) =>
+                  row.map((val, j) => (
+                    <Step11EditableCell
+                      key={`a-${i}-${j}`}
+                      value={val}
+                      row={i}
+                      col={j}
+                      isHovered={hoveredCell && hoveredCell.row === i && hoveredCell.col === j}
+                      onChange={handleCellChangeA}
+                      onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                    />
+                  ))
+                )}
+              </MatrixBracketWrapper>
+
+              <div className="matrix-footer-hint" style={{ marginTop: '0.45rem' }}>
+                <span>Click to edit • Use ▲ ▼ keys</span>
               </div>
             </div>
 
-            {/* OPERATOR 1: ➔ CONVERT TO GRAYSCALE */}
+            {/* OPERATOR 1: ➖ SUBTRACT */}
             <div className="addition-operator-divider">
-              <div className="operator-badge filter-badge" title="Quantize RGB photons to Luminance A">
-                <ArrowRight size={18} strokeWidth={2.6} />
-              </div>
-              <span className="operator-label">Grayscale</span>
-            </div>
-
-            {/* STAGE 2: GRAYSCALE INTENSITY MATRIX (A) */}
-            <div className="addition-column-card card-mat-a">
-              <div className="addition-column-header">
-                <div className="col-header-left">
-                  <span className="matrix-title-badge badge-a">A</span>
-                  <div>
-                    <h3 className="addition-card-title">Grayscale Matrix (A)</h3>
-                    <span className="addition-card-subtitle">Intensities: [0 = Black, 255 = White]</span>
-                  </div>
-                </div>
-                <div className="col-header-right">
-                  <span className="matrix-dims">4 × 4</span>
-                </div>
-              </div>
-
-              <div className="addition-card-body">
-                <div className="canvas-subrow">
-                  <PipelineCanvas
-                    matrix={matrixA}
-                    hoveredCell={hoveredCell}
-                    onHoverCell={setHoveredCell}
-                    pixelSize={24}
-                    highlightColor="var(--accent-purple)"
-                    themeMode="grayscale"
-                    title="Grayscale Intensity Matrix A"
-                  />
-                  <div className="canvas-subrow-info">
-                    <span className="subrow-label">Matrix A</span>
-                    <span className="subrow-hint">Original luminance values</span>
-                    <div className="subrow-actions">
-                      <span className="badge-tag-mini">Editable</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4x4 Grid for Matrix A */}
-                <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': 'var(--accent-purple)' }}>
-                  <div className="matrix-left-bracket" style={{ borderColor: 'var(--accent-purple)' }} />
-                  <div className="matrix-with-indices">
-                    <div className="matrix-col-indices-row">
-                      {matrixA[0].map((_, cIdx) => (
-                        <span key={`col-a-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
-                      ))}
-                    </div>
-                    <div className="matrix-body-row">
-                      <div className="matrix-row-indices-col">
-                        {matrixA.map((_, rIdx) => (
-                          <span key={`row-a-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
-                        ))}
-                      </div>
-                      <div 
-                        className="matrix-grid compact-grid"
-                        style={{ gridTemplateColumns: `repeat(${matrixA[0].length}, 1fr)` }}
-                        onMouseLeave={() => setHoveredCell(null)}
-                      >
-                        {matrixA.map((row, i) =>
-                          row.map((val, j) => {
-                            const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                            return (
-                              <div
-                                key={`a-${i}-${j}`}
-                                className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                                style={{
-                                  '--cell-accent': 'var(--accent-purple)',
-                                  borderColor: isHovered ? 'var(--accent-purple)' : undefined,
-                                  background: `linear-gradient(135deg, rgba(${val},${val},${val},0.18) 0%, var(--bg-secondary) 100%)`
-                                }}
-                                onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                                onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                                onWheel={(e) => {
-                                  e.preventDefault();
-                                  const delta = e.deltaY < 0 ? 5 : -5;
-                                  handleCellChangeA(i, j, Math.min(255, Math.max(0, val + delta)));
-                                }}
-                              >
-                                <div className="editable-cell-inner compact-inner">
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={val}
-                                    onFocus={(e) => e.target.select()}
-                                    onChange={(e) => {
-                                      const parsed = parseInt(e.target.value);
-                                      const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
-                                      handleCellChangeA(i, j, valid);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-                                        e.preventDefault();
-                                        handleCellChangeA(i, j, Math.min(255, val + 5));
-                                      } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-                                        e.preventDefault();
-                                        handleCellChangeA(i, j, Math.max(0, val - 5));
-                                      }
-                                    }}
-                                    className="matrix-cell-input compact-input"
-                                    style={{ color: 'var(--accent-purple)' }}
-                                  />
-                                  <div className="stepper-arrow-buttons compact-steppers">
-                                    <button
-                                      type="button"
-                                      className="stepper-arrow-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCellChangeA(i, j, Math.min(255, val + 10));
-                                      }}
-                                      title="+10"
-                                    >
-                                      ▲
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="stepper-arrow-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCellChangeA(i, j, Math.max(0, val - 10));
-                                      }}
-                                      title="-10"
-                                    >
-                                      ▼
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="matrix-right-bracket" style={{ borderColor: 'var(--accent-purple)' }} />
-                </div>
-              </div>
-            </div>
-
-            {/* OPERATOR 2: 🟰 255 - A */}
-            <div className="addition-operator-divider">
-              <div className="operator-badge minus-badge" title="Reverse pixel intensities: A′ = 255 − A">
-                <Minus size={18} strokeWidth={2.8} />
+              <div className="operator-badge" title="Subtract from peak ceiling: 255 - A">
+                <Minus size={18} strokeWidth={2.6} />
               </div>
               <span className="operator-label">255 − A</span>
             </div>
 
-            {/* STAGE 3: INVERT PIXEL VALUES MATRIX (A′ = 255 − A) */}
-            <div className="addition-column-card card-diff-d">
-              <div className="addition-column-header">
-                <div className="col-header-left">
-                  <span className="matrix-title-badge badge-d" style={{ background: 'rgba(6, 182, 212, 0.15)', color: 'var(--accent-cyan)', borderColor: 'rgba(6, 182, 212, 0.35)' }}>
-                    A′
-                  </span>
-                  <div>
-                    <h3 className="addition-card-title">Invert Pixel Values</h3>
-                    <span className="addition-card-subtitle" style={{ color: 'var(--accent-cyan)' }}>
-                      A′ = 255 − A
-                    </span>
-                  </div>
+            {/* COLUMN 2: PEAK WHITE CEILING (255) */}
+            <div className="addition-column-card glass-level-2">
+              <div className="matrix-header">
+                <div className="matrix-header-title-row">
+                  <h3 className="matrix-title-text">Peak White (255)</h3>
                 </div>
-                <div className="col-header-right">
-                  <span className="matrix-dims" style={{ borderColor: 'rgba(6, 182, 212, 0.4)', color: 'var(--accent-cyan)', background: 'rgba(6, 182, 212, 0.12)' }}>
-                    4 × 4
-                  </span>
+                <div className="matrix-header-badge-wrap">
+                  <span className="matrix-dims-badge">4 × 4</span>
                 </div>
               </div>
 
-              <div className="addition-card-body">
-                <div className="canvas-subrow">
-                  <PipelineCanvas
-                    matrix={matrixInverted}
-                    hoveredCell={hoveredCell}
-                    onHoverCell={setHoveredCell}
-                    pixelSize={24}
-                    highlightColor="var(--accent-cyan)"
-                    themeMode="grayscale"
-                    title="Inverted Pixel Matrix A′"
-                  />
-                  <div className="canvas-subrow-info">
-                    <span className="subrow-label">Reversed Intensity</span>
-                    <span className="subrow-hint">0 ➔ 255 &amp; 255 ➔ 0</span>
-                    <div className="subrow-actions">
-                      <span className="badge-tag-mini" style={{ color: 'var(--accent-cyan)', borderColor: 'rgba(6, 182, 212, 0.3)' }}>
-                        Live 255 − A
-                      </span>
-                    </div>
+              <div className="canvas-subrow">
+                <PipelineCanvas
+                  matrix={matrix255}
+                  hoveredCell={hoveredCell}
+                  onHoverCell={setHoveredCell}
+                  pixelSize={20}
+                  mode="ceiling255"
+                  title="Peak White 8-Bit Dynamic Ceiling"
+                />
+                <div className="canvas-subrow-info">
+                  <span className="subrow-label">Reference Matrix</span>
+                  <span className="subrow-hint">Full-scale ceiling ceiling 255</span>
+                  <div className="subrow-actions">
+                    <span className="badge-tag-mini">Ceiling</span>
                   </div>
                 </div>
+              </div>
 
-                {/* 4x4 Grid for Inverted Matrix */}
-                <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': 'var(--accent-cyan)' }}>
-                  <div className="matrix-left-bracket" style={{ borderColor: 'var(--accent-cyan)' }} />
-                  <div className="matrix-with-indices">
-                    <div className="matrix-col-indices-row">
-                      {matrixInverted[0].map((_, cIdx) => (
-                        <span key={`col-inv-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
-                      ))}
-                    </div>
-                    <div className="matrix-body-row">
-                      <div className="matrix-row-indices-col">
-                        {matrixInverted.map((_, rIdx) => (
-                          <span key={`row-inv-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
-                        ))}
-                      </div>
-                      <div 
-                        className="matrix-grid compact-grid"
-                        style={{ gridTemplateColumns: `repeat(${matrixInverted[0].length}, 1fr)` }}
-                        onMouseLeave={() => setHoveredCell(null)}
-                      >
-                        {matrixInverted.map((row, i) =>
-                          row.map((val, j) => {
-                            const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                            return (
-                              <div
-                                key={`inv-${i}-${j}`}
-                                className={`matrix-cell result-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                                style={{
-                                  '--cell-accent': 'var(--accent-cyan)',
-                                  borderColor: isHovered ? 'var(--accent-cyan)' : undefined,
-                                  background: `linear-gradient(135deg, rgba(${val},${val},${val},0.22) 0%, var(--bg-secondary) 100%)`
-                                }}
-                                onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                                onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                              >
-                                <span 
-                                  className="matrix-cell-val compact-val" 
-                                  style={{ 
-                                    color: 'var(--accent-cyan)',
-                                    fontWeight: '700'
-                                  }}
-                                >
-                                  {val}
-                                </span>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="matrix-right-bracket" style={{ borderColor: 'var(--accent-cyan)' }} />
-                </div>
+              {/* 4x4 Numerical Matrix Grid */}
+              <MatrixBracketWrapper onMouseLeave={() => setHoveredCell(null)}>
+                {matrix255.map((row, i) =>
+                  row.map((val, j) => (
+                    <Step11ResultCell
+                      key={`max-${i}-${j}`}
+                      value={val}
+                      row={i}
+                      col={j}
+                      isHovered={hoveredCell && hoveredCell.row === i && hoveredCell.col === j}
+                      onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                    />
+                  ))
+                )}
+              </MatrixBracketWrapper>
+
+              <div className="matrix-footer-hint" style={{ marginTop: '0.45rem' }}>
+                <span>Uniform 8-bit dynamic ceiling</span>
               </div>
             </div>
 
-            {/* OPERATOR 3: ➔ X-RAY RENDERING */}
+            {/* OPERATOR 2: 🟰 RESULT */}
             <div className="addition-operator-divider">
-              <div className="operator-badge filter-badge" style={{ borderColor: 'var(--accent-cyan)' }}>
-                <Activity size={18} strokeWidth={2.6} color="var(--accent-cyan)" />
+              <div className="operator-badge" title="Result of inversion: A′ = 255 - A">
+                <Equal size={18} strokeWidth={2.6} />
               </div>
-              <span className="operator-label">Render</span>
+              <span className="operator-label">Invert</span>
             </div>
 
-            {/* STAGE 4: X-RAY-LIKE VISUAL EFFECT */}
-            <div className="addition-column-card" style={{ borderColor: 'rgba(6, 182, 212, 0.45)' }}>
-              <div className="addition-column-header">
-                <div className="col-header-left">
-                  <span className="matrix-title-badge" style={{ background: 'rgba(6, 182, 212, 0.15)', color: 'var(--accent-cyan)', borderColor: 'rgba(6, 182, 212, 0.4)' }}>
-                    ★
-                  </span>
-                  <div>
-                    <h3 className="addition-card-title">X-ray-like Effect</h3>
-                    <span className="addition-card-subtitle" style={{ color: 'var(--accent-cyan)' }}>
-                      Reversed Tonal Negative
-                    </span>
-                  </div>
+            {/* COLUMN 3: INVERTED MATRIX (A′) */}
+            <div className="addition-column-card glass-level-2">
+              <div className="matrix-header">
+                <div className="matrix-header-title-row">
+                  <h3 className="matrix-title-text">Inverted Matrix (A′)</h3>
                 </div>
-                <div className="col-header-right">
-                  <span className="matrix-dims" style={{ borderColor: 'rgba(6, 182, 212, 0.4)', color: 'var(--accent-cyan)', background: 'rgba(6, 182, 212, 0.12)' }}>
-                    Negative
-                  </span>
+                <div className="matrix-header-badge-wrap">
+                  <span className="matrix-dims-badge">4 × 4</span>
                 </div>
               </div>
 
-              <div className="addition-card-body">
-                <div className="canvas-subrow">
-                  <PipelineCanvas
-                    matrix={matrixInverted}
-                    hoveredCell={hoveredCell}
-                    onHoverCell={setHoveredCell}
-                    pixelSize={24}
-                    highlightColor="var(--accent-cyan)"
-                    themeMode={xrayColorMode}
-                    title="Radiographic Negative Visual Effect"
-                  />
-                  <div className="canvas-subrow-info">
-                    <span className="subrow-label" style={{ color: 'var(--accent-cyan)', fontWeight: 700 }}>
-                      {xrayColorMode === 'xrayCool' ? 'Cyan Radiograph' : 'Monochrome Film'}
-                    </span>
-                    <span className="subrow-hint">
-                      Dark regions appear bright
-                    </span>
-                    <div className="subrow-actions">
-                      <span className="status-live-indicator" style={{ color: 'var(--accent-cyan)' }}>
-                        <span className="pulse-dot" style={{ background: 'var(--accent-cyan)' }}></span> Inverted Negative
-                      </span>
+              <div className="canvas-subrow">
+                <PipelineCanvas
+                  matrix={matrixInverted}
+                  hoveredCell={hoveredCell}
+                  onHoverCell={setHoveredCell}
+                  pixelSize={20}
+                  title="Inverted Pixel Matrix A′"
+                />
+                <div className="canvas-subrow-info">
+                  <span className="subrow-label">A′ = 255 − A</span>
+                  <span className="subrow-hint">0 ⇄ 255 Symmetrical Flip</span>
+                  <div className="subrow-actions">
+                    <span className="badge-tag-mini">A′ = 255 − A</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4x4 Numerical Matrix Grid */}
+              <MatrixBracketWrapper onMouseLeave={() => setHoveredCell(null)}>
+                {matrixInverted.map((row, i) =>
+                  row.map((val, j) => {
+                    const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                    const origVal = matrixA[i][j];
+                    const isSignificantShadow = origVal < 60;
+                    const isSignificantHighlight = origVal > 200;
+                    const badgeText = isSignificantShadow ? 'LUM' : isSignificantHighlight ? 'ABS' : null;
+                    return (
+                      <Step11ResultCell
+                        key={`inv-${i}-${j}`}
+                        value={val}
+                        row={i}
+                        col={j}
+                        isHovered={isHovered}
+                        isHighlighted={isSignificantShadow || isSignificantHighlight}
+                        badgeText={badgeText}
+                        onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                      />
+                    );
+                  })
+                )}
+              </MatrixBracketWrapper>
+
+              <div className="matrix-footer-hint" style={{ marginTop: '0.45rem' }}>
+                <span>Dark shadows become luminous highlights</span>
+              </div>
+            </div>
+
+            {/* OPERATOR 3: ➔ X-RAY OUTPUT */}
+            <div className="addition-operator-divider">
+              <div className="operator-badge" title="Dynamic radiographic blend factor">
+                <ArrowRight size={17} strokeWidth={2.5} />
+              </div>
+              <span className="operator-label">k = {(inversionFactor * 100).toFixed(0)}%</span>
+            </div>
+
+            {/* COLUMN 4: X-RAY FILM OUTPUT */}
+            <div className="addition-column-card glass-level-2">
+              <div className="matrix-header">
+                <div className="matrix-header-title-row">
+                  <h3 className="matrix-title-text">X-Ray Output</h3>
+                </div>
+                <div className="matrix-header-badge-wrap">
+                  <span className="matrix-dims-badge">Film</span>
+                </div>
+              </div>
+
+              <div className="canvas-subrow">
+                <PipelineCanvas
+                  matrix={card4View === 'blend' ? matrixBlended : matrixInverted}
+                  matrixOriginal={matrixA}
+                  inversionFactor={inversionFactor}
+                  mode="xray"
+                  hoveredCell={hoveredCell}
+                  onHoverCell={setHoveredCell}
+                  pixelSize={20}
+                  title="Inverted Negative Visual Output"
+                />
+                <div className="canvas-subrow-info">
+                  <span className="subrow-label">
+                    Radiographic Film
+                  </span>
+                  <span className="subrow-hint">
+                    Tonal negative radiograph
+                  </span>
+                  <div className="subrow-actions">
+                    <div className="subrow-toggle-group">
+                      <button
+                        type="button"
+                        className={`subrow-toggle-pill ${card4View === 'negative' ? 'active' : ''}`}
+                        onClick={() => setCard4View('negative')}
+                        title="Pure Inverted Matrix (255 - A)"
+                      >
+                        Film (A′)
+                      </button>
+                      <button
+                        type="button"
+                        className={`subrow-toggle-pill ${card4View === 'blend' ? 'active' : ''}`}
+                        onClick={() => setCard4View('blend')}
+                        title="Dynamic Blend with Factor k"
+                      >
+                        Blend (k)
+                      </button>
+                      <button
+                        type="button"
+                        className={`subrow-toggle-pill ${card4View === 'shift' ? 'active' : ''}`}
+                        onClick={() => setCard4View('shift')}
+                        title="Symmetrical Midpoint Delta"
+                      >
+                        Shift Δ
+                      </button>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Educational Summary Card */}
-                <div style={{ padding: '0.65rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                  Dense internal anatomy that was dark in the scene now shines like a radiographic film illuminator!
-                </div>
+              {/* 4x4 Numerical Matrix Grid */}
+              <MatrixBracketWrapper onMouseLeave={() => setHoveredCell(null)}>
+                {card4View === 'blend' ? (
+                  matrixBlended.map((row, i) =>
+                    row.map((val, j) => {
+                      const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                      return (
+                        <Step11ResultCell
+                          key={`bl-${i}-${j}`}
+                          value={val}
+                          row={i}
+                          col={j}
+                          isHovered={isHovered}
+                          onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                        />
+                      );
+                    })
+                  )
+                ) : card4View === 'shift' ? (
+                  matrixA.map((row, i) =>
+                    row.map((origVal, j) => {
+                      const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                      const delta = 127.5 - origVal;
+                      const displayVal = delta > 0 ? `+${Math.round(delta)}` : `${Math.round(delta)}`;
+                      return (
+                        <Step11ResultCell
+                          key={`sh-${i}-${j}`}
+                          value={displayVal}
+                          row={i}
+                          col={j}
+                          isHovered={isHovered}
+                          badgeText={delta !== 0 ? 'Δ' : '0'}
+                          onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                        />
+                      );
+                    })
+                  )
+                ) : (
+                  matrixInverted.map((row, i) =>
+                    row.map((val, j) => {
+                      const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                      const origVal = matrixA[i][j];
+                      const isSignificantShadow = origVal < 60;
+                      const isSignificantHighlight = origVal > 200;
+                      const badgeText = isSignificantShadow ? 'LUM' : isSignificantHighlight ? 'ABS' : null;
+                      return (
+                        <Step11ResultCell
+                          key={`out-${i}-${j}`}
+                          value={val}
+                          row={i}
+                          col={j}
+                          isHovered={isHovered}
+                          isHighlighted={isSignificantShadow || isSignificantHighlight}
+                          badgeText={badgeText}
+                          onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                        />
+                      );
+                    })
+                  )
+                )}
+              </MatrixBracketWrapper>
+
+              <div className="matrix-footer-hint" style={{ marginTop: '0.45rem' }}>
+                <span>Photographic negative &amp; medical X-Ray density</span>
               </div>
             </div>
-          </div>
-
-          {/* INTERACTIVE PIXEL INSPECTION & TRANSFER FUNCTION HUD */}
-          <div className="hover-calculation-card" style={{ padding: '1rem 1.25rem' }}>
-            {hoveredInfo ? (
-              <div className="pixel-inspect-grid">
-                
-                {/* Visual Color Chips (Before & After Swatches) */}
-                <div className="swatch-duo">
-                  <div className="pixel-swatch-box">
-                    <div 
-                      className="pixel-color-chip" 
-                      style={{ background: `rgb(${hoveredInfo.origVal}, ${hoveredInfo.origVal}, ${hoveredInfo.origVal})` }}
-                      title={`Original Intensity: ${hoveredInfo.origVal}`}
-                    />
-                    <span className="pixel-swatch-label">Orig: {hoveredInfo.origVal}</span>
-                  </div>
-
-                  <ArrowRight size={16} color="var(--accent-cyan)" />
-
-                  <div className="pixel-swatch-box">
-                    <div 
-                      className="pixel-color-chip" 
-                      style={{ 
-                        background: xrayColorMode === 'xrayCool'
-                          ? `rgb(${Math.round(hoveredInfo.invertedVal * 0.7)}, ${Math.min(255, Math.round(hoveredInfo.invertedVal * 1.05))}, ${Math.min(255, Math.round(hoveredInfo.invertedVal * 1.15))})`
-                          : `rgb(${hoveredInfo.invertedVal}, ${hoveredInfo.invertedVal}, ${hoveredInfo.invertedVal})`
-                      }}
-                      title={`Inverted Intensity: ${hoveredInfo.invertedVal}`}
-                    />
-                    <span className="pixel-swatch-label" style={{ color: 'var(--accent-cyan)' }}>Invert: {hoveredInfo.invertedVal}</span>
-                  </div>
-                </div>
-
-                {/* Mathematical Formula Breakdown */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <span className="font-mono" style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                      Pixel ({hoveredInfo.row}, {hoveredInfo.col}):
-                    </span>
-                    <span className="font-mono" style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      255 − <span style={{ color: 'var(--accent-purple)' }}>{hoveredInfo.origVal}</span> = <span style={{ color: 'var(--accent-cyan)' }}>{hoveredInfo.invertedVal}</span>
-                    </span>
-                  </div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    {hoveredInfo.commentary}
-                  </span>
-                </div>
-
-                {/* SVG Transfer Function Curve */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem' }}>
-                  <svg className="transfer-function-svg" width="60" height="60" viewBox="0 0 60 60">
-                    {/* Diagonal line y = 255 - x */}
-                    <line x1="8" y1="8" x2="52" y2="52" stroke="var(--text-muted)" strokeWidth="1.5" strokeDasharray="2,2" />
-                    <line x1="8" y1="52" x2="52" y2="8" stroke="var(--accent-cyan)" strokeWidth="2.5" />
-                    
-                    {/* Active point on curve */}
-                    {(() => {
-                      const px = 8 + (hoveredInfo.origVal / 255) * 44;
-                      const py = 52 - (hoveredInfo.invertedVal / 255) * 44;
-                      return (
-                        <circle cx={px} cy={py} r="4.5" fill="#38BDF8" stroke="#FFF" strokeWidth="1.5" />
-                      );
-                    })()}
-                  </svg>
-                  <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                    f(x) = 255−x
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="hover-calc-placeholder">
-                <HelpCircle size={16} color="var(--accent-cyan)" />
-                <span>Hover or scroll over any pixel cell above to inspect the individual before and after pixel inversion arithmetic</span>
-              </div>
-            )}
           </div>
         </>
       ) : (
         /* -------------------------------------------------------------
-           CUSTOM PHOTO INVERSION LABORATORY
+           CUSTOM PHOTO INVERSION LABORATORY (UPLOAD OR SNAP)
            ------------------------------------------------------------- */
-        <div className="top-control-card" style={{ padding: '1.5rem', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+        <div className="subtraction-controls-card" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
             <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Camera size={19} color="var(--accent-cyan)" />
-                <span>Custom Photo Inversion: Generate X-Ray-like Negatives</span>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                <Camera size={18} style={{ color: 'var(--accent-primary)' }} />
+                <span>Custom Photography Laboratory: Image Inversion &amp; X-Ray</span>
               </h3>
-              <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                Upload any photograph or snap a picture to see it convert into a grayscale matrix and invert to an X-ray-like negative!
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.25rem 0 0' }}>
+                Upload an image or capture with your webcam to watch matrix inversion reveal radiograph negatives!
               </p>
             </div>
 
-            {/* Resolution Selector */}
+            {/* Resolution selector for downsampled matrix */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>Matrix Grid Resolution:</span>
+              <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Grid Resolution:</span>
               <div className="noise-pill-group">
                 <button
+                  type="button"
                   className={`noise-btn ${photoResolution === 8 ? 'active' : ''}`}
                   onClick={() => setPhotoResolution(8)}
-                  title="8x8 Matrix (64 cells)"
+                  title="8x8 Matrix (64 numerical cells)"
                 >
                   8 × 8
                 </button>
                 <button
+                  type="button"
                   className={`noise-btn ${photoResolution === 16 ? 'active' : ''}`}
                   onClick={() => setPhotoResolution(16)}
-                  title="16x16 Matrix (256 cells)"
+                  title="16x16 Matrix (256 numerical cells)"
                 >
                   16 × 16
                 </button>
@@ -1120,27 +1185,29 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
             </div>
           </div>
 
-          {/* Quick Demo Test Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.25rem', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: '10px' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Try Demo Subject:</span>
+          {/* Quick Demo Sample Photo Buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.25rem', padding: '0.65rem 0.85rem', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Demo Photos:</span>
             <button
+              type="button"
               className="preset-btn mini-btn"
               onClick={() => loadDemoPhoto('hand')}
-              title="Hand Anatomy Silhouette"
+              title="Hand Anatomy Radiograph"
               style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
             >
-              <span>🦴 Hand Radiograph</span>
+              <span>Hand Radiograph</span>
             </button>
             <button
+              type="button"
               className="preset-btn mini-btn"
               onClick={() => loadDemoPhoto('leaf')}
               title="Botanical Leaf Veins"
               style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
             >
-              <span>🌿 Botanical Leaf</span>
+              <span>Botanical Leaf</span>
             </button>
 
-            {/* Webcam / Upload Buttons */}
+            {/* Webcam Button */}
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
               <input
                 ref={fileInputRef}
@@ -1150,28 +1217,31 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
                 onChange={handlePhotoUpload}
               />
               <button
-                className="preset-btn mini-btn"
+                type="button"
+                className="icon-action-btn"
                 onClick={() => fileInputRef.current?.click()}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
               >
                 <Upload size={13} />
-                <span>Upload Photo</span>
+                <span>Upload Image</span>
               </button>
 
               {!isCameraActive ? (
                 <button
-                  className="preset-btn mini-btn"
+                  type="button"
+                  className="icon-action-btn"
                   onClick={startCamera}
-                  style={{ background: 'rgba(6, 182, 212, 0.15)', borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                 >
                   <Video size={13} />
                   <span>Use Webcam</span>
                 </button>
               ) : (
                 <button
-                  className="preset-btn mini-btn"
+                  type="button"
+                  className="icon-action-btn"
                   onClick={stopCamera}
-                  style={{ background: 'rgba(239, 68, 68, 0.15)', borderColor: '#EF4444', color: '#EF4444', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                 >
                   <VideoOff size={13} />
                   <span>Stop Camera</span>
@@ -1182,155 +1252,115 @@ export default function Step11ImageInversionXRay({ onSelectStep }) {
 
           {/* Camera Error banner if any */}
           {cameraError && (
-            <div style={{ padding: '0.65rem 1rem', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', color: '#EF4444', fontSize: '0.82rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <AlertCircle size={15} />
+            <div style={{ padding: '0.65rem 0.85rem', background: 'var(--accent-subtle)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.8rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <AlertCircle size={15} style={{ color: 'var(--accent-primary)' }} />
               <span>{cameraError}</span>
             </div>
           )}
 
-          {/* Active Webcam View */}
+          {/* Active Webcam Streaming Card */}
           {isCameraActive && (
-            <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--accent-cyan)', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ position: 'relative', width: '220px', height: '220px', borderRadius: '10px', overflow: 'hidden', border: '2px solid var(--border-color)', background: '#000' }}>
+            <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ position: 'relative', width: '220px', height: '220px', borderRadius: '10px', overflow: 'hidden', border: '2px solid var(--border-color)', background: 'var(--bg-card)' }}>
                 <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', bottom: '8px', left: '8px', right: '8px', textAlign: 'center', background: 'rgba(0,0,0,0.7)', padding: '4px', borderRadius: '6px', fontSize: '0.74rem', color: '#FFF', fontFamily: 'var(--font-mono)' }}>
+                  Snap photo to invert
+                </div>
               </div>
               <button
-                className="mode-btn active"
+                type="button"
+                className="preset-btn mini-btn"
                 onClick={snapCameraPhoto}
-                style={{ background: 'var(--accent-cyan)', color: '#000', fontWeight: 700, padding: '0.55rem 1.25rem', borderRadius: '9999px', display: 'flex', alignItems: 'center', gap: '0.45rem' }}
+                style={{ padding: '0.45rem 1rem', display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: 700 }}
               >
-                <Camera size={16} />
-                <span>📸 Capture &amp; Invert Image</span>
+                <Camera size={15} />
+                <span>Capture &amp; Invert Photo</span>
               </button>
             </div>
           )}
 
           {/* RESULTS COMPARISON DISPLAY */}
           {customMatrixA && customMatrixInverted ? (
-            <div style={{ padding: '1.25rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Image Inversion Pipeline: Original ➔ Grayscale Matrix A ➔ Invert (255 − A) ➔ X-ray Effect
-                </span>
+            <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>
+                Photo Inversion Pipeline: Source ➔ Grayscale Matrix A ➔ Inverted Matrix A′ ➔ Negative Visual
               </div>
 
               {/* 4 Canvases for Custom Photo */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '1.25rem', alignItems: 'center' }}>
-                
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '1rem', alignItems: 'center', textAlign: 'center' }}>
                 {/* 1. Original Uploaded Photo */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#A855F7' }}>1. Original Photo</span>
-                  <div style={{ width: '120px', height: '120px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                    <img src={customPhotoUrl} alt="Original" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-secondary)' }}>1. Source Photo</span>
+                  <div style={{ width: '110px', height: '110px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                    <img src={customPhotoUrl} alt="Original source" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                 </div>
 
                 <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 800 }}>➔</div>
 
                 {/* 2. Grayscale Matrix A */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-purple)' }}>2. Grayscale Matrix A</span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-secondary)' }}>2. Grayscale Matrix A</span>
                   <PipelineCanvas
                     matrix={customMatrixA}
-                    pixelSize={photoResolution === 8 ? 15 : 7.5}
-                    themeMode="grayscale"
-                    highlightColor="var(--accent-purple)"
+                    pixelSize={photoResolution === 8 ? 14 : 7}
                     title="Grayscale Matrix A"
                   />
                 </div>
 
-                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 800 }}>➔ [255 − A] ➔</div>
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 800 }}>➔</div>
 
                 {/* 3. Inverted Matrix A' */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>3. Inverted Matrix A′</span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-secondary)' }}>3. Inverted Matrix A′</span>
                   <PipelineCanvas
                     matrix={customMatrixInverted}
-                    pixelSize={photoResolution === 8 ? 15 : 7.5}
-                    themeMode="grayscale"
-                    highlightColor="var(--accent-cyan)"
+                    pixelSize={photoResolution === 8 ? 14 : 7}
                     title="Inverted Matrix A′"
                   />
                 </div>
 
                 <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 800 }}>➔</div>
 
-                {/* 4. X-ray Visual Effect */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>4. X-Ray-like Effect</span>
+                {/* 4. Inverted Negative Output */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-secondary)' }}>4. Inverted Negative</span>
                   <PipelineCanvas
                     matrix={customMatrixInverted}
-                    pixelSize={photoResolution === 8 ? 15 : 7.5}
-                    themeMode="xrayCool"
-                    highlightColor="var(--accent-cyan)"
-                    title="X-ray-like Radiographic Visual Effect"
+                    pixelSize={photoResolution === 8 ? 14 : 7}
+                    title="Inverted Negative Visual Output"
                   />
                 </div>
               </div>
 
-              {/* Notification Banner */}
-              <div style={{ marginTop: '1.25rem', padding: '0.85rem 1.15rem', background: 'rgba(6, 182, 212, 0.1)', border: '1px solid rgba(6, 182, 212, 0.3)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div style={{ marginTop: '1rem', padding: '0.65rem 0.95rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                  <CheckCircle2 size={18} color="var(--accent-cyan)" />
+                  <CheckCircle2 size={16} style={{ color: 'var(--accent-primary)' }} />
                   <div>
-                    <div style={{ fontWeight: 700, color: 'var(--accent-cyan)', fontSize: '0.9rem' }}>
-                      Pixel Inversion Complete: A′ = 255 − A
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.84rem' }}>
+                      Inversion Processing Complete!
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      All {customMatrixA.length * customMatrixA[0].length} pixels inverted! Dark shadows are now luminous highlights and bright areas are deep absorption blacks.
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                      All {customMatrixA.length * customMatrixA[0].length} pixels inverted: A′ = 255 − A. Dark shadows are now luminous highlights.
                     </div>
                   </div>
                 </div>
-                <span style={{ padding: '0.3rem 0.75rem', background: 'var(--accent-cyan)', color: '#000', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700 }}>
-                  X-Ray-like View
+                <span className="badge-tag-mini" style={{ padding: '0.2rem 0.5rem', fontSize: '0.72rem' }}>
+                  100% Inverted
                 </span>
               </div>
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '1.75rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              Choose a demo subject above or upload a photo to generate an X-ray-like negative!
+            <div style={{ textAlign: 'center', padding: '1.25rem', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+              Choose a demo subject above or upload a photo to inspect custom matrix inversion!
             </div>
           )}
         </div>
       )}
 
-      {/* EDUCATIONAL THEORY ACCORDION */}
-      <div className="explanation-accordion-card">
-        <h3 className="explanation-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Sparkles size={18} color="var(--accent-cyan)" />
-          <span>Mathematical Foundations: Point Transformations &amp; Digital Negatives</span>
-        </h3>
-        
-        <div className="math-concept-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1.25rem', marginTop: '0.85rem' }}>
-          
-          <div className="math-concept-box">
-            <h4 style={{ color: 'var(--accent-purple)', fontSize: '0.92rem', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span>1. Linear Point Transformation: s = 255 − r</span>
-            </h4>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Inversion is the simplest linear point transformation in image processing: <code>s = (L − 1) − r</code>, where <code>L = 256</code> intensity levels. The transformation maps the interval <code>[0, 255]</code> onto itself with a constant slope of <code>−1</code>, symmetrically reversing contrast.
-            </p>
-          </div>
-
-          <div className="math-concept-box">
-            <h4 style={{ color: 'var(--accent-cyan)', fontSize: '0.92rem', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span>2. The Neutral Invariant Point (127.5)</span>
-            </h4>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              At the exact midpoint <code>r = 127.5</code> (rounded to 127 or 128), <code>255 − 128 = 127</code>. Pixels at the middle of the tonal range barely change their intensity value, whereas extreme blacks (0) and extreme whites (255) undergo the maximum possible shift of 255 levels!
-            </p>
-          </div>
-
-          <div className="math-concept-box">
-            <h4 style={{ color: '#10B981', fontSize: '0.92rem', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span>3. Digital Inversion vs. Medical Radiography</span>
-            </h4>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              In real medicine, X-rays are high-energy electromagnetic waves. As X-rays pass through a patient, bones (rich in calcium) absorb more photons than soft flesh, casting a shadow onto film or a digital detector. Our screen effect is a mathematical negative that visualizes this visual reversal!
-            </p>
-          </div>
-        </div>
+      {/* STANDARDIZED EDUCATIONAL DOCUMENTATION */}
+      <div style={{ marginTop: '1.25rem' }}>
+        <ModuleDocumentation stepNumber={11} />
       </div>
 
       <StepFooter stepNumber={11} onSelectStep={onSelectStep} />

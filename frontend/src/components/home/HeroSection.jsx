@@ -1,19 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   ArrowRight,
+  ArrowUpRight,
   Search,
   X,
   ChevronLeft,
-  ChevronRight,
-  Grid,
-  Compass,
-  Blend,
-  Zap,
-  Variable,
-  Layers,
-  Sparkles,
-  BookOpen
+  ChevronRight
 } from 'lucide-react';
 import { FEATURES, CATEGORIES } from '../../config/features';
 
@@ -110,20 +103,20 @@ export default function HeroSection({
 
   return (
     <div className="hero-page-wrapper">
-      {/* 1. Masthead Section (Editorial, spacious, high contrast) */}
+      {/* 1. Masthead Section (Clean editorial headline & subheading) */}
       <section className="hero-masthead-section">
         <motion.div
           className="hero-masthead-inner"
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         >
           {/* Eyebrow Label */}
           <div className="hero-eyebrow">
             <span>INTERACTIVE MATHEMATICS &amp; LINEAR ALGEBRA LAB</span>
           </div>
 
-          {/* Large Bold Editorial Headline */}
+          {/* Headline */}
           <h1 className="hero-headline">
             See the <span className="hero-headline-accent">mathematics</span> you can actually understand.
           </h1>
@@ -132,8 +125,13 @@ export default function HeroSection({
           <p className="hero-subheading">
             Bridge the gap between abstract matrix equations and tangible digital pixels through 18 real-time visual laboratories. Discover intensity tensors, 2D coordinate mappings, and eigenspaces.
           </p>
+        </motion.div>
+      </section>
 
-          {/* Single Primary Search & Filter Bar */}
+      {/* 2. All Experiments Section: Unified Container (Search -> Category Tabs -> Compact Grid) */}
+      <section className="hero-modules-directory" id="all-experiments">
+        <div className="all-experiments-container">
+          {/* 1. Search Bar */}
           <div className="hero-search-capsule-wrapper">
             <form className="hero-search-capsule" onSubmit={handleSearchSubmit}>
               <div className="search-capsule-left">
@@ -144,8 +142,8 @@ export default function HeroSection({
                   className="search-capsule-input"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search experiments, operations, or concepts"
-                  aria-label="Search experiments, operations, or concepts"
+                  placeholder="Search experiments by name, operation, or concept..."
+                  aria-label="Search experiments by name, operation, or concept"
                   autoComplete="off"
                   spellCheck="false"
                 />
@@ -175,68 +173,112 @@ export default function HeroSection({
                 <ArrowRight size={14} />
               </button>
             </form>
+          </div>
 
-            {/* Responsive Modules Category Slider with Smooth Scrolling & Arrow Controls */}
-            <div className="hero-category-slider-wrapper">
-              <button
-                type="button"
-                className={`category-slider-arrow left ${canScrollLeft ? 'active' : 'disabled'}`}
-                onClick={() => handleScrollBy(-200)}
-                aria-label="Scroll categories left"
-                title="Previous categories"
-                disabled={!canScrollLeft}
-              >
-                <ChevronLeft size={16} />
-              </button>
+          {/* 2. Responsive Category Filter Tabs */}
+          <div className="hero-category-slider-wrapper">
+            <button
+              type="button"
+              className={`category-slider-arrow left ${canScrollLeft ? 'active' : 'disabled'}`}
+              onClick={() => handleScrollBy(-200)}
+              aria-label="Scroll categories left"
+              title="Previous categories"
+              disabled={!canScrollLeft}
+            >
+              <ChevronLeft size={16} />
+            </button>
 
-              <div
-                ref={scrollContainerRef}
-                className="hero-category-slider-track"
-                role="tablist"
-                aria-label="Experiment Category Filters"
-                onScroll={checkScroll}
-              >
-                {categoryChips.map((chip) => {
-                  const isActive = selectedCategory === chip.id;
-                  return (
-                    <button
-                      key={chip.id}
-                      ref={(el) => (categoryRefs.current[chip.id] = el)}
-                      type="button"
-                      role="tab"
-                      aria-selected={isActive}
-                      className={`hero-tag-pill ${isActive ? 'active' : ''}`}
-                      onClick={() => setSelectedCategory(chip.id)}
-                    >
-                      <span>{chip.label}</span>
-                      <span className="hero-pill-badge">{chip.count}</span>
-                    </button>
-                  );
-                })}
+            <div
+              ref={scrollContainerRef}
+              className="hero-category-slider-track"
+              role="tablist"
+              aria-label="Experiment Category Filters"
+              onScroll={checkScroll}
+            >
+              {categoryChips.map((chip) => {
+                const isActive = selectedCategory === chip.id;
+                return (
+                  <button
+                    key={chip.id}
+                    ref={(el) => (categoryRefs.current[chip.id] = el)}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    className={`hero-tag-pill ${isActive ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(chip.id)}
+                  >
+                    <span>{chip.label}</span>
+                    <span className="hero-pill-badge">{chip.count}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              className={`category-slider-arrow right ${canScrollRight ? 'active' : 'disabled'}`}
+              onClick={() => handleScrollBy(200)}
+              aria-label="Scroll categories right"
+              title="Next categories"
+              disabled={!canScrollRight}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* 3. Compact Elegant Grid of Experiment Cards */}
+          {filteredFeatures.length > 0 ? (
+            <div className="directory-cards-grid">
+              {filteredFeatures.map((feat) => (
+                <motion.button
+                  key={feat.id}
+                  className="directory-item-card"
+                  onClick={() => onSelectStep(feat.stepNumber)}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.99 }}
+                  type="button"
+                  tabIndex={0}
+                  aria-label={`${feat.title} (Module ${feat.stepNumber})`}
+                >
+                  <div className="dir-item-left">
+                    <span className="dir-item-num">{String(feat.stepNumber).padStart(2, '0')}</span>
+                    <span className="dir-item-title">{feat.title}</span>
+                  </div>
+                  <div className="dir-item-arrow-wrap">
+                    <ArrowUpRight size={13} className="dir-item-arrow" />
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          ) : (
+            <div className="experiments-empty-state">
+              <div className="empty-state-icon">
+                <Search size={26} />
               </div>
-
+              <h4 className="empty-state-title">No experiments matched your search</h4>
+              <p className="empty-state-desc">
+                No results found for &ldquo;<strong>{searchQuery}</strong>&rdquo;
+                {selectedCategory !== 'all' ? ` in category "${selectedCategory}"` : ''}.
+              </p>
               <button
                 type="button"
-                className={`category-slider-arrow right ${canScrollRight ? 'active' : 'disabled'}`}
-                onClick={() => handleScrollBy(200)}
-                aria-label="Scroll categories right"
-                title="Next categories"
-                disabled={!canScrollRight}
+                className="empty-state-clear-btn"
+                onClick={handleClearSearch}
               >
-                <ChevronRight size={16} />
+                Clear filters and view all {FEATURES.length} experiments
               </button>
             </div>
-          </div>
-        </motion.div>
+          )}
+        </div>
       </section>
 
-      {/* 2. Structured Learning Pathways (Clean, matte cards) */}
+      {/* 3. Structured Learning Pathways (Curriculum Overview) */}
       <section className="hero-curriculum-overview">
         <div className="section-header-block">
           <span className="section-pre-tag">Core Curriculum</span>
           <h2 className="section-headline">Five Foundations of Visual Linear Algebra</h2>
           <p className="section-description">
-            Explore 18 progressive laboratory modules engineered to make mathematical intuition instant and rigorous.
+            Structured learning tracks engineered to build intuitive and rigorous understanding of digital matrices.
           </p>
         </div>
 
@@ -279,90 +321,6 @@ export default function HeroSection({
             );
           })}
         </div>
-      </section>
-
-      {/* 3. Redesigned "All Experiments" Section */}
-      <section className="hero-modules-directory" id="all-experiments">
-        <div className="section-header-block">
-          <span className="section-pre-tag">ALL EXPERIMENTS</span>
-          <h2 className="section-headline">Explore Mathematics Through Interactive Experiments</h2>
-          <p className="section-description">
-            Discover how matrices, linear algebra, and image processing work through hands-on experiments. Open any module to explore the concepts, modify values, and see the results in real time.
-          </p>
-
-          {/* Feedback meta strip showing active filter and match count */}
-          <div className="experiments-meta-bar">
-            <span className="experiments-count-pill">
-              Showing {filteredFeatures.length} of {FEATURES.length} experiments
-            </span>
-            {(searchQuery || selectedCategory !== 'all') && (
-              <button
-                type="button"
-                className="experiments-reset-btn"
-                onClick={handleClearSearch}
-              >
-                Reset filters
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Experiments Grid or Empty State */}
-        {filteredFeatures.length > 0 ? (
-          <div className="directory-cards-grid">
-            {filteredFeatures.map((feat) => {
-              const Icon = feat.icon;
-              return (
-                <motion.button
-                  key={feat.id}
-                  className="directory-item-card"
-                  onClick={() => onSelectStep(feat.stepNumber)}
-                  whileHover={{ y: -3 }}
-                  whileTap={{ scale: 0.985 }}
-                  type="button"
-                  tabIndex={0}
-                  aria-label={`${feat.code}: ${feat.title}`}
-                >
-                  {/* 1. Top row: Icon + Code Pill */}
-                  <div className="dir-item-top">
-                    <div className="dir-icon-box">
-                      <Icon size={16} />
-                    </div>
-                    <span className="dir-step-pill">{feat.code}</span>
-                  </div>
-
-                  {/* 2. Topic Name */}
-                  <h3 className="dir-item-title">{feat.title}</h3>
-
-                  {/* 3. Mathematical Formula Preview */}
-                  <div className="dir-item-formula" title={`Formula: ${feat.formula}`}>
-                    <span className="formula-symbol">ƒ</span>
-                    <span className="formula-text">{feat.formula}</span>
-                  </div>
-                </motion.button>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="experiments-empty-state">
-            <div className="empty-state-icon">
-              <Search size={28} />
-            </div>
-            <h4 className="empty-state-title">No experiments matched your search</h4>
-            <p className="empty-state-desc">
-              No results found for &ldquo;<strong>{searchQuery}</strong>&rdquo;
-              {selectedCategory !== 'all' ? ` in category "${selectedCategory}"` : ''}.
-              Try searching by keyword, matrix operation, or clear filters.
-            </p>
-            <button
-              type="button"
-              className="empty-state-clear-btn"
-              onClick={handleClearSearch}
-            >
-              Clear filters and view all 18 experiments
-            </button>
-          </div>
-        )}
       </section>
     </div>
   );

@@ -113,6 +113,7 @@ export default function Step2CellEditing({ onSelectStep }) {
           matrix={matrix}
           hoveredCell={hoveredCell}
           onHoverCell={setHoveredCell}
+          pixelSize={70}
           title="Live Image Pixel Canvas"
         />
         <MatrixGrid

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Scissors, 
   Minus, 
@@ -9,21 +9,11 @@ import {
   RotateCcw, 
   Shuffle, 
   Volume2, 
-  ShieldAlert, 
-  CheckCircle2, 
-  Layers, 
-  Blend,
-  Eye,
-  Sliders,
-  AlertCircle,
-  Scan,
-  Activity,
-  Maximize2,
-  Undo2,
-  ZoomIn
+  AlertCircle
 } from 'lucide-react';
 import { clampPixel, createEmptyMatrix, subtractMatrices, thresholdMatrix } from '../core/mathEngine';
 import StepFooter from '../components/layout/StepFooter';
+import ModuleDocumentation from '../components/experiment/ModuleDocumentation';
 
 // Presets representing Scene with Object (I) and Empty Background (B)
 const SUBTRACTION_PRESETS = {
@@ -97,6 +87,14 @@ const SUBTRACTION_PRESETS = {
   }
 };
 
+const THRESHOLD_PRESETS = [
+  { val: 0, label: 'T = 0 (Raw)' },
+  { val: 12, label: 'T = 12 (Low)' },
+  { val: 25, label: 'T = 25 (Optimal)' },
+  { val: 50, label: 'T = 50 (High)' },
+  { val: 100, label: 'T = 100 (Strict)' }
+];
+
 /**
  * Compact Canvas Component for the 4-column horizontal pipeline
  */
@@ -106,8 +104,7 @@ function PipelineCanvas({
   extractedImage = null,
   hoveredCell,
   onHoverCell,
-  pixelSize = 26,
-  highlightColor = 'var(--accent-purple)',
+  pixelSize = 22,
   title
 }) {
   const canvasRef = React.useRef(null);
@@ -140,9 +137,9 @@ function PipelineCanvas({
           const val = extractedImage[r][c];
           fillStyle = `rgb(${val}, ${val}, ${val})`;
         } else if (isMask) {
-          // Binary mask: 1 = pure white (255) or cyan, 0 = black (0)
+          // Binary mask: 1 = pure white (255), 0 = black / dark surface
           const isFg = matrix[r][c] === 1 || matrix[r][c] === 255;
-          fillStyle = isFg ? '#FFFFFF' : '#0B0F17';
+          fillStyle = isFg ? '#FFFFFF' : (isLight ? '#E8EDDF' : '#130F0D');
         } else {
           // Grayscale / difference intensity
           const v = matrix[r][c];
@@ -158,29 +155,29 @@ function PipelineCanvas({
         if (isMask) brightness = matrix[r][c] ? 255 : 0;
 
         if (brightness < 60) {
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
         } else if (brightness > 190) {
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
         } else {
-          ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.22)' : 'rgba(255, 255, 255, 0.25)';
+          ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)';
         }
 
         ctx.lineWidth = 1;
         ctx.strokeRect(c * pixelSize + 0.5, r * pixelSize + 0.5, pixelSize - 1, pixelSize - 1);
 
-        // Synchronized hover outline
+        // Synchronized hover outline (Theme consistent)
         if (hoveredCell && hoveredCell.row === r && hoveredCell.col === c) {
-          ctx.lineWidth = 2.5;
-          ctx.strokeStyle = highlightColor;
-          ctx.strokeRect(c * pixelSize + 1.5, r * pixelSize + 1.5, pixelSize - 3, pixelSize - 3);
-          ctx.fillStyle = 'rgba(6, 182, 212, 0.25)';
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = isLight ? '#424F34' : '#FFFFFF';
+          ctx.strokeRect(c * pixelSize + 1, r * pixelSize + 1, pixelSize - 2, pixelSize - 2);
+          ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.2)' : 'rgba(255, 255, 255, 0.15)';
           ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
         }
       }
     }
 
     ctx.restore();
-  }, [matrix, isMask, extractedImage, hoveredCell, rows, cols, pixelSize, highlightColor]);
+  }, [matrix, isMask, extractedImage, hoveredCell, rows, cols, pixelSize]);
 
   const handleMouseMove = (e) => {
     if (!onHoverCell || !canvasRef.current) return;
@@ -208,6 +205,249 @@ function PipelineCanvas({
   );
 }
 
+/**
+ * Matrix Bracket Wrapper - Clean brackets matching Matrix 8
+ */
+function MatrixBracketWrapper({ children, onMouseLeave }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 'fit-content',
+        margin: '0.65rem auto 0.25rem'
+      }}
+      onMouseLeave={onMouseLeave}
+    >
+      <div
+        style={{
+          width: '7px',
+          alignSelf: 'stretch',
+          border: '2.5px solid var(--border-color)',
+          borderRight: 'none',
+          borderRadius: '7px 0 0 7px',
+          marginRight: '5px'
+        }}
+      />
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 40px)',
+          gap: '5px',
+          width: 'fit-content'
+        }}
+      >
+        {children}
+      </div>
+      <div
+        style={{
+          width: '7px',
+          alignSelf: 'stretch',
+          border: '2.5px solid var(--border-color)',
+          borderLeft: 'none',
+          borderRadius: '0 7px 7px 0',
+          marginLeft: '5px'
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * Clean, modern editable matrix cell matching Step 8's EditableCell
+ */
+const SubtractionEditableCell = React.memo(function SubtractionEditableCell({
+  value,
+  row,
+  col,
+  isHovered,
+  onChange,
+  onHover
+}) {
+  const [text, setText] = useState(String(value));
+  const isFocusedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!isFocusedRef.current) {
+      setText(String(value));
+    }
+  }, [value]);
+
+  const handleChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    setText(raw);
+    if (raw !== '') {
+      const num = Math.min(255, Math.max(0, parseInt(raw, 10)));
+      onChange && onChange(row, col, num);
+    }
+  };
+
+  const handleBlur = () => {
+    isFocusedRef.current = false;
+    let finalVal = 0;
+    if (text !== '') {
+      const parsed = parseInt(text, 10);
+      if (!isNaN(parsed)) {
+        finalVal = Math.min(255, Math.max(0, parsed));
+      }
+    }
+    setText(String(finalVal));
+    onChange && onChange(row, col, finalVal);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const current = parseInt(text, 10) || 0;
+      const step = e.shiftKey ? 15 : 5;
+      const next = Math.min(255, current + step);
+      setText(String(next));
+      onChange && onChange(row, col, next);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const current = parseInt(text, 10) || 0;
+      const step = e.shiftKey ? 15 : 5;
+      const next = Math.max(0, current - step);
+      setText(String(next));
+      onChange && onChange(row, col, next);
+    } else if (e.key === 'Enter') {
+      e.target.blur();
+    }
+  };
+
+  return (
+    <div
+      style={{
+        width: '40px',
+        height: '40px',
+        borderRadius: '7px',
+        border: `1px solid ${isHovered ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+        background: isHovered ? 'var(--bg-hover)' : 'var(--bg-secondary)',
+        boxShadow: isHovered ? '0 0 0 1px var(--border-hover)' : 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        transition: 'all 0.15s ease'
+      }}
+      onMouseEnter={onHover}
+      onTouchStart={onHover}
+      onWheel={(e) => {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 5 : -5;
+        const current = parseInt(text, 10) || 0;
+        const next = Math.min(255, Math.max(0, current + delta));
+        setText(String(next));
+        onChange && onChange(row, col, next);
+      }}
+    >
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        maxLength={3}
+        value={text}
+        onFocus={(e) => {
+          isFocusedRef.current = true;
+          onHover && onHover();
+          e.target.select();
+        }}
+        onBlur={handleBlur}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        style={{
+          width: '100%',
+          height: '100%',
+          textAlign: 'center',
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          color: 'var(--text-primary)',
+          fontWeight: 700,
+          fontSize: '0.92rem',
+          fontFamily: 'var(--font-mono)',
+          fontVariantNumeric: 'tabular-nums',
+          cursor: 'pointer'
+        }}
+        aria-label={`Cell [${row}, ${col}]`}
+      />
+    </div>
+  );
+});
+
+/**
+ * Result Matrix Cell (Read-Only) matching Step 8's ResultCell
+ */
+const SubtractionResultCell = React.memo(function SubtractionResultCell({
+  value,
+  row,
+  col,
+  isHovered,
+  isHighlighted = false,
+  badgeText = null,
+  onHover
+}) {
+  return (
+    <div
+      style={{
+        width: '40px',
+        height: '40px',
+        borderRadius: '7px',
+        border: `1px solid ${
+          isHighlighted
+            ? 'var(--accent-primary)'
+            : isHovered
+            ? 'var(--border-hover)'
+            : 'var(--border-color)'
+        }`,
+        background: isHighlighted
+          ? 'var(--accent-subtle)'
+          : isHovered
+          ? 'var(--bg-hover)'
+          : 'var(--bg-secondary)',
+        boxShadow: isHovered ? '0 0 0 1px var(--border-hover)' : 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        transition: 'all 0.15s ease',
+        cursor: 'pointer'
+      }}
+      onMouseEnter={onHover}
+      onTouchStart={onHover}
+    >
+      <span
+        style={{
+          color: 'var(--text-primary)',
+          fontWeight: isHighlighted ? 800 : 700,
+          fontSize: '0.92rem',
+          fontFamily: 'var(--font-mono)',
+          fontVariantNumeric: 'tabular-nums'
+        }}
+      >
+        {value}
+      </span>
+      {badgeText && isHighlighted && (
+        <span
+          style={{
+            position: 'absolute',
+            bottom: '1px',
+            fontSize: '0.52rem',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 800,
+            color: 'var(--accent-primary)',
+            lineHeight: 1
+          }}
+        >
+          {badgeText}
+        </span>
+      )}
+    </div>
+  );
+});
+
 export default function Step9MatrixSubtraction({ onSelectStep }) {
   // Preset selection
   const [currentPresetKey, setCurrentPresetKey] = useState('movingBox');
@@ -219,7 +459,7 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
   // Threshold T for binary mask M
   const [threshold, setThreshold] = useState(25);
 
-  // Camera sensor noise level: 0 (clean), 3 (subtle), 7 (medium), 14 (heavy)
+  // Camera sensor noise level: 0 (clean), 4 (subtle), 10 (heavy)
   const [noiseLevel, setNoiseLevel] = useState(0);
 
   // Output representation in Column 4: 'mask' (M binary 1/0) or 'segmented' (I * M)
@@ -228,13 +468,13 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
   // Synchronized hovered cell
   const [hoveredCell, setHoveredCell] = useState(null);
 
-  // Background matrix with optional real-world sensor noise added
+  // Background matrix with deterministic sensor noise simulation
   const noisyMatrixB = useMemo(() => {
     if (noiseLevel === 0) return matrixB;
-    // Deterministic pseudo-noise based on coordinates so it doesn't flicker endlessly
     return matrixB.map((row, r) =>
       row.map((val, c) => {
-        const jitter = Math.sin(r * 4.3 + c * 7.1) * noiseLevel;
+        // Deterministic pseudo-jitter offset across all cells
+        const jitter = Math.sin((r + 1) * 3.7 + (c + 2) * 5.3) * noiseLevel;
         return clampPixel(val + Math.round(jitter));
       })
     );
@@ -345,41 +585,30 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      {/* STEP HEADER WITH SUB-CHAPTER SWITCHER */}
+      {/* STEP HEADER */}
       <div className="step-header-box">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.45rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <span className="modal-badge-tag" style={{ margin: 0, background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', borderColor: 'rgba(59, 130, 246, 0.35)' }}>
-              Visual Lab 09
-            </span>
-            <span style={{ fontSize: '0.85rem', color: 'var(--accent-blue)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-              Background Detection: D = |I − B|
-            </span>
-          </div>
-        </div>
-
-        <h2 className="step-heading">Visual Lab 09: Background Detection</h2>
+        <h2 className="step-heading">Background Detection</h2>
         <p className="step-description">
           Subtract an empty background image matrix <strong>B</strong> from a scene matrix containing an object <strong>I</strong>: <code>D = |I − B|</code>. Unchanged background pixels yield values close to zero, while the introduced object creates a high difference. We then apply threshold <strong>T</strong> to construct a binary mask: <strong>M(x, y) = 1 if D(x, y) &gt; T, else 0</strong>.
         </p>
       </div>
 
       {/* TOP CONTROLS CARD */}
-      <div className="top-control-card subtraction-controls-card">
+      <div className="subtraction-controls-card">
         <div className="subtraction-controls-grid">
           
           {/* Part 1: Threshold Slider & Presets */}
           <div className="slider-group" style={{ marginBottom: 0 }}>
-            <div className="slider-label" style={{ marginBottom: '0.35rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Filter size={16} color="var(--accent-purple)" />
+            <div className="threshold-label-row">
+              <div className="threshold-title-wrap">
+                <Filter size={15} style={{ color: 'var(--text-secondary)' }} />
                 <span>Detection Threshold (T):</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                <span className="font-mono" style={{ color: 'var(--accent-purple)', fontSize: '1.25rem', fontWeight: '800' }}>
+              <div className="threshold-val-wrap">
+                <span className="threshold-num-large font-mono">
                   {threshold}
                 </span>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                <span className="threshold-formula-sub">
                   (D &gt; {threshold} ➔ Foreground 1)
                 </span>
               </div>
@@ -396,105 +625,85 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
               onInput={(e) => setThreshold(parseInt(e.target.value, 10))}
               style={{ 
                 '--slider-pct': `${(threshold / 150) * 100}%`, 
-                '--slider-color': 'var(--accent-purple)' 
+                '--slider-color': 'var(--text-primary)' 
               }}
             />
 
-            {/* Quick Threshold Presets */}
-            <div className="alpha-presets-row">
-              <button 
-                className={`mini-preset-pill ${threshold === 0 ? 'active' : ''}`}
-                onClick={() => setThreshold(0)}
-                title="T = 0 (Detects everything including tiny noise)"
-              >
-                T = 0 (Raw)
-              </button>
-              <button 
-                className={`mini-preset-pill ${threshold === 12 ? 'active' : ''}`}
-                onClick={() => setThreshold(12)}
-                title="T = 12 (Low threshold)"
-              >
-                T = 12 (Low)
-              </button>
-              <button 
-                className={`mini-preset-pill ${threshold === 25 ? 'active' : ''}`}
-                onClick={() => setThreshold(25)}
-                title="T = 25 (Optimal clean foreground mask)"
-              >
-                T = 25 (Optimal)
-              </button>
-              <button 
-                className={`mini-preset-pill ${threshold === 50 ? 'active' : ''}`}
-                onClick={() => setThreshold(50)}
-                title="T = 50 (High threshold)"
-              >
-                T = 50 (High)
-              </button>
-              <button 
-                className={`mini-preset-pill ${threshold === 100 ? 'active' : ''}`}
-                onClick={() => setThreshold(100)}
-                title="T = 100 (Too high - drops parts of the object)"
-              >
-                T = 100 (Strict)
-              </button>
+            {/* Synchronized Threshold Presets Strip */}
+            <div className="threshold-presets-strip">
+              {THRESHOLD_PRESETS.map((p) => (
+                <button
+                  key={p.val}
+                  type="button"
+                  className={`threshold-preset-pill ${threshold === p.val ? 'active' : ''}`}
+                  onClick={() => setThreshold(p.val)}
+                  title={`Set threshold to ${p.val}`}
+                >
+                  {p.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Part 2: Real-World Sensor Noise Simulation & Presets */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                <Volume2 size={15} color="#F59E0B" />
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Camera Noise & Light Jitter:
-                </span>
+          {/* Part 2: Sensor Noise & Presets */}
+          <div className="subtraction-right-controls">
+            <div className="control-row-group">
+              <div className="control-row-label-wrap">
+                <Volume2 size={14} style={{ color: 'var(--text-secondary)' }} />
+                <span>Camera Noise &amp; Light Jitter:</span>
               </div>
               
-              {/* Noise Presets */}
               <div className="noise-pill-group">
                 <button
+                  type="button"
                   className={`noise-btn ${noiseLevel === 0 ? 'active' : ''}`}
                   onClick={() => setNoiseLevel(0)}
-                  title="Ideal World: Background gives exact D = 0"
+                  title="Ideal: No sensor noise"
                 >
                   0 (Ideal)
                 </button>
                 <button
+                  type="button"
                   className={`noise-btn ${noiseLevel === 4 ? 'active' : ''}`}
                   onClick={() => setNoiseLevel(4)}
-                  title="Subtle camera sensor noise (±4 delta on background)"
+                  title="Subtle sensor noise: ±4"
                 >
-                  ±4 (Subtle)
+                  &plusmn;4 (Subtle)
                 </button>
                 <button
+                  type="button"
                   className={`noise-btn ${noiseLevel === 10 ? 'active' : ''}`}
                   onClick={() => setNoiseLevel(10)}
-                  title="Lighting fluctuations & shadows (±10 delta)"
+                  title="Heavy lighting noise: ±10"
                 >
-                  ±10 (Heavy)
+                  &plusmn;10 (Heavy)
                 </button>
               </div>
             </div>
 
             {/* Presets and Actions Row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', marginRight: '0.2rem' }}>
-                Presets:
-              </span>
-              {Object.entries(SUBTRACTION_PRESETS).map(([key, data]) => (
-                <button
-                  key={key}
-                  className={`preset-btn mini-btn ${currentPresetKey === key ? 'active' : ''}`}
-                  onClick={() => handleSelectPreset(key)}
-                  title={data.desc}
-                >
-                  {data.name}
-                </button>
-              ))}
+            <div className="control-row-group">
+              <div className="presets-pill-group">
+                <span className="control-row-label-wrap" style={{ marginRight: '0.15rem' }}>
+                  Presets:
+                </span>
+                {Object.entries(SUBTRACTION_PRESETS).map(([key, data]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`preset-btn mini-btn ${currentPresetKey === key ? 'active' : ''}`}
+                    onClick={() => handleSelectPreset(key)}
+                    title={data.desc}
+                  >
+                    {data.name}
+                  </button>
+                ))}
+              </div>
 
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.35rem' }}>
+              <div className="action-btn-group">
                 <button 
-                  className="preset-btn mini-btn icon-only-btn" 
+                  type="button"
+                  className="icon-action-btn" 
                   onClick={handleRandomize}
                   title="Generate Random Clean Scene & Background"
                 >
@@ -502,9 +711,10 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
                   <span>Random</span>
                 </button>
                 <button 
-                  className="preset-btn mini-btn icon-only-btn" 
+                  type="button"
+                  className="icon-action-btn" 
                   onClick={handleReset}
-                  title="Reset to default"
+                  title="Reset to default preset"
                 >
                   <RotateCcw size={13} />
                 </button>
@@ -515,597 +725,315 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
         </div>
       </div>
 
-      {/* ELEMENT-BY-ELEMENT LIVE FORMULA INSPECTOR STRIP */}
-      <div className="addition-formula-inspector">
-        {hoverDetail ? (
-          <div className="formula-inspector-content active">
-            <span className="inspector-pill">
-              Cell ({hoverDetail.row + 1}, {hoverDetail.col + 1})
+      {/* THRESHOLD LOGIC & NOISE STATUS BAR */}
+      <div className="subtraction-logic-bar">
+        <div className="logic-bar-left">
+          <Sparkles size={14} style={{ flexShrink: 0, color: 'var(--text-secondary)' }} />
+          {hoverDetail ? (
+            <span style={{ fontFamily: 'var(--font-mono)' }}>
+              Cell ({hoverDetail.row + 1}, {hoverDetail.col + 1}):{' '}
+              I = <strong>{hoverDetail.valI}</strong> &minus; B = <strong>{hoverDetail.valB}</strong> &rarr;{' '}
+              D = |{hoverDetail.valI} &minus; {hoverDetail.valB}| = <strong>{hoverDetail.valD}</strong>{' '}
+              ({hoverDetail.valD} {hoverDetail.isFg ? '>' : '\u2264'} T={threshold}) &rarr;{' '}
+              <strong>M = {hoverDetail.isFg ? '1 (Foreground)' : '0 (Background)'}</strong>
             </span>
-            <div className="formula-math-tokens">
-              <span className="token-var">I</span>
-              <span className="token-op">=</span>
-              <span className="token-val" style={{ color: 'var(--accent-purple)' }}>{hoverDetail.valI}</span>
-              <span className="token-op">−</span>
-              <span className="token-var">B</span>
-              <span className="token-op">=</span>
-              <span className="token-val" style={{ color: '#F59E0B' }}>{hoverDetail.valB}</span>
-              <span className="token-op">➔</span>
-              <span className="token-var">D</span>
-              <span className="token-op">=</span>
-              <span className="token-sub">|{hoverDetail.valI} − {hoverDetail.valB}| = <strong>{hoverDetail.valD}</strong></span>
-              <span className="token-op">|</span>
-              <span className="token-op">Check:</span>
-              <span className="token-val" style={{ color: hoverDetail.isFg ? 'var(--accent-emerald)' : 'var(--text-muted)' }}>
-                {hoverDetail.valD} {hoverDetail.isFg ? '>' : '≤'} T({threshold})
-              </span>
-              <span className="token-op">➔</span>
-              <span className={`token-badge-status ${hoverDetail.isFg ? 'status-fg' : 'status-bg'}`}>
-                {hoverDetail.isFg ? 'Mask M = 1 (FOREGROUND OBJECT ✅)' : 'Mask M = 0 (BACKGROUND FILTERED ❌)'}
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div className="formula-inspector-content idle">
-            <Sparkles size={14} className="sparkle-idle-icon" />
+          ) : (
             <span>
-              <strong>Threshold Logic:</strong> D(x, y) = |I(x, y) − B(x, y)|. If D &gt; {threshold}, M(x, y) = 1 (Foreground). Otherwise M(x, y) = 0 (Background). Hover any cell to inspect!
+              <strong>Threshold Logic:</strong> D(x, y) = |I(x, y) &minus; B(x, y)|. If D &gt; {threshold}, M(x, y) = 1 (Foreground). Otherwise M(x, y) = 0 (Background). Hover any cell to inspect!
             </span>
-          </div>
-        )}
-
-        {/* Real-world Noise Insight Tag */}
+          )}
+        </div>
         {noiseLevel > 0 && (
-          <div className="noise-active-badge" title="Small background differences caused by camera sensor noise or ambient light">
-            <AlertCircle size={13} />
-            <span>Noise Active: Unchanged BG has small delta (2–{noiseLevel})</span>
-          </div>
+          <span className="noise-alert-badge" title="Sensor noise alters unchanged background pixels">
+            <AlertCircle size={12} />
+            Noise Active: Unchanged BG has small delta (2&ndash;{noiseLevel})
+          </span>
         )}
       </div>
 
       {/* =========================================================================
           THE 4-COLUMN HORIZONTAL LINE PIPELINE:
           IMAGE WITH OBJECT (I)  ➖  BACKGROUND (B)  🟰  DIFFERENCE (D)  ➔  MASK (M)
-          All placed side-by-side in ONE horizontal line so changes are visible instantly!
+          Styled using canonical MathLens MatrixGrid design and theme colors
          ========================================================================= */}
       <div className="subtraction-horizontal-line-container">
         
         {/* COLUMN 1: SCENE WITH OBJECT (I) */}
-        <div className="addition-column-card card-scene-i">
-          <div className="addition-column-header">
-            <div className="col-header-left">
-              <span className="matrix-title-badge badge-i">I</span>
-              <div>
-                <h3 className="addition-card-title">Scene with Object</h3>
-                <span className="addition-card-subtitle">Editable Image I (0–255)</span>
-              </div>
+        <div className="addition-column-card glass-level-2">
+          <div className="matrix-header">
+            <div className="matrix-header-title-row">
+              <h3 className="matrix-title-text">Scene Image (I)</h3>
             </div>
-            <div className="col-header-right">
-              <span className="matrix-dims">4 × 4</span>
+            <div className="matrix-header-badge-wrap">
+              <span className="matrix-dims-badge">4 × 4</span>
             </div>
           </div>
 
-          <div className="addition-card-body">
-            <div className="canvas-subrow">
-              <PipelineCanvas
-                matrix={matrixI}
-                hoveredCell={hoveredCell}
-                onHoverCell={setHoveredCell}
-                pixelSize={24}
-                highlightColor="var(--accent-purple)"
-                title="Scene with Object (I)"
-              />
-              <div className="canvas-subrow-info">
-                <span className="subrow-label">Scene Matrix I</span>
-                <span className="subrow-hint">Object placed inside background</span>
-                <div className="subrow-actions">
-                  <span className="badge-tag-mini">Editable</span>
-                </div>
+          <div className="canvas-subrow">
+            <PipelineCanvas
+              matrix={matrixI}
+              hoveredCell={hoveredCell}
+              onHoverCell={setHoveredCell}
+              pixelSize={20}
+              title="Scene with Object (I)"
+            />
+            <div className="canvas-subrow-info">
+              <span className="subrow-label">Scene Matrix I</span>
+              <span className="subrow-hint">Object inside background</span>
+              <div className="subrow-actions">
+                <span className="badge-tag-mini">Editable</span>
               </div>
             </div>
+          </div>
 
-            {/* Editable 4x4 Grid */}
-            <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': 'var(--accent-purple)' }}>
-              <div className="matrix-left-bracket" style={{ borderColor: 'var(--accent-purple)' }} />
-              <div className="matrix-with-indices">
-                <div className="matrix-col-indices-row">
-                  {matrixI[0].map((_, cIdx) => (
-                    <span key={`col-i-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
-                  ))}
-                </div>
-                <div className="matrix-body-row">
-                  <div className="matrix-row-indices-col">
-                    {matrixI.map((_, rIdx) => (
-                      <span key={`row-i-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
-                    ))}
-                  </div>
-                  <div 
-                    className="matrix-grid compact-grid"
-                    style={{ gridTemplateColumns: `repeat(${matrixI[0].length}, 1fr)` }}
-                    onMouseLeave={() => setHoveredCell(null)}
-                  >
-                    {matrixI.map((row, i) =>
-                      row.map((val, j) => {
-                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                        return (
-                          <div
-                            key={`i-${i}-${j}`}
-                            className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                            style={{
-                              '--cell-accent': 'var(--accent-purple)',
-                              borderColor: isHovered ? 'var(--accent-purple)' : undefined,
-                              background: `linear-gradient(135deg, rgba(${val},${val},${val},0.16) 0%, var(--bg-secondary) 100%)`
-                            }}
-                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onWheel={(e) => {
-                              e.preventDefault();
-                              const delta = e.deltaY < 0 ? 5 : -5;
-                              handleCellChangeI(i, j, Math.min(255, Math.max(0, val + delta)));
-                            }}
-                          >
-                            <div className="editable-cell-inner compact-inner">
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={val}
-                                onFocus={(e) => e.target.select()}
-                                onChange={(e) => {
-                                  const parsed = parseInt(e.target.value);
-                                  const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
-                                  handleCellChangeI(i, j, valid);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-                                    e.preventDefault();
-                                    handleCellChangeI(i, j, Math.min(255, val + 5));
-                                  } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-                                    e.preventDefault();
-                                    handleCellChangeI(i, j, Math.max(0, val - 5));
-                                  }
-                                }}
-                                className="matrix-cell-input compact-input"
-                                style={{ color: 'var(--accent-purple)' }}
-                              />
-                              <div className="stepper-arrow-buttons compact-steppers">
-                                <button
-                                  type="button"
-                                  className="stepper-arrow-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCellChangeI(i, j, Math.min(255, val + 10));
-                                  }}
-                                  title="+10"
-                                >
-                                  ▲
-                                </button>
-                                <button
-                                  type="button"
-                                  className="stepper-arrow-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCellChangeI(i, j, Math.max(0, val - 10));
-                                  }}
-                                  title="-10"
-                                >
-                                  ▼
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="matrix-right-bracket" style={{ borderColor: 'var(--accent-purple)' }} />
-            </div>
+          {/* Matrix Grid Container */}
+          <MatrixBracketWrapper onMouseLeave={() => setHoveredCell(null)}>
+            {matrixI.map((row, i) =>
+              row.map((val, j) => (
+                <SubtractionEditableCell
+                  key={`i-${i}-${j}`}
+                  value={val}
+                  row={i}
+                  col={j}
+                  isHovered={hoveredCell && hoveredCell.row === i && hoveredCell.col === j}
+                  onChange={handleCellChangeI}
+                  onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                />
+              ))
+            )}
+          </MatrixBracketWrapper>
+
+          <div className="matrix-footer-hint" style={{ marginTop: '0.45rem' }}>
+            <span>Click to edit • Use ▲ ▼ keys</span>
           </div>
         </div>
 
         {/* OPERATOR 1: ➖ */}
         <div className="addition-operator-divider">
-          <div className="operator-badge minus-badge" title="Matrix Subtraction: [I - B]">
-            <Minus size={20} strokeWidth={2.8} />
+          <div className="operator-badge" title="Matrix Subtraction: [I - B]">
+            <Minus size={18} strokeWidth={2.6} />
           </div>
           <span className="operator-label">Subtract</span>
         </div>
 
         {/* COLUMN 2: EMPTY BACKGROUND (B) */}
-        <div className="addition-column-card card-bg-b">
-          <div className="addition-column-header">
-            <div className="col-header-left">
-              <span className="matrix-title-badge badge-b">B</span>
-              <div>
-                <h3 className="addition-card-title">Empty Background</h3>
-                <span className="addition-card-subtitle">
-                  {noiseLevel > 0 ? `Matrix B (±${noiseLevel} noise)` : 'Editable Background B'}
-                </span>
-              </div>
+        <div className="addition-column-card glass-level-2">
+          <div className="matrix-header">
+            <div className="matrix-header-title-row">
+              <h3 className="matrix-title-text">Background (B)</h3>
             </div>
-            <div className="col-header-right">
-              <span className="matrix-dims" style={{ borderColor: 'rgba(245, 158, 11, 0.4)', color: '#F59E0B', background: 'rgba(245, 158, 11, 0.12)' }}>
-                4 × 4
-              </span>
+            <div className="matrix-header-badge-wrap">
+              <span className="matrix-dims-badge">4 × 4</span>
             </div>
           </div>
 
-          <div className="addition-card-body">
-            <div className="canvas-subrow">
-              <PipelineCanvas
-                matrix={noisyMatrixB}
-                hoveredCell={hoveredCell}
-                onHoverCell={setHoveredCell}
-                pixelSize={24}
-                highlightColor="#F59E0B"
-                title="Empty Background (B)"
-              />
-              <div className="canvas-subrow-info">
-                <span className="subrow-label">Background Matrix B</span>
-                <span className="subrow-hint">Scene without the object</span>
-                <div className="subrow-actions">
-                  <span className="badge-tag-mini" style={{ color: '#F59E0B', borderColor: 'rgba(245, 158, 11, 0.3)' }}>
-                    Reference
-                  </span>
-                </div>
+          <div className="canvas-subrow">
+            <PipelineCanvas
+              matrix={noisyMatrixB}
+              hoveredCell={hoveredCell}
+              onHoverCell={setHoveredCell}
+              pixelSize={20}
+              title="Empty Background (B)"
+            />
+            <div className="canvas-subrow-info">
+              <span className="subrow-label">Background Matrix B</span>
+              <span className="subrow-hint">Scene without the object</span>
+              <div className="subrow-actions">
+                <span className="badge-tag-mini">Reference</span>
               </div>
             </div>
+          </div>
 
-            {/* Editable 4x4 Grid */}
-            <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': '#F59E0B' }}>
-              <div className="matrix-left-bracket" style={{ borderColor: '#F59E0B' }} />
-              <div className="matrix-with-indices">
-                <div className="matrix-col-indices-row">
-                  {noisyMatrixB[0].map((_, cIdx) => (
-                    <span key={`col-b-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
-                  ))}
-                </div>
-                <div className="matrix-body-row">
-                  <div className="matrix-row-indices-col">
-                    {noisyMatrixB.map((_, rIdx) => (
-                      <span key={`row-b-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
-                    ))}
-                  </div>
-                  <div 
-                    className="matrix-grid compact-grid"
-                    style={{ gridTemplateColumns: `repeat(${noisyMatrixB[0].length}, 1fr)` }}
-                    onMouseLeave={() => setHoveredCell(null)}
-                  >
-                    {noisyMatrixB.map((row, i) =>
-                      row.map((val, j) => {
-                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                        return (
-                          <div
-                            key={`b-${i}-${j}`}
-                            className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                            style={{
-                              '--cell-accent': '#F59E0B',
-                              borderColor: isHovered ? '#F59E0B' : undefined,
-                              background: `linear-gradient(135deg, rgba(${val},${val},${val},0.16) 0%, var(--bg-secondary) 100%)`
-                            }}
-                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onWheel={(e) => {
-                              e.preventDefault();
-                              const delta = e.deltaY < 0 ? 5 : -5;
-                              handleCellChangeB(i, j, Math.min(255, Math.max(0, val + delta)));
-                            }}
-                          >
-                            <div className="editable-cell-inner compact-inner">
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={val}
-                                onFocus={(e) => e.target.select()}
-                                onChange={(e) => {
-                                  const parsed = parseInt(e.target.value);
-                                  const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
-                                  handleCellChangeB(i, j, valid);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-                                    e.preventDefault();
-                                    handleCellChangeB(i, j, Math.min(255, val + 5));
-                                  } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-                                    e.preventDefault();
-                                    handleCellChangeB(i, j, Math.max(0, val - 5));
-                                  }
-                                }}
-                                className="matrix-cell-input compact-input"
-                                style={{ color: '#F59E0B' }}
-                              />
-                              <div className="stepper-arrow-buttons compact-steppers">
-                                <button
-                                  type="button"
-                                  className="stepper-arrow-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCellChangeB(i, j, Math.min(255, val + 10));
-                                  }}
-                                  title="+10"
-                                >
-                                  ▲
-                                </button>
-                                <button
-                                  type="button"
-                                  className="stepper-arrow-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCellChangeB(i, j, Math.max(0, val - 10));
-                                  }}
-                                  title="-10"
-                                >
-                                  ▼
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="matrix-right-bracket" style={{ borderColor: '#F59E0B' }} />
-            </div>
+          {/* Matrix Grid Container */}
+          <MatrixBracketWrapper onMouseLeave={() => setHoveredCell(null)}>
+            {noisyMatrixB.map((row, i) =>
+              row.map((val, j) => (
+                <SubtractionEditableCell
+                  key={`b-${i}-${j}`}
+                  value={val}
+                  row={i}
+                  col={j}
+                  isHovered={hoveredCell && hoveredCell.row === i && hoveredCell.col === j}
+                  onChange={handleCellChangeB}
+                  onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                />
+              ))
+            )}
+          </MatrixBracketWrapper>
+
+          <div className="matrix-footer-hint" style={{ marginTop: '0.45rem' }}>
+            <span>{noiseLevel > 0 ? `±${noiseLevel} sensor noise active` : 'Click to edit background'}</span>
           </div>
         </div>
 
         {/* OPERATOR 2: 🟰 */}
         <div className="addition-operator-divider">
-          <div className="operator-badge equals-badge" title="Difference Matrix D = |I - B|">
-            <Equal size={20} strokeWidth={2.8} />
+          <div className="operator-badge" title="Difference Matrix D = |I - B|">
+            <Equal size={18} strokeWidth={2.6} />
           </div>
           <span className="operator-label">Difference</span>
         </div>
 
         {/* COLUMN 3: DIFFERENCE MATRIX (D) */}
-        <div className="addition-column-card card-diff-d">
-          <div className="addition-column-header">
-            <div className="col-header-left">
-              <span className="matrix-title-badge badge-d">D</span>
-              <div>
-                <h3 className="addition-card-title">Difference Matrix D</h3>
-                <span className="addition-card-subtitle" style={{ color: 'var(--accent-cyan)' }}>
-                  D = |I − B|
-                </span>
-              </div>
+        <div className="addition-column-card glass-level-2">
+          <div className="matrix-header">
+            <div className="matrix-header-title-row">
+              <h3 className="matrix-title-text">Difference (D)</h3>
             </div>
-            <div className="col-header-right">
-              <span className="matrix-dims" style={{ borderColor: 'rgba(6, 182, 212, 0.4)', color: 'var(--accent-cyan)', background: 'rgba(6, 182, 212, 0.12)' }}>
-                4 × 4
-              </span>
+            <div className="matrix-header-badge-wrap">
+              <span className="matrix-dims-badge">4 × 4</span>
             </div>
           </div>
 
-          <div className="addition-card-body">
-            <div className="canvas-subrow">
-              <PipelineCanvas
-                matrix={matrixD}
-                hoveredCell={hoveredCell}
-                onHoverCell={setHoveredCell}
-                pixelSize={24}
-                highlightColor="var(--accent-cyan)"
-                title="Difference Matrix Heatmap (D)"
-              />
-              <div className="canvas-subrow-info">
-                <span className="subrow-label">Delta Intensity</span>
-                <span className="subrow-hint">Object: large delta. BG: ~0 delta</span>
-                <div className="subrow-actions">
-                  <span className="badge-tag-mini" style={{ color: 'var(--accent-cyan)', borderColor: 'rgba(6, 182, 212, 0.3)' }}>
-                    Live |I - B|
-                  </span>
-                </div>
+          <div className="canvas-subrow">
+            <PipelineCanvas
+              matrix={matrixD}
+              hoveredCell={hoveredCell}
+              onHoverCell={setHoveredCell}
+              pixelSize={20}
+              title="Difference Matrix Heatmap (D)"
+            />
+            <div className="canvas-subrow-info">
+              <span className="subrow-label">Delta Intensity</span>
+              <span className="subrow-hint">Object: delta &gt; T. BG: ~0 delta</span>
+              <div className="subrow-actions">
+                <span className="badge-tag-mini">Live |I - B|</span>
               </div>
             </div>
+          </div>
 
-            {/* Read-Only 4x4 Grid for D */}
-            <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': 'var(--accent-cyan)' }}>
-              <div className="matrix-left-bracket" style={{ borderColor: 'var(--accent-cyan)' }} />
-              <div className="matrix-with-indices">
-                <div className="matrix-col-indices-row">
-                  {matrixD[0].map((_, cIdx) => (
-                    <span key={`col-d-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
-                  ))}
-                </div>
-                <div className="matrix-body-row">
-                  <div className="matrix-row-indices-col">
-                    {matrixD.map((_, rIdx) => (
-                      <span key={`row-d-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
-                    ))}
-                  </div>
-                  <div 
-                    className="matrix-grid compact-grid"
-                    style={{ gridTemplateColumns: `repeat(${matrixD[0].length}, 1fr)` }}
-                    onMouseLeave={() => setHoveredCell(null)}
-                  >
-                    {matrixD.map((row, i) =>
-                      row.map((val, j) => {
-                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                        const exceedsT = val > threshold;
-                        return (
-                          <div
-                            key={`d-${i}-${j}`}
-                            className={`matrix-cell result-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                            style={{
-                              '--cell-accent': 'var(--accent-cyan)',
-                              borderColor: isHovered ? 'var(--accent-cyan)' : undefined,
-                              background: exceedsT 
-                                ? `linear-gradient(135deg, rgba(6, 182, 212, 0.25) 0%, var(--bg-secondary) 100%)`
-                                : `linear-gradient(135deg, rgba(0, 0, 0, 0.2) 0%, var(--bg-secondary) 100%)`
-                            }}
-                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                          >
-                            <span 
-                              className="matrix-cell-val compact-val" 
-                              style={{ 
-                                color: exceedsT ? '#38BDF8' : 'var(--text-muted)',
-                                fontWeight: exceedsT ? '800' : '600'
-                              }}
-                            >
-                              {val}
-                            </span>
-                            {exceedsT && (
-                              <span className="delta-fg-indicator" title={`Delta ${val} > T (${threshold})`}>
-                                &gt;T
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="matrix-right-bracket" style={{ borderColor: 'var(--accent-cyan)' }} />
-            </div>
+          {/* Matrix Grid Container */}
+          <MatrixBracketWrapper onMouseLeave={() => setHoveredCell(null)}>
+            {matrixD.map((row, i) =>
+              row.map((val, j) => {
+                const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                const exceedsT = val > threshold;
+                return (
+                  <SubtractionResultCell
+                    key={`d-${i}-${j}`}
+                    value={val}
+                    row={i}
+                    col={j}
+                    isHovered={isHovered}
+                    isHighlighted={exceedsT}
+                    badgeText={exceedsT ? '>T' : null}
+                    onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                  />
+                );
+              })
+            )}
+          </MatrixBracketWrapper>
+
+          <div className="matrix-footer-hint" style={{ marginTop: '0.45rem' }}>
+            <span>Delta: D(x, y) = |I &minus; B|</span>
           </div>
         </div>
 
         {/* OPERATOR 3: ➔ THRESHOLD T */}
         <div className="addition-operator-divider">
-          <div className="operator-badge filter-badge" title={`Threshold Test: D(x, y) > ${threshold}`}>
-            <Filter size={18} strokeWidth={2.6} />
+          <div className="operator-badge" title={`Threshold Test: D(x, y) > ${threshold}`}>
+            <Filter size={17} strokeWidth={2.5} />
           </div>
           <span className="operator-label">&gt; T({threshold})</span>
         </div>
 
         {/* COLUMN 4: BINARY MASK (M) & EXTRACTED OBJECT */}
-        <div className="addition-column-card card-mask-m">
-          <div className="addition-column-header">
-            <div className="col-header-left">
-              <span className="matrix-title-badge badge-m">M</span>
-              <div>
-                <h3 className="addition-card-title">Binary Mask M</h3>
-                <span className="addition-card-subtitle" style={{ color: 'var(--accent-emerald)' }}>
-                  1: Foreground, 0: Background
-                </span>
-              </div>
+        <div className="addition-column-card glass-level-2">
+          <div className="matrix-header">
+            <div className="matrix-header-title-row">
+              <h3 className="matrix-title-text">
+                {outputView === 'mask' ? 'Binary Mask (M)' : 'Object (I·M)'}
+              </h3>
             </div>
-            <div className="col-header-right">
-              <span className="matrix-dims">4 × 4</span>
+            <div className="matrix-header-badge-wrap">
+              <span className="matrix-dims-badge">4 × 4</span>
             </div>
           </div>
 
-          <div className="addition-card-body">
-            {/* Toggle View: Mask vs Extracted (Contained inside outer card box) */}
-            <div className="mask-view-toggle-bar">
-              <button
-                type="button"
-                className={`mask-toggle-pill ${outputView === 'mask' ? 'active' : ''}`}
-                onClick={() => setOutputView('mask')}
-                title="View Binary Mask M(x, y)"
-              >
-                <Eye size={12} />
-                <span>Mask (M)</span>
-              </button>
-              <button
-                type="button"
-                className={`mask-toggle-pill ${outputView === 'segmented' ? 'active' : ''}`}
-                onClick={() => setOutputView('segmented')}
-                title="View Extracted Object (I * M)"
-              >
-                <Scissors size={12} />
-                <span>Extracted</span>
-              </button>
-            </div>
-            <div className="canvas-subrow">
-              <PipelineCanvas
-                matrix={matrixM}
-                isMask={outputView === 'mask'}
-                extractedImage={outputView === 'segmented' ? extractedObject : null}
-                hoveredCell={hoveredCell}
-                onHoverCell={setHoveredCell}
-                pixelSize={24}
-                highlightColor="var(--accent-emerald)"
-                title={outputView === 'mask' ? 'Binary Mask M' : 'Segmented Foreground Object'}
-              />
-              <div className="canvas-subrow-info">
-                <span className="subrow-label" style={{ color: 'var(--text-primary)' }}>
-                  {outputView === 'mask' ? 'Isolated Object Mask' : 'Clean Segmented Object'}
-                </span>
-                <span className="subrow-hint">
-                  {stats.fgCount} FG pixel{stats.fgCount !== 1 ? 's' : ''}, {stats.bgCount} BG pixel{stats.bgCount !== 1 ? 's' : ''}
-                </span>
-                <div className="subrow-actions">
-                  <span className="status-live-indicator">
-                    <span className="pulse-dot"></span> Segmented
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Read-Only 4x4 Grid for Mask M */}
-            <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': 'var(--accent-emerald)' }}>
-              <div className="matrix-left-bracket" style={{ borderColor: 'var(--accent-emerald)' }} />
-              <div className="matrix-with-indices">
-                <div className="matrix-col-indices-row">
-                  {matrixM[0].map((_, cIdx) => (
-                    <span key={`col-m-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
-                  ))}
-                </div>
-                <div className="matrix-body-row">
-                  <div className="matrix-row-indices-col">
-                    {matrixM.map((_, rIdx) => (
-                      <span key={`row-m-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
-                    ))}
-                  </div>
-                  <div 
-                    className="matrix-grid compact-grid"
-                    style={{ gridTemplateColumns: `repeat(${matrixM[0].length}, 1fr)` }}
-                    onMouseLeave={() => setHoveredCell(null)}
+          <div className="canvas-subrow">
+            <PipelineCanvas
+              matrix={matrixM}
+              isMask={outputView === 'mask'}
+              extractedImage={outputView === 'segmented' ? extractedObject : null}
+              hoveredCell={hoveredCell}
+              onHoverCell={setHoveredCell}
+              pixelSize={20}
+              title={outputView === 'mask' ? 'Binary Mask M' : 'Segmented Foreground Object'}
+            />
+            <div className="canvas-subrow-info">
+              <span className="subrow-label">
+                {outputView === 'mask' ? 'Isolated Mask' : 'Segmented Object'}
+              </span>
+              <span className="subrow-hint">
+                {stats.fgCount} FG, {stats.bgCount} BG
+              </span>
+              <div className="subrow-actions">
+                <div className="subrow-toggle-group">
+                  <button
+                    type="button"
+                    className={`subrow-toggle-pill ${outputView === 'mask' ? 'active' : ''}`}
+                    onClick={() => setOutputView('mask')}
+                    title="View Binary Mask M"
                   >
-                    {matrixM.map((row, i) =>
-                      row.map((val, j) => {
-                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                        const isFg = val === 1;
-
-                        return (
-                          <div
-                            key={`m-${i}-${j}`}
-                            className={`matrix-cell result-cell compact-cell ${isHovered ? 'hovered' : ''} ${isFg ? 'mask-fg-cell' : 'mask-bg-cell'}`}
-                            style={{
-                              '--cell-accent': 'var(--accent-emerald)',
-                              borderColor: isHovered ? 'var(--accent-emerald)' : undefined
-                            }}
-                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                          >
-                            <span 
-                              className="matrix-cell-val compact-val" 
-                              style={{ 
-                                color: isFg ? '#10B981' : 'var(--text-muted)',
-                                fontWeight: '800'
-                              }}
-                            >
-                              {val}
-                            </span>
-                            <span className="mask-sub-tag">
-                              {isFg ? 'FG' : 'BG'}
-                            </span>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
+                    Mask
+                  </button>
+                  <button
+                    type="button"
+                    className={`subrow-toggle-pill ${outputView === 'segmented' ? 'active' : ''}`}
+                    onClick={() => setOutputView('segmented')}
+                    title="View Segmented Object (I * M)"
+                  >
+                    Object
+                  </button>
                 </div>
               </div>
-              <div className="matrix-right-bracket" style={{ borderColor: 'var(--accent-emerald)' }} />
             </div>
+          </div>
+
+          {/* Matrix Grid Container */}
+          <MatrixBracketWrapper onMouseLeave={() => setHoveredCell(null)}>
+            {matrixM.map((row, i) =>
+              row.map((val, j) => {
+                const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
+                const isFg = val === 1;
+                const displayVal = outputView === 'mask' ? val : extractedObject[i][j];
+
+                return (
+                  <SubtractionResultCell
+                    key={`m-${i}-${j}`}
+                    value={displayVal}
+                    row={i}
+                    col={j}
+                    isHovered={isHovered}
+                    isHighlighted={isFg}
+                    badgeText={isFg && outputView === 'mask' ? 'FG' : null}
+                    onHover={(e) => setHoveredCell({ row: i, col: j, x: e?.clientX, y: e?.clientY })}
+                  />
+                );
+              })
+            )}
+          </MatrixBracketWrapper>
+
+          <div className="matrix-footer-hint" style={{ marginTop: '0.45rem' }}>
+            <span>{outputView === 'mask' ? '1 = Foreground, 0 = Background' : 'F(x, y) = M(x, y) · I(x, y)'}</span>
           </div>
         </div>
 
       </div>
 
-      {/* FLOATING CURSOR TOOLTIP (Guarded against right-edge overflow to eliminate layout shaking) */}
+      {/* FLOATING CURSOR TOOLTIP */}
       {hoveredCell && hoveredCell.x !== undefined && (() => {
-        const tooltipWidth = 340;
+        const tooltipWidth = 320;
         const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
         const leftPos = hoveredCell.x > (screenWidth - tooltipWidth - 20)
           ? Math.max(10, hoveredCell.x - tooltipWidth - 14)
           : hoveredCell.x + 14;
+
+        const valI = matrixI[hoveredCell.row][hoveredCell.col];
+        const valB = noisyMatrixB[hoveredCell.row][hoveredCell.col];
+        const valD = matrixD[hoveredCell.row][hoveredCell.col];
+        const valM = matrixM[hoveredCell.row][hoveredCell.col];
+        const isFg = valM === 1;
 
         return (
           <div 
@@ -1116,39 +1044,42 @@ export default function Step9MatrixSubtraction({ onSelectStep }) {
               top: `${hoveredCell.y + 14}px`,
               pointerEvents: 'none',
               zIndex: 9999,
-              background: 'rgba(15, 23, 42, 0.95)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
-              backdropFilter: 'blur(8px)',
-              borderRadius: '20px',
-              padding: '0.35rem 0.85rem',
-              fontSize: '0.82rem',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+              borderRadius: '8px',
+              padding: '0.35rem 0.75rem',
+              fontSize: '0.78rem',
               fontFamily: 'var(--font-mono)',
-              color: '#FFFFFF',
+              color: 'var(--text-primary)',
               whiteSpace: 'nowrap',
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem'
             }}
           >
-            <span style={{ color: 'var(--accent-purple)', fontWeight: 700 }}>
+            <span style={{ fontWeight: 700 }}>
               ({hoveredCell.row + 1}, {hoveredCell.col + 1})
             </span>
             <span style={{ opacity: 0.3 }}>|</span>
-            <span>I: <strong style={{ color: 'var(--accent-purple)' }}>{matrixI[hoveredCell.row][hoveredCell.col]}</strong></span>
-            <span style={{ opacity: 0.3 }}>−</span>
-            <span>B: <strong style={{ color: '#F59E0B' }}>{noisyMatrixB[hoveredCell.row][hoveredCell.col]}</strong></span>
+            <span>I: <strong>{valI}</strong></span>
+            <span style={{ opacity: 0.3 }}>&minus;</span>
+            <span>B: <strong>{valB}</strong></span>
             <span style={{ opacity: 0.3 }}>=</span>
-            <span>D: <strong style={{ color: 'var(--accent-cyan)' }}>{matrixD[hoveredCell.row][hoveredCell.col]}</strong></span>
-            <span style={{ opacity: 0.3 }}>➔</span>
-            <span>M: <strong style={{ color: matrixM[hoveredCell.row][hoveredCell.col] === 1 ? '#10B981' : '#64748B' }}>
-              {matrixM[hoveredCell.row][hoveredCell.col]} ({matrixM[hoveredCell.row][hoveredCell.col] === 1 ? 'FG' : 'BG'})
-            </strong></span>
+            <span>D: <strong>{valD}</strong></span>
+            <span style={{ opacity: 0.3 }}>&rarr;</span>
+            <span>M: <strong>{valM} ({isFg ? 'FG' : 'BG'})</strong></span>
           </div>
         );
       })()}
+
+      {/* STANDARDIZED EDUCATIONAL DOCUMENTATION */}
+      <div style={{ marginTop: '1.25rem' }}>
+        <ModuleDocumentation stepNumber={9} />
+      </div>
 
       <StepFooter stepNumber={9} onSelectStep={onSelectStep} />
     </motion.div>
   );
 }
+

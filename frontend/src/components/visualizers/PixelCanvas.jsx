@@ -31,10 +31,12 @@ export default function PixelCanvas({
     const width = cols * effectivePixelSize;
     const height = rows * effectivePixelSize;
 
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
+    const targetW = Math.round(width * dpr);
+    const targetH = Math.round(height * dpr);
+    if (canvas.width !== targetW) canvas.width = targetW;
+    if (canvas.height !== targetH) canvas.height = targetH;
+    if (canvas.style.width !== `${width}px`) canvas.style.width = `${width}px`;
+    if (canvas.style.height !== `${height}px`) canvas.style.height = `${height}px`;
 
     ctx.save();
     ctx.scale(dpr, dpr);
@@ -102,9 +104,10 @@ export default function PixelCanvas({
     if (!canvasRef.current) return null;
     const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+    if (clientX === undefined || clientY === undefined) return null;
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
     const col = Math.floor(x / effectivePixelSize);
     const row = Math.floor(y / effectivePixelSize);
 
@@ -142,7 +145,8 @@ export default function PixelCanvas({
   const handleExportPNG = () => {
     if (!canvasRef.current) return;
     const link = document.createElement('a');
-    link.download = `mathlens-${title.toLowerCase().replace(/\s+/g, '-')}.png`;
+    const safeTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    link.download = `mathlens-${safeTitle || 'pixel-canvas'}.png`;
     link.href = canvasRef.current.toDataURL('image/png');
     link.click();
   };
@@ -152,9 +156,7 @@ export default function PixelCanvas({
       {/* Header with Title and Viewport Controls */}
       <div className="canvas-header-bar">
         <div className="canvas-title-group">
-          <Eye size={15} className="text-cyan-400" />
           <h3 className="canvas-title-text">{title}</h3>
-          <span className="canvas-dims-tag">{cols} × {rows} px</span>
         </div>
 
         <div className="canvas-tools-group">
@@ -169,7 +171,7 @@ export default function PixelCanvas({
 
           <button
             className="canvas-tool-btn"
-            onClick={() => setZoomScale(prev => Math.min(1.75, prev + 0.15))}
+            onClick={() => setZoomScale(prev => Math.min(1.75, Math.round((prev + 0.15) * 100) / 100))}
             title="Zoom in (+)"
             type="button"
           >
@@ -178,14 +180,14 @@ export default function PixelCanvas({
 
           <button
             className="canvas-tool-btn"
-            onClick={() => setZoomScale(prev => Math.max(0.65, prev - 0.15))}
+            onClick={() => setZoomScale(prev => Math.max(0.65, Math.round((prev - 0.15) * 100) / 100))}
             title="Zoom out (-)"
             type="button"
           >
             <ZoomOut size={13} />
           </button>
 
-          {zoomScale !== 1 && (
+          {Math.abs(zoomScale - 1) > 0.01 && (
             <button
               className="canvas-tool-btn"
               onClick={() => setZoomScale(1)}

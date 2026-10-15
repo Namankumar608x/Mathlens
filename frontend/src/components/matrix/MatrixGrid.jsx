@@ -79,6 +79,22 @@ export default function MatrixGrid({
                       onHoverCell && onHoverCell({ row: i, col: j, x: e.touches[0].clientX, y: e.touches[0].clientY });
                     }
                   }}
+                  onClick={(e) => {
+                    if (editable) {
+                      const inputEl = e.currentTarget.querySelector('input');
+                      if (inputEl && document.activeElement !== inputEl) {
+                        inputEl.focus();
+                        inputEl.select();
+                      }
+                    }
+                  }}
+                  onWheel={(e) => {
+                    if (editable && onChangeCell) {
+                      e.preventDefault();
+                      const delta = e.deltaY < 0 ? 5 : -5;
+                      onChangeCell(i, j, Math.min(255, Math.max(0, val + delta)));
+                    }
+                  }}
                 >
                   {editable ? (
                     <div className="editable-cell-inner">
@@ -89,9 +105,21 @@ export default function MatrixGrid({
                         aria-label={`Cell ${i}, ${j}`}
                         onFocus={(e) => e.target.select()}
                         onChange={(e) => {
+                          const raw = e.target.value.trim();
+                          if (raw === '') {
+                            onChangeCell && onChangeCell(i, j, 0);
+                            return;
+                          }
+                          const parsed = parseInt(raw, 10);
+                          if (!isNaN(parsed)) {
+                            onChangeCell && onChangeCell(i, j, Math.min(255, Math.max(0, parsed)));
+                          }
+                        }}
+                        onBlur={(e) => {
                           const parsed = parseInt(e.target.value, 10);
-                          const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
-                          onChangeCell && onChangeCell(i, j, valid);
+                          if (isNaN(parsed)) {
+                            onChangeCell && onChangeCell(i, j, 0);
+                          }
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'ArrowUp') {
@@ -103,7 +131,6 @@ export default function MatrixGrid({
                           }
                         }}
                         className="matrix-cell-input"
-                        style={{ color: accentColor }}
                       />
                       <div className="stepper-arrow-buttons">
                         <button 
@@ -133,7 +160,7 @@ export default function MatrixGrid({
                       </div>
                     </div>
                   ) : (
-                    <span className="matrix-cell-val" style={{ color: isHovered ? undefined : accentColor }}>
+                    <span className="matrix-cell-val">
                       {val}
                     </span>
                   )}

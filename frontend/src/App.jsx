@@ -95,12 +95,14 @@ export default function App() {
   }, [theme]);
 
   const handleSelectStep = useCallback((step) => {
-    setCurrentStep(step);
+    const parsedStep = typeof step === 'number' ? step : parseInt(step, 10);
+    const validStep = !isNaN(parsedStep) ? parsedStep : 1;
+    setCurrentStep(validStep);
     setCurrentView('module');
-    setNavHistory(prev => [...prev, { view: 'module', step }]);
-    localStorage.setItem('mathlens_step', step);
+    setNavHistory(prev => [...prev, { view: 'module', step: validStep }]);
+    localStorage.setItem('mathlens_step', String(validStep));
     const url = new URL(window.location.href);
-    url.searchParams.set('step', step);
+    url.searchParams.set('step', validStep);
     url.searchParams.delete('view');
     window.history.replaceState({}, '', url.toString());
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -199,7 +201,7 @@ export default function App() {
   }, [currentView, currentStep, handleSelectStep, toggleTheme]);
 
   const renderModuleStepContent = () => {
-    switch (currentStep) {
+    switch (Number(currentStep)) {
       case 1:
         return <Step1Grayscale onSelectStep={handleSelectStep} />;
       case 2:

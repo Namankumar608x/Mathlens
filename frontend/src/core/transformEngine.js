@@ -16,13 +16,19 @@ export function transformPoint(matrix2x2, point) {
 }
 
 export function getRotationMatrix(angleInDegrees) {
+  const normalized = ((angleInDegrees % 360) + 360) % 360;
+  if (normalized === 0) return { a: 1, b: 0, c: 0, d: 1 };
+  if (normalized === 90) return { a: 0, b: -1, c: 1, d: 0 };
+  if (normalized === 180) return { a: -1, b: 0, c: 0, d: -1 };
+  if (normalized === 270) return { a: 0, b: 1, c: -1, d: 0 };
+  if (normalized === 45) return { a: 0.71, b: -0.71, c: 0.71, d: 0.71 };
+
   const rad = (angleInDegrees * Math.PI) / 180;
-  return {
-    a: Math.cos(rad),
-    b: -Math.sin(rad),
-    c: Math.sin(rad),
-    d: Math.cos(rad),
-  };
+  const a = Math.abs(Math.cos(rad)) < 1e-10 ? 0 : parseFloat(Math.cos(rad).toFixed(4));
+  const b = Math.abs(Math.sin(rad)) < 1e-10 ? 0 : parseFloat((-Math.sin(rad)).toFixed(4));
+  const c = Math.abs(Math.sin(rad)) < 1e-10 ? 0 : parseFloat(Math.sin(rad).toFixed(4));
+  const d = Math.abs(Math.cos(rad)) < 1e-10 ? 0 : parseFloat(Math.cos(rad).toFixed(4));
+  return { a, b, c, d };
 }
 
 export function getScalingMatrix(sx, sy) {
@@ -255,33 +261,34 @@ export function drawProceduralSubject(ctx, type = 'portrait', unitStep = 45, isL
     ctx.fillStyle = '#10B981';
     ctx.fillText('R', half * 0.55, -half * 0.45);
   } else if (type === 'geometry') {
-    // 4-Quadrant Asymmetric Calibration Target with letter "R"
-    // Quadrant 1 (+, +): Cyan
-    ctx.fillStyle = 'rgba(6, 182, 212, 0.75)';
+    // 4-Quadrant Asymmetric Calibration Target (tests shear, scale, rotation, and reflection)
+    // Quadrant 1 (+, +): Subtle accent
+    ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.22)' : 'rgba(255, 255, 255, 0.16)';
     ctx.fillRect(0, -half * 0.85, half * 0.85, half * 0.85);
-    // Quadrant 2 (-, +): Purple
-    ctx.fillStyle = 'rgba(168, 85, 247, 0.75)';
+    // Quadrant 2 (-, +): Muted
+    ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.10)' : 'rgba(255, 255, 255, 0.08)';
     ctx.fillRect(-half * 0.85, -half * 0.85, half * 0.85, half * 0.85);
-    // Quadrant 3 (-, -): Pink
-    ctx.fillStyle = 'rgba(236, 72, 153, 0.75)';
+    // Quadrant 3 (-, -): Subtle
+    ctx.fillStyle = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.04)';
     ctx.fillRect(-half * 0.85, 0, half * 0.85, half * 0.85);
-    // Quadrant 4 (+, -): Amber
-    ctx.fillStyle = 'rgba(245, 158, 11, 0.75)';
+    // Quadrant 4 (+, -): Subtle
+    ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.14)' : 'rgba(255, 255, 255, 0.12)';
     ctx.fillRect(0, 0, half * 0.85, half * 0.85);
 
     // Outer border
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = isLight ? '#424F34' : 'rgba(255, 255, 255, 0.9)';
+    ctx.lineWidth = 2;
     ctx.strokeRect(-half * 0.85, -half * 0.85, half * 1.7, half * 1.7);
 
-    // Bold asymmetric Letter "R" (textbook linear algebra test shape)
-    ctx.font = `900 ${Math.round(half * 0.75)}px "Inter", "Arial Black", sans-serif`;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0,0,0,0.6)';
-    ctx.shadowBlur = 8;
-    ctx.fillText('R', 0, 0);
+    // Asymmetric Compass Arrow / Directional Chevron (clean geometric indicator, NO letter 'R')
+    ctx.fillStyle = isLight ? '#424F34' : '#FFFFFF';
+    ctx.beginPath();
+    ctx.moveTo(0, -half * 0.65);
+    ctx.lineTo(half * 0.45, half * 0.45);
+    ctx.lineTo(0, half * 0.20);
+    ctx.lineTo(-half * 0.45, half * 0.45);
+    ctx.closePath();
+    ctx.fill();
   } else if (type === 'rocket') {
     // Space Rocket with asymmetric flame and decal
     // Fuselage

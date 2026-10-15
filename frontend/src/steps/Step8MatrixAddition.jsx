@@ -1,30 +1,18 @@
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo, useCallback, useRef, useEffect, memo } from 'react';
 import { 
-  Blend, 
-  ArrowLeftRight, 
-  ArrowRight,
   RotateCcw, 
+  ArrowLeftRight, 
   Shuffle, 
-  Sliders, 
   Plus, 
-  Minus,
+  Minus, 
   Equal, 
-  Layers, 
-  Sparkles,
-  Info,
-  AlertTriangle,
-  Scan,
-  Scissors,
-  Activity,
-  Maximize2,
-  Undo2,
-  ZoomIn
+  Sliders
 } from 'lucide-react';
+import StepWrapper from '../components/layout/StepWrapper';
+import MathInspectorHUD from '../components/ui/MathInspectorHUD';
 import { clampPixel, createEmptyMatrix } from '../core/mathEngine';
-import StepFooter from '../components/layout/StepFooter';
 
-// Default presets for Image A and Image B (Addition & Subtraction pairings)
+// Presets for Matrix A and Matrix B
 const PRESET_PAIRS = {
   crossAndFrame: {
     name: 'Cross & Frame',
@@ -40,38 +28,6 @@ const PRESET_PAIRS = {
       [220, 20,  20,  220],
       [220, 20,  20,  220],
       [220, 220, 220, 220]
-    ]
-  },
-  motionDetect: {
-    name: 'Motion / Delta',
-    desc: 'Moving target isolated from a static background (A - B / |A - B|)',
-    matrixA: [
-      [35,  35,  35,  35],
-      [35, 235, 235,  35],
-      [35, 235, 235,  35],
-      [35,  35,  35,  35]
-    ],
-    matrixB: [
-      [35, 35, 35, 35],
-      [35, 35, 35, 35],
-      [35, 35, 35, 35],
-      [35, 35, 35, 35]
-    ]
-  },
-  defectInspect: {
-    name: 'Defect Inspection',
-    desc: 'Baseline component compared against defective part',
-    matrixA: [
-      [180, 180, 180, 180],
-      [180,  30, 180, 180],
-      [180, 180, 180, 180],
-      [180, 180, 180, 180]
-    ],
-    matrixB: [
-      [180, 180, 180, 180],
-      [180, 180, 180, 180],
-      [180, 180, 180, 180],
-      [180, 180, 180, 180]
     ]
   },
   dualGradients: {
@@ -121,24 +77,55 @@ const PRESET_PAIRS = {
       [220, 30, 220, 30],
       [220, 30, 220, 30]
     ]
+  },
+  motionDetect: {
+    name: 'Motion Delta',
+    desc: 'Moving target isolated from static background',
+    matrixA: [
+      [35,  35,  35,  35],
+      [35, 235, 235,  35],
+      [35, 235, 235,  35],
+      [35,  35,  35,  35]
+    ],
+    matrixB: [
+      [35, 35, 35, 35],
+      [35, 35, 35, 35],
+      [35, 35, 35, 35],
+      [35, 35, 35, 35]
+    ]
+  },
+  defectInspect: {
+    name: 'Defect Inspect',
+    desc: 'Baseline component compared against defective part',
+    matrixA: [
+      [180, 180, 180, 180],
+      [180,  30, 180, 180],
+      [180, 180, 180, 180],
+      [180, 180, 180, 180]
+    ],
+    matrixB: [
+      [180, 180, 180, 180],
+      [180, 180, 180, 180],
+      [180, 180, 180, 180],
+      [180, 180, 180, 180]
+    ]
   }
 };
 
 /**
- * Compact Canvas Visualizer for side-by-side or stacked presentation
+ * Compact Image Visualizer Canvas
  */
-function CompactPixelCanvas({
+const BlendingPixelCanvas = memo(function BlendingPixelCanvas({
   matrix,
   hoveredCell,
   onHoverCell,
-  pixelSize = 28,
-  highlightColor = 'var(--accent-purple)'
+  pixelSize = 32
 }) {
-  const canvasRef = React.useRef(null);
-  const rows = matrix.length;
-  const cols = matrix[0].length;
+  const canvasRef = useRef(null);
+  const rows = matrix ? matrix.length : 0;
+  const cols = matrix && matrix[0] ? matrix[0].length : 0;
 
-  React.useEffect(() => {
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !rows || !cols) return;
     const ctx = canvas.getContext('2d');
@@ -146,10 +133,12 @@ function CompactPixelCanvas({
     const width = cols * pixelSize;
     const height = rows * pixelSize;
 
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
+    const targetW = Math.round(width * dpr);
+    const targetH = Math.round(height * dpr);
+    if (canvas.width !== targetW) canvas.width = targetW;
+    if (canvas.height !== targetH) canvas.height = targetH;
+    if (canvas.style.width !== `${width}px`) canvas.style.width = `${width}px`;
+    if (canvas.style.height !== `${height}px`) canvas.style.height = `${height}px`;
 
     ctx.save();
     ctx.scale(dpr, dpr);
@@ -162,13 +151,13 @@ function CompactPixelCanvas({
         ctx.fillStyle = `rgb(${v}, ${v}, ${v})`;
         ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
 
-        // Adaptive border for high visibility
+        // Adaptive grid borders
         if (v < 75) {
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         } else if (v > 180) {
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
         } else {
-          ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)';
+          ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)';
         }
 
         ctx.lineWidth = 1;
@@ -177,66 +166,293 @@ function CompactPixelCanvas({
         // Hover highlight
         if (hoveredCell && hoveredCell.row === r && hoveredCell.col === c) {
           ctx.lineWidth = 2.5;
-          ctx.strokeStyle = highlightColor;
+          ctx.strokeStyle = isLight ? '#424F34' : '#FFFFFF';
           ctx.strokeRect(c * pixelSize + 1.5, r * pixelSize + 1.5, pixelSize - 3, pixelSize - 3);
-          ctx.fillStyle = 'rgba(6, 182, 212, 0.28)';
+          ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.25)' : 'rgba(255, 255, 255, 0.25)';
           ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
         }
       }
     }
 
     ctx.restore();
-  }, [matrix, hoveredCell, rows, cols, pixelSize, highlightColor]);
+  }, [matrix, hoveredCell, rows, cols, pixelSize]);
 
-  const handleMouseMove = (e) => {
+  const handlePointer = (e) => {
     if (!onHoverCell || !canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const col = Math.floor(x / pixelSize);
-    const row = Math.floor(y / pixelSize);
+    const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+    if (clientX === undefined || clientY === undefined) return;
+
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const col = Math.floor(x / (rect.width / cols));
+    const row = Math.floor(y / (rect.height / rows));
 
     if (row >= 0 && row < rows && col >= 0 && col < cols) {
-      onHoverCell({ row, col, x: e.clientX, y: e.clientY });
+      onHoverCell({ row, col });
     }
   };
 
   return (
-    <div className="compact-canvas-wrapper" onMouseLeave={() => onHoverCell && onHoverCell(null)}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0.45rem',
+        borderRadius: '10px',
+        background: 'var(--bg-tertiary)',
+        border: '1px solid var(--border-color)',
+        width: 'fit-content',
+        margin: '0 auto'
+      }}
+      onMouseLeave={() => onHoverCell && onHoverCell(null)}
+    >
       <canvas
         ref={canvasRef}
-        className="compact-pixel-canvas"
-        onMouseMove={handleMouseMove}
-        onClick={handleMouseMove}
+        onMouseMove={handlePointer}
+        onTouchStart={handlePointer}
+        onTouchMove={handlePointer}
+        style={{
+          borderRadius: '6px',
+          border: '1px solid var(--border-color)',
+          cursor: 'pointer',
+          touchAction: 'none',
+          display: 'block'
+        }}
       />
     </div>
   );
-}
+});
+
+/**
+ * Editable Matrix Cell with Focus Tracking
+ */
+const EditableCell = memo(function EditableCell({
+  value,
+  row,
+  col,
+  isHovered,
+  onChange,
+  onHover
+}) {
+  const [text, setText] = useState(String(value));
+  const isFocusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isFocusedRef.current) {
+      setText(String(value));
+    }
+  }, [value]);
+
+  const handleChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    setText(raw);
+    if (raw !== '') {
+      const num = Math.min(255, Math.max(0, parseInt(raw, 10)));
+      onChange && onChange(row, col, num);
+    }
+  };
+
+  const handleBlur = () => {
+    isFocusedRef.current = false;
+    let finalVal = 0;
+    if (text !== '') {
+      const parsed = parseInt(text, 10);
+      if (!isNaN(parsed)) {
+        finalVal = Math.min(255, Math.max(0, parsed));
+      }
+    }
+    setText(String(finalVal));
+    onChange && onChange(row, col, finalVal);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const current = parseInt(text, 10) || 0;
+      const step = e.shiftKey ? 15 : 5;
+      const next = Math.min(255, current + step);
+      setText(String(next));
+      onChange && onChange(row, col, next);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const current = parseInt(text, 10) || 0;
+      const step = e.shiftKey ? 15 : 5;
+      const next = Math.max(0, current - step);
+      setText(String(next));
+      onChange && onChange(row, col, next);
+    } else if (e.key === 'Enter') {
+      e.target.blur();
+    }
+  };
+
+  return (
+    <div
+      style={{
+        width: '44px',
+        height: '44px',
+        borderRadius: '7px',
+        border: `1px solid ${isHovered ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+        background: isHovered ? 'var(--bg-hover)' : 'var(--bg-secondary)',
+        boxShadow: isHovered ? '0 0 0 1px var(--border-hover)' : 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        transition: 'all 0.15s ease'
+      }}
+      onMouseEnter={onHover}
+      onTouchStart={onHover}
+    >
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        maxLength={3}
+        value={text}
+        onFocus={(e) => {
+          isFocusedRef.current = true;
+          onHover && onHover();
+          e.target.select();
+        }}
+        onBlur={handleBlur}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        style={{
+          width: '100%',
+          height: '100%',
+          textAlign: 'center',
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          color: 'var(--text-primary)',
+          fontWeight: 700,
+          fontSize: '0.94rem',
+          fontFamily: 'var(--font-mono)',
+          fontVariantNumeric: 'tabular-nums',
+          cursor: 'pointer'
+        }}
+        aria-label={`Cell [${row}, ${col}]`}
+      />
+    </div>
+  );
+});
+
+/**
+ * Result Matrix Cell (Read-Only with Saturated / Underflow Badges)
+ */
+const ResultCell = memo(function ResultCell({
+  value,
+  row,
+  col,
+  isHovered,
+  isOverflow,
+  isUnderflow,
+  onHover
+}) {
+  return (
+    <div
+      style={{
+        width: '44px',
+        height: '44px',
+        borderRadius: '7px',
+        border: `1px solid ${
+          isOverflow
+            ? '#DC2626'
+            : isUnderflow
+            ? '#D97706'
+            : isHovered
+            ? 'var(--accent-primary)'
+            : 'var(--border-color)'
+        }`,
+        background: isOverflow
+          ? 'rgba(220, 38, 38, 0.12)'
+          : isUnderflow
+          ? 'rgba(217, 119, 6, 0.12)'
+          : isHovered
+          ? 'var(--bg-hover)'
+          : 'var(--bg-secondary)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        transition: 'all 0.15s ease'
+      }}
+      onMouseEnter={onHover}
+      onTouchStart={onHover}
+    >
+      <span
+        style={{
+          color: isOverflow ? '#DC2626' : isUnderflow ? '#D97706' : 'var(--text-primary)',
+          fontWeight: 700,
+          fontSize: '0.94rem',
+          fontFamily: 'var(--font-mono)',
+          fontVariantNumeric: 'tabular-nums'
+        }}
+      >
+        {value}
+      </span>
+      {isOverflow && (
+        <span
+          style={{
+            position: 'absolute',
+            bottom: '1px',
+            fontSize: '0.55rem',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 800,
+            color: '#DC2626',
+            lineHeight: 1
+          }}
+        >
+          MAX
+        </span>
+      )}
+      {isUnderflow && (
+        <span
+          style={{
+            position: 'absolute',
+            bottom: '1px',
+            fontSize: '0.55rem',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 800,
+            color: '#D97706',
+            lineHeight: 1
+          }}
+        >
+          MIN
+        </span>
+      )}
+    </div>
+  );
+});
 
 export default function Step8MatrixAddition({ onSelectStep }) {
-  // Primary Operation: 'add' (Addition) or 'sub' (Subtraction)
+  // Primary Operation: 'add' (Addition/Blending) or 'sub' (Subtraction)
   const [operation, setOperation] = useState('add');
-
-  // Alpha slider state (0.0 to 1.0)
-  const [alpha, setAlpha] = useState(0.5);
 
   // Addition Mode: 'blend' (C = αA + (1-α)B) or 'direct' (C = min(255, A + B))
   const [mode, setMode] = useState('blend');
 
-  // Subtraction Mode: 'direct' (C = clamp(A - B)), 'abs' (C = |A - B|), or 'weighted' (C = clamp(A - αB))
-  const [subMode, setSubMode] = useState('direct');
+  // Subtraction Mode: 'abs' (|A - B|), 'direct' (clamp(A - B)), or 'weighted' (clamp(A - αB))
+  const [subMode, setSubMode] = useState('abs');
+
+  // Blending factor alpha (0.00 to 1.00)
+  const [alpha, setAlpha] = useState(0.5);
 
   // Selected preset key
   const [currentPresetKey, setCurrentPresetKey] = useState('crossAndFrame');
 
-  // Matrix A and Matrix B state
-  const [matrixA, setMatrixA] = useState(PRESET_PAIRS.crossAndFrame.matrixA);
-  const [matrixB, setMatrixB] = useState(PRESET_PAIRS.crossAndFrame.matrixB);
+  // Input Matrices A and B
+  const [matrixA, setMatrixA] = useState(() => PRESET_PAIRS.crossAndFrame.matrixA.map(r => [...r]));
+  const [matrixB, setMatrixB] = useState(() => PRESET_PAIRS.crossAndFrame.matrixB.map(r => [...r]));
 
-  // Synchronized hovered cell: { row, col, x, y }
+  // Hovered Cell synchronization { row, col }
   const [hoveredCell, setHoveredCell] = useState(null);
 
-  // Calculate Result Matrix C based on active operation and mode
+  // Derived Result Matrix C
   const matrixC = useMemo(() => {
     const rows = matrixA.length;
     const cols = matrixA[0].length;
@@ -249,22 +465,16 @@ export default function Step8MatrixAddition({ onSelectStep }) {
 
         if (operation === 'add') {
           if (mode === 'direct') {
-            // Direct addition clamped to [0, 255]
             result[i][j] = clampPixel(valA + valB);
           } else {
-            // Convex Blending: C = αA + (1-α)B
-            result[i][j] = clampPixel(alpha * valA + (1 - alpha) * valB);
+            result[i][j] = clampPixel(Math.round(alpha * valA + (1 - alpha) * valB));
           }
         } else {
-          // Matrix Subtraction
           if (subMode === 'abs') {
-            // Absolute Difference: C = |A - B| (Motion & Change Detection)
             result[i][j] = clampPixel(Math.abs(valA - valB));
           } else if (subMode === 'weighted') {
-            // Weighted Subtraction: C = clamp(A - αB)
-            result[i][j] = clampPixel(valA - alpha * valB);
+            result[i][j] = clampPixel(Math.round(valA - alpha * valB));
           } else {
-            // Direct Subtraction: C = clamp(A - B)
             result[i][j] = clampPixel(valA - valB);
           }
         }
@@ -273,8 +483,8 @@ export default function Step8MatrixAddition({ onSelectStep }) {
     return result;
   }, [matrixA, matrixB, alpha, mode, operation, subMode]);
 
-  // Count cells clipped at 255 in direct addition
-  const clippedOverflowCount = useMemo(() => {
+  // Overflow and Underflow Counts
+  const overflowCount = useMemo(() => {
     if (operation !== 'add' || mode !== 'direct') return 0;
     let count = 0;
     for (let i = 0; i < matrixA.length; i++) {
@@ -285,81 +495,267 @@ export default function Step8MatrixAddition({ onSelectStep }) {
     return count;
   }, [matrixA, matrixB, mode, operation]);
 
-  // Count cells clipped at 0 in direct subtraction (underflow)
-  const clippedUnderflowCount = useMemo(() => {
-    if (operation !== 'sub') return 0;
+  const underflowCount = useMemo(() => {
+    if (operation !== 'sub' || subMode === 'abs') return 0;
     let count = 0;
     for (let i = 0; i < matrixA.length; i++) {
       for (let j = 0; j < matrixA[0].length; j++) {
         const valA = matrixA[i][j];
         const valB = matrixB[i][j];
-        if (subMode === 'weighted') {
-          if (valA - alpha * valB < 0) count++;
-        } else if (subMode === 'direct') {
-          if (valA - valB < 0) count++;
-        }
+        const diff = subMode === 'weighted' ? valA - alpha * valB : valA - valB;
+        if (diff < 0) count++;
       }
     }
     return count;
   }, [matrixA, matrixB, subMode, operation, alpha]);
 
   // Handlers for cell editing
-  const handleCellChangeA = (r, c, val) => {
-    const next = matrixA.map(row => [...row]);
-    next[r][c] = Math.min(255, Math.max(0, val));
-    setMatrixA(next);
-  };
+  const handleCellChangeA = useCallback((r, c, val) => {
+    setMatrixA(prev => {
+      const next = prev.map(row => [...row]);
+      next[r][c] = Math.min(255, Math.max(0, val));
+      return next;
+    });
+  }, []);
 
-  const handleCellChangeB = (r, c, val) => {
-    const next = matrixB.map(row => [...row]);
-    next[r][c] = Math.min(255, Math.max(0, val));
-    setMatrixB(next);
-  };
+  const handleCellChangeB = useCallback((r, c, val) => {
+    setMatrixB(prev => {
+      const next = prev.map(row => [...row]);
+      next[r][c] = Math.min(255, Math.max(0, val));
+      return next;
+    });
+  }, []);
 
-  // Swap Matrices A and B
-  const handleSwapMatrices = () => {
-    const temp = matrixA;
-    setMatrixA(matrixB);
-    setMatrixB(temp);
-  };
-
-  // Select Preset
-  const handleSelectPreset = (key) => {
+  const handleSelectPreset = useCallback((key) => {
     setCurrentPresetKey(key);
-    setMatrixA(PRESET_PAIRS[key].matrixA.map(row => [...row]));
-    setMatrixB(PRESET_PAIRS[key].matrixB.map(row => [...row]));
-  };
+    if (PRESET_PAIRS[key]) {
+      setMatrixA(PRESET_PAIRS[key].matrixA.map(r => [...r]));
+      setMatrixB(PRESET_PAIRS[key].matrixB.map(r => [...r]));
+    }
+  }, []);
 
-  // Randomize both matrices with clean stepped values (multiples of 15)
-  const handleRandomize = () => {
-    const rows = 4;
-    const cols = 4;
-    const newA = Array.from({ length: rows }, () =>
-      Array.from({ length: cols }, () => Math.floor(Math.random() * 17) * 15)
-    );
-    const newB = Array.from({ length: rows }, () =>
-      Array.from({ length: cols }, () => Math.floor(Math.random() * 17) * 15)
-    );
-    setMatrixA(newA);
-    setMatrixB(newB);
-  };
+  const handleSwapMatrices = useCallback(() => {
+    setMatrixA(prevA => {
+      setMatrixB(prevA);
+      return matrixB;
+    });
+  }, [matrixB]);
 
-  // Invert matrix values
-  const handleInvertA = () => {
-    setMatrixA(prev => prev.map(row => row.map(v => 255 - v)));
-  };
+  const handleRandomize = useCallback(() => {
+    const rows = 4, cols = 4;
+    setMatrixA(Array.from({ length: rows }, () =>
+      Array.from({ length: cols }, () => Math.floor(Math.random() * 18) * 15)
+    ));
+    setMatrixB(Array.from({ length: rows }, () =>
+      Array.from({ length: cols }, () => Math.floor(Math.random() * 18) * 15)
+    ));
+  }, []);
 
-  const handleInvertB = () => {
-    setMatrixB(prev => prev.map(row => row.map(v => 255 - v)));
-  };
-
-  // Reset to current preset
-  const handleReset = () => {
-    handleSelectPreset(currentPresetKey);
+  const handleReset = useCallback(() => {
+    handleSelectPreset('crossAndFrame');
     setAlpha(0.5);
-  };
+    setOperation('add');
+    setMode('blend');
+  }, [handleSelectPreset]);
 
-  // Current hovered values
+  const handleInvertA = useCallback(() => {
+    setMatrixA(prev => prev.map(row => row.map(v => 255 - v)));
+  }, []);
+
+  const handleInvertB = useCallback(() => {
+    setMatrixB(prev => prev.map(row => row.map(v => 255 - v)));
+  }, []);
+
+  const handleMidGrayA = useCallback(() => {
+    setMatrixA(createEmptyMatrix(4, 4, 128));
+  }, []);
+
+  const handleMidGrayB = useCallback(() => {
+    setMatrixB(createEmptyMatrix(4, 4, 128));
+  }, []);
+
+  // Controls Bar (Above Matrix Blocks)
+  const controls = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', width: '100%' }}>
+      {/* Row 1: Operations, Modes, Actions */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.65rem', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+          {/* Operation Switch */}
+          <div className="control-cluster">
+            <span className="control-cluster-label">Operation</span>
+            <div className="segmented-control-group">
+              <button
+                className={`segmented-control-btn ${operation === 'add' ? 'active' : ''}`}
+                onClick={() => setOperation('add')}
+                type="button"
+                title="Addition (Image & Matrix Blending)"
+              >
+                <Plus size={11} strokeWidth={2.5} />
+                <span>Addition</span>
+              </button>
+              <button
+                className={`segmented-control-btn ${operation === 'sub' ? 'active' : ''}`}
+                onClick={() => setOperation('sub')}
+                type="button"
+                title="Subtraction (Delta & Difference Detection)"
+              >
+                <Minus size={11} strokeWidth={2.5} />
+                <span>Subtraction</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Mode Switch */}
+          <div className="control-cluster">
+            <span className="control-cluster-label">Mode</span>
+            <div className="segmented-control-group">
+              {operation === 'add' ? (
+                <>
+                  <button
+                    className={`segmented-control-btn ${mode === 'blend' ? 'active' : ''}`}
+                    onClick={() => setMode('blend')}
+                    type="button"
+                    title="Linear Alpha Blending: αA + (1−α)B"
+                  >
+                    <span>Blend (α)</span>
+                  </button>
+                  <button
+                    className={`segmented-control-btn ${mode === 'direct' ? 'active' : ''}`}
+                    onClick={() => setMode('direct')}
+                    type="button"
+                    title="Direct Matrix Addition: clamp(A + B)"
+                  >
+                    <span>Direct (A + B)</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className={`segmented-control-btn ${subMode === 'abs' ? 'active' : ''}`}
+                    onClick={() => setSubMode('abs')}
+                    type="button"
+                    title="Absolute Delta: |A − B| (Motion & Change Detection)"
+                  >
+                    <span>Absolute |A − B|</span>
+                  </button>
+                  <button
+                    className={`segmented-control-btn ${subMode === 'direct' ? 'active' : ''}`}
+                    onClick={() => setSubMode('direct')}
+                    type="button"
+                    title="Direct Clamped Subtraction: clamp(A − B)"
+                  >
+                    <span>Direct (A − B)</span>
+                  </button>
+                  <button
+                    className={`segmented-control-btn ${subMode === 'weighted' ? 'active' : ''}`}
+                    onClick={() => setSubMode('weighted')}
+                    type="button"
+                    title="Weighted Subtraction: clamp(A − αB)"
+                  >
+                    <span>Weighted (α)</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Utility Actions */}
+        <div className="segmented-control-group">
+          <button
+            className="segmented-control-btn"
+            onClick={handleSwapMatrices}
+            type="button"
+            title="Swap Matrix A and Matrix B"
+          >
+            <ArrowLeftRight size={11} />
+            <span>Swap A ⇄ B</span>
+          </button>
+          <button
+            className="segmented-control-btn"
+            onClick={handleRandomize}
+            type="button"
+            title="Generate Random Inputs"
+          >
+            <Shuffle size={11} />
+            <span>Random</span>
+          </button>
+          <button
+            className="segmented-control-btn"
+            onClick={handleReset}
+            type="button"
+            title="Reset to default preset"
+          >
+            <RotateCcw size={11} />
+            <span>Reset</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Row 2: Blending Factor Slider (when blending or weighted subtraction active) */}
+      {(operation === 'add' ? mode === 'blend' : subMode === 'weighted') && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+            padding: '0.35rem 0.65rem',
+            borderRadius: '7px',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '240px' }}>
+            <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+              {operation === 'add' ? 'Blend Factor (α)' : 'Weight Factor (α)'}
+            </span>
+            <input
+              type="range"
+              className="glass-slider"
+              min="0.0"
+              max="1.0"
+              step="0.01"
+              value={alpha}
+              onChange={(e) => setAlpha(parseFloat(e.target.value))}
+              style={{
+                flex: 1,
+                minWidth: '140px',
+                '--slider-pct': `${alpha * 100}%`
+              }}
+              aria-label="Alpha blending slider"
+            />
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '0.84rem', color: 'var(--text-primary)', minWidth: '36px' }}>
+              {alpha.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Row 3: Presets Strip */}
+      <div className="control-cluster" style={{ flexWrap: 'wrap' }}>
+        <span className="control-cluster-label">
+          Presets
+        </span>
+        <div className="segmented-control-group" style={{ flexWrap: 'wrap' }}>
+          {Object.entries(PRESET_PAIRS).map(([key, data]) => (
+            <button
+              key={key}
+              className={`segmented-control-btn ${currentPresetKey === key ? 'active' : ''}`}
+              onClick={() => handleSelectPreset(key)}
+              type="button"
+              title={data.desc}
+            >
+              <span>{data.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Live Hovered Math Calculation for HUD
   const hoveredInfo = useMemo(() => {
     if (!hoveredCell) return null;
     const { row, col } = hoveredCell;
@@ -367,985 +763,668 @@ export default function Step8MatrixAddition({ onSelectStep }) {
     const valB = matrixB[row]?.[col] ?? 0;
     const valC = matrixC[row]?.[col] ?? 0;
 
-    const rawSum = valA + valB;
-    const rawDiff = valA - valB;
-    const rawWeightedDiff = Math.round(valA - alpha * valB);
-    const rawAbsDiff = Math.abs(valA - valB);
+    let mathFormula = '';
+    let mathResult = '';
 
-    const isOverflow = operation === 'add' && mode === 'direct' && rawSum > 255;
-    const isUnderflow = operation === 'sub' && (
-      (subMode === 'direct' && rawDiff < 0) ||
-      (subMode === 'weighted' && (valA - alpha * valB) < 0)
-    );
+    if (operation === 'add') {
+      if (mode === 'blend') {
+        mathFormula = `C[${row}, ${col}] = ${alpha.toFixed(2)} · ${valA} + ${(1 - alpha).toFixed(2)} · ${valB}`;
+        mathResult = `${Math.round(alpha * valA)} + ${Math.round((1 - alpha) * valB)} = ${valC}`;
+      } else {
+        mathFormula = `C[${row}, ${col}] = ${valA} + ${valB}`;
+        mathResult = `${valA + valB}${valA + valB > 255 ? ' ➔ clamped to 255' : ` = ${valC}`}`;
+      }
+    } else {
+      if (subMode === 'abs') {
+        mathFormula = `C[${row}, ${col}] = |${valA} − ${valB}|`;
+        mathResult = `|${valA - valB}| = ${valC}`;
+      } else if (subMode === 'weighted') {
+        const rawW = Math.round(valA - alpha * valB);
+        mathFormula = `C[${row}, ${col}] = clamp(${valA} − ${alpha.toFixed(2)} · ${valB}, 0, 255)`;
+        mathResult = `${rawW < 0 ? `${rawW} ➔ clamped to 0` : `= ${valC}`}`;
+      } else {
+        const rawD = valA - valB;
+        mathFormula = `C[${row}, ${col}] = clamp(${valA} − ${valB}, 0, 255)`;
+        mathResult = `${rawD < 0 ? `${rawD} ➔ clamped to 0` : `= ${valC}`}`;
+      }
+    }
 
-    return { 
-      row, 
-      col, 
-      valA, 
-      valB, 
-      valC, 
-      rawSum, 
-      rawDiff, 
-      rawWeightedDiff,
-      rawAbsDiff,
-      isOverflow, 
-      isUnderflow 
-    };
-  }, [hoveredCell, matrixA, matrixB, matrixC, mode, operation, subMode, alpha]);
+    return { row, col, valA, valB, valC, mathFormula, mathResult };
+  }, [hoveredCell, matrixA, matrixB, matrixC, operation, mode, subMode, alpha]);
 
   return (
-    <motion.div 
-      className="step-module addition-module"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+    <StepWrapper
+      stepNumber={8}
+      title="Matrix Blending & Image Addition"
+      subtitle="Combine image matrices element-by-element using convex alpha weighting: C = α·A + (1 − α)·B."
+      formula={
+        operation === 'add'
+          ? (mode === 'blend' ? 'C = α · A + (1 − α) · B  (0 ≤ α ≤ 1)' : 'C = min(255, A + B)')
+          : (subMode === 'abs' ? 'C = |A − B|' : subMode === 'weighted' ? 'C = clamp(A − α·B, 0, 255)' : 'C = clamp(A − B, 0, 255)')
+      }
+      basicHint="Matrix addition combines pixels at identical [row, col] coordinates. Alpha weighting α controls the transparency and blend ratio of the two images."
+      advancedFormula={
+        operation === 'add'
+          ? 'C[i, j] = clamp(α · A[i, j] + (1 − α) · B[i, j], 0, 255)'
+          : 'C[i, j] = clamp(|A[i, j] − B[i, j]|, 0, 255)'
+      }
+      controls={controls}
+      onPrev={() => onSelectStep && onSelectStep(7)}
+      onNext={() => onSelectStep && onSelectStep(9)}
     >
-      {/* STEP HEADER */}
-      <div className="step-header-box">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.45rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-            <span className="modal-badge-tag" style={{ margin: 0, background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', borderColor: 'rgba(59, 130, 246, 0.35)' }}>
-              Visual Lab 08
-            </span>
-            <span style={{ fontSize: '0.85rem', color: 'var(--accent-blue)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-              Matrix Blending: C = αA + (1 − α)B
-            </span>
-          </div>
-        </div>
-
-        <h2 className="step-heading">
-          Visual Lab 08: Matrix Blending
-        </h2>
-        <p className="step-description">
-          {operation === 'add' ? (
-            <>
-              Combine two images of the same size using matrix addition. Since direct addition (<code>C = A + B</code>) can produce pixel values exceeding 255 (causing intensity blowout/saturation), we introduce a blending factor: <strong>C = αA + (1 − α)B</strong>, where <strong>0 ≤ α ≤ 1</strong>. Notice how corresponding pixels combine element-by-element!
-            </>
-          ) : (
-            <>
-              Subtract one image matrix from another element-by-element. Direct subtraction (<code>C = clamp(A − B)</code>) clamps negative values to <strong>0 (Black)</strong>, while Absolute Difference (<code>C = |A − B|</code>) measures the exact delta between frames—a core principle of <strong>motion tracking</strong>, <strong>background removal</strong>, and <strong>defect detection</strong>!
-            </>
-          )}
-        </p>
-
-        <div style={{ marginTop: '0.75rem' }}>
-          <button
-            type="button"
-            onClick={() => onSelectStep && onSelectStep(15)}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25 flex items-center gap-2 transition-all w-fit cursor-pointer shadow-sm"
-          >
-            <Sparkles size={14} className="text-cyan-400" />
-            <span>Curriculum Companion: <strong>Matrix Multiplication &amp; Shadows</strong></span>
-            <ArrowRight size={13} />
-          </button>
-        </div>
-      </div>
-
-      {/* TOP CONTROLS CARD */}
-      <div className="top-control-card addition-controls-card">
-        <div className="addition-controls-grid">
-          
-          {/* Part 1: Factor Slider (Alpha Blending or Subtraction Intensity) */}
-          <div className="slider-group" style={{ marginBottom: 0 }}>
-            <div className="slider-label" style={{ marginBottom: '0.35rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Blend size={16} color="var(--accent-purple)" />
-                <span>
-                  {operation === 'add' 
-                    ? 'Blending Factor (α):' 
-                    : subMode === 'weighted' 
-                      ? 'Subtraction Weight (α):' 
-                      : 'Weight Factor (α):'}
+      {/* 3-Column Balanced Equation Stage: Matrix A  [+]  Matrix B  [=]  Result C */}
+      <div
+        className="matrix-blending-stage"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr)',
+          alignItems: 'stretch',
+          gap: '0.75rem',
+          width: '100%'
+        }}
+      >
+        {/* CARD 1: INPUT A */}
+        <div
+          className="canvas-card glass-level-2"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: '0.85rem 1rem'
+          }}
+        >
+          <div>
+            {/* Header */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingBottom: '0.45rem',
+                marginBottom: '0.65rem',
+                borderBottom: '1px solid var(--border-color)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <span style={{ fontSize: '0.94rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  Image & Matrix A
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                <span className="font-mono" style={{ color: 'var(--accent-purple)', fontSize: '1.25rem', fontWeight: '800' }}>
-                  {alpha.toFixed(2)}
-                </span>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                  {operation === 'add' 
-                    ? `(${Math.round(alpha * 100)}% A + ${Math.round((1 - alpha) * 100)}% B)`
-                    : subMode === 'weighted' 
-                      ? `(A − ${alpha.toFixed(2)} × B)` 
-                      : subMode === 'abs'
-                        ? '(|A − B| unweighted)'
-                        : '(Direct A − B)'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                {operation === 'add' && mode === 'blend' && (
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
+                      padding: '0.12rem 0.45rem',
+                      borderRadius: '5px'
+                    }}
+                  >
+                    α = {alpha.toFixed(2)}
+                  </span>
+                )}
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--text-muted)',
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                    padding: '0.12rem 0.45rem',
+                    borderRadius: '5px'
+                  }}
+                >
+                  4 × 4
                 </span>
               </div>
             </div>
 
-            <input
-              type="range"
-              className="slider-input"
-              min="0.0"
-              max="1.0"
-              step="0.01"
-              value={alpha}
-              disabled={operation === 'add' ? mode === 'direct' : subMode !== 'weighted'}
-              onChange={(e) => setAlpha(parseFloat(e.target.value))}
-              onInput={(e) => setAlpha(parseFloat(e.target.value))}
-              style={{ 
-                '--slider-pct': `${alpha * 100}%`, 
-                '--slider-color': 'var(--accent-purple)',
-                opacity: (operation === 'add' ? mode === 'direct' : subMode !== 'weighted') ? 0.35 : 1 
-              }}
+            {/* Visual Canvas Preview */}
+            <BlendingPixelCanvas
+              matrix={matrixA}
+              hoveredCell={hoveredCell}
+              onHoverCell={setHoveredCell}
+              pixelSize={30}
             />
 
-            {/* Quick Presets for Alpha */}
-            <div className="alpha-presets-row">
-              <button 
-                className={`mini-preset-pill ${alpha === 1.0 ? 'active' : ''}`}
-                onClick={() => {
-                  if (operation === 'add') setMode('blend');
-                  if (operation === 'sub') setSubMode('weighted');
-                  setAlpha(1.0);
+            {/* 4x4 Numerical Matrix Grid */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 'fit-content',
+                margin: '0.75rem auto 0.25rem'
+              }}
+            >
+              <div
+                style={{
+                  width: '7px',
+                  alignSelf: 'stretch',
+                  border: '2.5px solid var(--border-color)',
+                  borderRight: 'none',
+                  borderRadius: '7px 0 0 7px',
+                  marginRight: '5px'
                 }}
-                title={operation === 'add' ? '100% Image A' : '100% Subtraction Weight'}
-              >
-                {operation === 'add' ? '100% A' : '1.00×'}
-              </button>
-              <button 
-                className={`mini-preset-pill ${alpha === 0.75 ? 'active' : ''}`}
-                onClick={() => {
-                  if (operation === 'add') setMode('blend');
-                  if (operation === 'sub') setSubMode('weighted');
-                  setAlpha(0.75);
+              />
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gap: '5px',
+                  width: 'fit-content'
                 }}
-                title={operation === 'add' ? '75% Image A, 25% Image B' : '75% Subtraction Weight'}
               >
-                {operation === 'add' ? '75% A' : '0.75×'}
-              </button>
-              <button 
-                className={`mini-preset-pill ${alpha === 0.5 ? 'active' : ''}`}
-                onClick={() => {
-                  if (operation === 'add') setMode('blend');
-                  if (operation === 'sub') setSubMode('weighted');
-                  setAlpha(0.5);
-                }}
-                title={operation === 'add' ? 'Equal 50/50 blend' : '50% Subtraction Weight'}
-              >
-                {operation === 'add' ? '50/50' : '0.50×'}
-              </button>
-              <button 
-                className={`mini-preset-pill ${alpha === 0.25 ? 'active' : ''}`}
-                onClick={() => {
-                  if (operation === 'add') setMode('blend');
-                  if (operation === 'sub') setSubMode('weighted');
-                  setAlpha(0.25);
-                }}
-                title={operation === 'add' ? '25% Image A, 75% Image B' : '25% Subtraction Weight'}
-              >
-                {operation === 'add' ? '25% A' : '0.25×'}
-              </button>
-              <button 
-                className={`mini-preset-pill ${alpha === 0.0 ? 'active' : ''}`}
-                onClick={() => {
-                  if (operation === 'add') setMode('blend');
-                  if (operation === 'sub') setSubMode('weighted');
-                  setAlpha(0.0);
-                }}
-                title={operation === 'add' ? '100% Image B' : '0% Subtraction (No effect)'}
-              >
-                {operation === 'add' ? '100% B' : '0.00×'}
-              </button>
-            </div>
-          </div>
-
-          {/* Part 2: Arithmetic Operation & Modes & Presets */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            
-            {/* Primary Operation Switch: Addition vs Subtraction */}
-            <div className="control-row-group">
-              <span className="control-row-label">
-                Operation:
-              </span>
-              <div className="addition-mode-toggle operation-method-toggle">
-                <button
-                  className={`mode-btn ${operation === 'add' ? 'active' : ''}`}
-                  onClick={() => setOperation('add')}
-                  title="Element-wise Matrix Addition"
-                >
-                  <Plus size={13} /> <span>Addition (+)</span>
-                </button>
-                <button
-                  className={`mode-btn ${operation === 'sub' ? 'active' : ''}`}
-                  onClick={() => {
-                    setOperation('sub');
-                    // Automatically recommend motion/delta preset if coming from default
-                    if (currentPresetKey === 'crossAndFrame') {
-                      handleSelectPreset('motionDetect');
-                    }
-                  }}
-                  title="Element-wise Matrix Subtraction & Change Detection"
-                >
-                  <Minus size={13} /> <span>Subtraction (−)</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Sub-modes for the Active Operation */}
-            <div className="control-row-group">
-              <span className="control-row-label">
-                {operation === 'add' ? 'Addition Mode:' : 'Subtraction Mode:'}
-              </span>
-              <div className="addition-mode-toggle">
-                {operation === 'add' ? (
-                  <>
-                    <button
-                      className={`mode-btn ${mode === 'blend' ? 'active' : ''}`}
-                      onClick={() => setMode('blend')}
-                    >
-                      <Blend size={13} /> <span>Blending</span> <span className="mode-pill-math">αA + (1-α)B</span>
-                    </button>
-                    <button
-                      className={`mode-btn ${mode === 'direct' ? 'active' : ''}`}
-                      onClick={() => setMode('direct')}
-                    >
-                      <Plus size={13} /> <span>Direct</span> <span className="mode-pill-math">A + B</span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      className={`mode-btn ${subMode === 'direct' ? 'active' : ''}`}
-                      onClick={() => setSubMode('direct')}
-                      title="Direct subtraction C = clamp(A − B)"
-                    >
-                      <Minus size={13} /> <span>Direct</span> <span className="mode-pill-math">clamp(A−B)</span>
-                    </button>
-                    <button
-                      className={`mode-btn ${subMode === 'abs' ? 'active' : ''}`}
-                      onClick={() => setSubMode('abs')}
-                      title="Absolute difference C = |A − B| (Motion/Delta analysis)"
-                    >
-                      <Scan size={13} /> <span>Absolute</span> <span className="mode-pill-math">|A−B|</span>
-                    </button>
-                    <button
-                      className={`mode-btn ${subMode === 'weighted' ? 'active' : ''}`}
-                      onClick={() => setSubMode('weighted')}
-                      title="Weighted subtraction C = clamp(A − αB)"
-                    >
-                      <Sliders size={13} /> <span>Weighted</span> <span className="mode-pill-math">clamp(A−αB)</span>
-                    </button>
-                  </>
+                {matrixA.map((row, r) =>
+                  row.map((val, c) => (
+                    <EditableCell
+                      key={`a-${r}-${c}`}
+                      value={val}
+                      row={r}
+                      col={c}
+                      isHovered={hoveredCell && hoveredCell.row === r && hoveredCell.col === c}
+                      onChange={handleCellChangeA}
+                      onHover={() => setHoveredCell({ row: r, col: c })}
+                    />
+                  ))
                 )}
               </div>
-            </div>
-
-            {/* Presets & Actions Row */}
-            <div className="addition-presets-actions-container">
-              <div className="addition-presets-strip">
-                <span className="control-row-label" style={{ marginRight: '0.15rem' }}>
-                  Presets:
-                </span>
-                {Object.entries(PRESET_PAIRS).map(([key, data]) => (
-                  <button
-                    key={key}
-                    className={`preset-btn mini-btn ${currentPresetKey === key ? 'active' : ''}`}
-                    onClick={() => handleSelectPreset(key)}
-                    title={data.desc}
-                  >
-                    {data.name}
-                  </button>
-                ))}
-              </div>
-
-              <div className="addition-actions-group">
-                <button 
-                  className="preset-btn mini-btn icon-only-btn" 
-                  onClick={handleSwapMatrices}
-                  title="Swap Matrix A and Matrix B (Non-commutative in subtraction!)"
-                >
-                  <ArrowLeftRight size={13} />
-                  <span>Swap A ⇄ B</span>
-                </button>
-                <button 
-                  className="preset-btn mini-btn icon-only-btn" 
-                  onClick={handleRandomize}
-                  title="Generate Random Clean Pixel Matrices"
-                >
-                  <Shuffle size={13} />
-                  <span>Random</span>
-                </button>
-                <button 
-                  className="preset-btn mini-btn icon-only-btn" 
-                  onClick={handleReset}
-                  title="Reset to default preset"
-                >
-                  <RotateCcw size={13} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ELEMENT-BY-ELEMENT LIVE FORMULA INSPECTOR STRIP */}
-      <div className="addition-formula-inspector">
-        {hoveredInfo ? (
-          <div className="formula-inspector-content active">
-            <span className="inspector-pill">
-              Cell ({hoveredInfo.row + 1}, {hoveredInfo.col + 1})
-            </span>
-            <div className="formula-math-tokens">
-              {operation === 'add' ? (
-                mode === 'blend' ? (
-                  <>
-                    <span className="token-var">C<sub>{hoveredInfo.row+1},{hoveredInfo.col+1}</sub></span>
-                    <span className="token-op">=</span>
-                    <span className="token-val" style={{ color: 'var(--accent-purple)' }}>{alpha.toFixed(2)} × {hoveredInfo.valA}</span>
-                    <span className="token-op">+</span>
-                    <span className="token-val" style={{ color: '#F59E0B' }}>{(1 - alpha).toFixed(2)} × {hoveredInfo.valB}</span>
-                    <span className="token-op">=</span>
-                    <span className="token-sub">
-                      {Math.round(alpha * hoveredInfo.valA)} + {Math.round((1 - alpha) * hoveredInfo.valB)}
-                    </span>
-                    <span className="token-op">=</span>
-                    <span className="token-result">{hoveredInfo.valC}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="token-var">C<sub>{hoveredInfo.row+1},{hoveredInfo.col+1}</sub></span>
-                    <span className="token-op">=</span>
-                    <span className="token-val" style={{ color: 'var(--accent-purple)' }}>{hoveredInfo.valA}</span>
-                    <span className="token-op">+</span>
-                    <span className="token-val" style={{ color: '#F59E0B' }}>{hoveredInfo.valB}</span>
-                    <span className="token-op">=</span>
-                    <span className="token-sub">{hoveredInfo.rawSum}</span>
-                    {hoveredInfo.isOverflow && (
-                      <span className="token-clipped-warning">
-                        <AlertTriangle size={13} /> Clamped to max 255!
-                      </span>
-                    )}
-                    <span className="token-op">➔</span>
-                    <span className="token-result">{hoveredInfo.valC}</span>
-                  </>
-                )
-              ) : (
-                /* SUBTRACTION INSPECTOR */
-                subMode === 'abs' ? (
-                  <>
-                    <span className="token-var">C<sub>{hoveredInfo.row+1},{hoveredInfo.col+1}</sub></span>
-                    <span className="token-op">=</span>
-                    <span className="token-op">|</span>
-                    <span className="token-val" style={{ color: 'var(--accent-purple)' }}>{hoveredInfo.valA}</span>
-                    <span className="token-op">−</span>
-                    <span className="token-val" style={{ color: '#F59E0B' }}>{hoveredInfo.valB}</span>
-                    <span className="token-op">|</span>
-                    <span className="token-op">=</span>
-                    <span className="token-sub">|{hoveredInfo.rawDiff}|</span>
-                    <span className="token-op">➔</span>
-                    <span className="token-result">{hoveredInfo.valC}</span>
-                  </>
-                ) : subMode === 'weighted' ? (
-                  <>
-                    <span className="token-var">C<sub>{hoveredInfo.row+1},{hoveredInfo.col+1}</sub></span>
-                    <span className="token-op">=</span>
-                    <span className="token-val" style={{ color: 'var(--accent-purple)' }}>{hoveredInfo.valA}</span>
-                    <span className="token-op">−</span>
-                    <span className="token-val" style={{ color: '#F59E0B' }}>({alpha.toFixed(2)} × {hoveredInfo.valB})</span>
-                    <span className="token-op">=</span>
-                    <span className="token-sub">{hoveredInfo.valA} − {Math.round(alpha * hoveredInfo.valB)} = {hoveredInfo.rawWeightedDiff}</span>
-                    {hoveredInfo.isUnderflow && (
-                      <span className="token-clipped-warning underflow-warning">
-                        <AlertTriangle size={13} /> Clamped to min 0!
-                      </span>
-                    )}
-                    <span className="token-op">➔</span>
-                    <span className="token-result">{hoveredInfo.valC}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="token-var">C<sub>{hoveredInfo.row+1},{hoveredInfo.col+1}</sub></span>
-                    <span className="token-op">=</span>
-                    <span className="token-val" style={{ color: 'var(--accent-purple)' }}>{hoveredInfo.valA}</span>
-                    <span className="token-op">−</span>
-                    <span className="token-val" style={{ color: '#F59E0B' }}>{hoveredInfo.valB}</span>
-                    <span className="token-op">=</span>
-                    <span className="token-sub">{hoveredInfo.rawDiff}</span>
-                    {hoveredInfo.isUnderflow && (
-                      <span className="token-clipped-warning underflow-warning">
-                        <AlertTriangle size={13} /> Clamped to min 0!
-                      </span>
-                    )}
-                    <span className="token-op">➔</span>
-                    <span className="token-result">{hoveredInfo.valC}</span>
-                  </>
-                )
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="formula-inspector-content idle">
-            <Sparkles size={14} className="sparkle-idle-icon" />
-            <span>
-              <strong>Element-by-Element Principle:</strong>{' '}
-              {operation === 'add'
-                ? 'Corresponding pixels of Matrix A and Matrix B are combined individually. Hover over any cell below to inspect its exact arithmetic!'
-                : 'Corresponding pixels of Matrix A and Matrix B are subtracted individually. Hover over any cell below to inspect difference arithmetic!'}
-            </span>
-          </div>
-        )}
-
-        {/* Warning Badges for Saturated Overflow or Negative Underflow */}
-        {operation === 'add' && mode === 'direct' && clippedOverflowCount > 0 && (
-          <div className="clipped-summary-badge">
-            <AlertTriangle size={13} />
-            <span>{clippedOverflowCount} cell{clippedOverflowCount > 1 ? 's' : ''} saturated (&gt; 255)</span>
-          </div>
-        )}
-
-        {operation === 'sub' && (subMode === 'direct' || subMode === 'weighted') && clippedUnderflowCount > 0 && (
-          <div className="clipped-summary-badge underflow-summary-badge">
-            <AlertTriangle size={13} />
-            <span>{clippedUnderflowCount} cell{clippedUnderflowCount > 1 ? 's' : ''} underflowed (&lt; 0)</span>
-          </div>
-        )}
-      </div>
-
-      {/* =========================================================================
-          THE HORIZONTAL / RESPONSIVE LINE:
-          MATRIX A  ➕/➖  MATRIX B  🟰  RESULTANT MATRIX C
-         ========================================================================= */}
-      <div className="addition-horizontal-line-container">
-        
-        {/* COLUMN 1: MATRIX & IMAGE A */}
-        <div className="addition-column-card card-matrix-a">
-          <div className="addition-column-header">
-            <div className="col-header-left">
-              <span className="matrix-title-badge badge-a">A</span>
-              <div>
-                <h3 className="addition-card-title">Image & Matrix A</h3>
-                <span className="addition-card-subtitle">Editable Inputs (0–255)</span>
-              </div>
-            </div>
-            <div className="col-header-right">
-              {operation === 'add' && mode === 'blend' && (
-                <span className="addition-weight-pill pill-a" title="Current alpha weight for Image A">
-                  α = {alpha.toFixed(2)}
-                </span>
-              )}
-              <span className="matrix-dims">4 × 4</span>
-            </div>
-          </div>
-
-          {/* Interactive Visual + Numerical Matrix Stack */}
-          <div className="addition-card-body">
-            {/* Visual Canvas Preview */}
-            <div className="canvas-subrow">
-              <CompactPixelCanvas
-                matrix={matrixA}
-                hoveredCell={hoveredCell}
-                onHoverCell={setHoveredCell}
-                pixelSize={28}
-                highlightColor="var(--accent-purple)"
+              <div
+                style={{
+                  width: '7px',
+                  alignSelf: 'stretch',
+                  border: '2.5px solid var(--border-color)',
+                  borderLeft: 'none',
+                  borderRadius: '0 7px 7px 0',
+                  marginLeft: '5px'
+                }}
               />
-              <div className="canvas-subrow-info">
-                <span className="subrow-label">Visual Representation A</span>
-                <span className="subrow-hint">Grayscale: 0 (black) to 255 (white)</span>
-                <div className="subrow-actions">
-                  <button className="text-action-btn" onClick={handleInvertA} title="Invert colors (255 - x)">
-                    Invert A
-                  </button>
-                  <button 
-                    className="text-action-btn" 
-                    onClick={() => setMatrixA(createEmptyMatrix(4, 4, 128))}
-                    title="Fill with mid-gray (128)"
-                  >
-                    128 Gray
-                  </button>
-                </div>
-              </div>
             </div>
+          </div>
 
-            {/* Editable 4x4 Numerical Matrix Grid */}
-            <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': 'var(--accent-purple)' }}>
-              <div className="matrix-left-bracket" style={{ borderColor: 'var(--accent-purple)' }} />
-              <div className="matrix-with-indices">
-                <div className="matrix-col-indices-row">
-                  {matrixA[0].map((_, cIdx) => (
-                    <span key={`col-a-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
-                  ))}
-                </div>
-                <div className="matrix-body-row">
-                  <div className="matrix-row-indices-col">
-                    {matrixA.map((_, rIdx) => (
-                      <span key={`row-a-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
-                    ))}
-                  </div>
-                  <div 
-                    className="matrix-grid compact-grid"
-                    style={{ gridTemplateColumns: `repeat(${matrixA[0].length}, 1fr)` }}
-                    onMouseLeave={() => setHoveredCell(null)}
-                  >
-                    {matrixA.map((row, i) =>
-                      row.map((val, j) => {
-                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                        return (
-                          <div
-                            key={`a-${i}-${j}`}
-                            className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                            style={{
-                              '--cell-accent': 'var(--accent-purple)',
-                              borderColor: isHovered ? 'var(--accent-purple)' : undefined,
-                              background: `linear-gradient(135deg, rgba(${val},${val},${val},0.14) 0%, var(--bg-secondary) 100%)`
-                            }}
-                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onWheel={(e) => {
-                              e.preventDefault();
-                              const delta = e.deltaY < 0 ? 5 : -5;
-                              handleCellChangeA(i, j, Math.min(255, Math.max(0, val + delta)));
-                            }}
-                          >
-                            <div className="editable-cell-inner compact-inner">
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={val}
-                                onFocus={(e) => e.target.select()}
-                                onChange={(e) => {
-                                  const parsed = parseInt(e.target.value);
-                                  const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
-                                  handleCellChangeA(i, j, valid);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-                                    e.preventDefault();
-                                    handleCellChangeA(i, j, Math.min(255, val + 5));
-                                  } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-                                    e.preventDefault();
-                                    handleCellChangeA(i, j, Math.max(0, val - 5));
-                                  }
-                                }}
-                                className="matrix-cell-input compact-input"
-                                style={{ color: 'var(--accent-purple)' }}
-                              />
-                              <div className="stepper-arrow-buttons compact-steppers">
-                                <button
-                                  type="button"
-                                  className="stepper-arrow-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCellChangeA(i, j, Math.min(255, val + 10));
-                                  }}
-                                  title="+10"
-                                >
-                                  ▲
-                                </button>
-                                <button
-                                  type="button"
-                                  className="stepper-arrow-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCellChangeA(i, j, Math.max(0, val - 10));
-                                  }}
-                                  title="-10"
-                                >
-                                  ▼
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="matrix-right-bracket" style={{ borderColor: 'var(--accent-purple)' }} />
-            </div>
+          {/* Card Utility Actions */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '0.4rem',
+              marginTop: '0.65rem',
+              paddingTop: '0.45rem',
+              borderTop: '1px solid var(--border-color)'
+            }}
+          >
+            <button
+              className="preset-pill-btn"
+              onClick={handleInvertA}
+              type="button"
+              style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}
+            >
+              Invert A
+            </button>
+            <button
+              className="preset-pill-btn"
+              onClick={handleMidGrayA}
+              type="button"
+              style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}
+            >
+              128 Gray
+            </button>
           </div>
         </div>
 
-        {/* MATH OPERATOR: ➕ or ➖ */}
-        <div className="addition-operator-divider">
-          <div 
-            className={`operator-badge ${operation === 'add' ? 'plus-badge' : 'minus-badge'}`} 
-            title={operation === 'add' ? "Matrix Addition Operator" : "Matrix Subtraction Operator"}
+        {/* OPERATOR BADGE 1: (+) or (−) */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.35rem',
+            padding: '0 0.15rem'
+          }}
+        >
+          <div
+            style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '50%',
+              background: 'var(--bg-secondary)',
+              border: '1.5px solid var(--border-color)',
+              color: 'var(--text-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+            }}
           >
-            {operation === 'add' ? (
-              <Plus size={22} strokeWidth={2.8} />
-            ) : (
-              <Minus size={22} strokeWidth={2.8} />
-            )}
+            {operation === 'add' ? <Plus size={18} strokeWidth={2.6} /> : <Minus size={18} strokeWidth={2.6} />}
           </div>
-          <span className="operator-label">
-            {operation === 'add' ? (
-              mode === 'blend' ? 'αA + (1-α)B' : 'A + B'
-            ) : (
-              subMode === 'abs' ? '|A − B|' : subMode === 'weighted' ? 'A − αB' : 'A − B'
-            )}
+          <span
+            style={{
+              fontSize: '0.68rem',
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--text-muted)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {operation === 'add' ? (mode === 'blend' ? 'αA+(1−α)B' : 'A + B') : (subMode === 'abs' ? '|A − B|' : 'A − B')}
           </span>
         </div>
 
-        {/* COLUMN 2: MATRIX & IMAGE B */}
-        <div className="addition-column-card card-matrix-b">
-          <div className="addition-column-header">
-            <div className="col-header-left">
-              <span className="matrix-title-badge badge-b">B</span>
-              <div>
-                <h3 className="addition-card-title">Image & Matrix B</h3>
-                <span className="addition-card-subtitle">Editable Inputs (0–255)</span>
+        {/* CARD 2: INPUT B */}
+        <div
+          className="canvas-card glass-level-2"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: '0.85rem 1rem'
+          }}
+        >
+          <div>
+            {/* Header */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingBottom: '0.45rem',
+                marginBottom: '0.65rem',
+                borderBottom: '1px solid var(--border-color)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <span style={{ fontSize: '0.94rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  Image & Matrix B
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                {operation === 'add' && mode === 'blend' && (
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
+                      padding: '0.12rem 0.45rem',
+                      borderRadius: '5px'
+                    }}
+                  >
+                    1−α = {(1 - alpha).toFixed(2)}
+                  </span>
+                )}
+                {operation === 'sub' && subMode === 'weighted' && (
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
+                      padding: '0.12rem 0.45rem',
+                      borderRadius: '5px'
+                    }}
+                  >
+                    α = {alpha.toFixed(2)}
+                  </span>
+                )}
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--text-muted)',
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                    padding: '0.12rem 0.45rem',
+                    borderRadius: '5px'
+                  }}
+                >
+                  4 × 4
+                </span>
               </div>
             </div>
-            <div className="col-header-right">
-              {operation === 'add' && mode === 'blend' && (
-                <span className="addition-weight-pill pill-b" title="Current (1-alpha) weight for Image B">
-                  1-α = {(1 - alpha).toFixed(2)}
-                </span>
-              )}
-              {operation === 'sub' && subMode === 'weighted' && (
-                <span className="addition-weight-pill pill-b" title="Current alpha scalar applied to Image B">
-                  α = {alpha.toFixed(2)}
-                </span>
-              )}
-              <span className="matrix-dims" style={{ borderColor: 'rgba(245, 158, 11, 0.4)', color: '#F59E0B', background: 'rgba(245, 158, 11, 0.12)' }}>
-                4 × 4
-              </span>
+
+            {/* Visual Canvas Preview */}
+            <BlendingPixelCanvas
+              matrix={matrixB}
+              hoveredCell={hoveredCell}
+              onHoverCell={setHoveredCell}
+              pixelSize={30}
+            />
+
+            {/* 4x4 Numerical Matrix Grid */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 'fit-content',
+                margin: '0.75rem auto 0.25rem'
+              }}
+            >
+              <div
+                style={{
+                  width: '7px',
+                  alignSelf: 'stretch',
+                  border: '2.5px solid var(--border-color)',
+                  borderRight: 'none',
+                  borderRadius: '7px 0 0 7px',
+                  marginRight: '5px'
+                }}
+              />
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gap: '5px',
+                  width: 'fit-content'
+                }}
+              >
+                {matrixB.map((row, r) =>
+                  row.map((val, c) => (
+                    <EditableCell
+                      key={`b-${r}-${c}`}
+                      value={val}
+                      row={r}
+                      col={c}
+                      isHovered={hoveredCell && hoveredCell.row === r && hoveredCell.col === c}
+                      onChange={handleCellChangeB}
+                      onHover={() => setHoveredCell({ row: r, col: c })}
+                    />
+                  ))
+                )}
+              </div>
+              <div
+                style={{
+                  width: '7px',
+                  alignSelf: 'stretch',
+                  border: '2.5px solid var(--border-color)',
+                  borderLeft: 'none',
+                  borderRadius: '0 7px 7px 0',
+                  marginLeft: '5px'
+                }}
+              />
             </div>
           </div>
 
-          {/* Interactive Visual + Numerical Matrix Stack */}
-          <div className="addition-card-body">
-            {/* Visual Canvas Preview */}
-            <div className="canvas-subrow">
-              <CompactPixelCanvas
-                matrix={matrixB}
-                hoveredCell={hoveredCell}
-                onHoverCell={setHoveredCell}
-                pixelSize={28}
-                highlightColor="#F59E0B"
-              />
-              <div className="canvas-subrow-info">
-                <span className="subrow-label">Visual Representation B</span>
-                <span className="subrow-hint">Grayscale: 0 (black) to 255 (white)</span>
-                <div className="subrow-actions">
-                  <button className="text-action-btn" onClick={handleInvertB} title="Invert colors (255 - x)">
-                    Invert B
-                  </button>
-                  <button 
-                    className="text-action-btn" 
-                    onClick={() => setMatrixB(createEmptyMatrix(4, 4, 128))}
-                    title="Fill with mid-gray (128)"
-                  >
-                    128 Gray
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Editable 4x4 Numerical Matrix Grid */}
-            <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': '#F59E0B' }}>
-              <div className="matrix-left-bracket" style={{ borderColor: '#F59E0B' }} />
-              <div className="matrix-with-indices">
-                <div className="matrix-col-indices-row">
-                  {matrixB[0].map((_, cIdx) => (
-                    <span key={`col-b-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
-                  ))}
-                </div>
-                <div className="matrix-body-row">
-                  <div className="matrix-row-indices-col">
-                    {matrixB.map((_, rIdx) => (
-                      <span key={`row-b-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
-                    ))}
-                  </div>
-                  <div 
-                    className="matrix-grid compact-grid"
-                    style={{ gridTemplateColumns: `repeat(${matrixB[0].length}, 1fr)` }}
-                    onMouseLeave={() => setHoveredCell(null)}
-                  >
-                    {matrixB.map((row, i) =>
-                      row.map((val, j) => {
-                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                        return (
-                          <div
-                            key={`b-${i}-${j}`}
-                            className={`matrix-cell editable-cell compact-cell ${isHovered ? 'hovered' : ''}`}
-                            style={{
-                              '--cell-accent': '#F59E0B',
-                              borderColor: isHovered ? '#F59E0B' : undefined,
-                              background: `linear-gradient(135deg, rgba(${val},${val},${val},0.14) 0%, var(--bg-secondary) 100%)`
-                            }}
-                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onWheel={(e) => {
-                              e.preventDefault();
-                              const delta = e.deltaY < 0 ? 5 : -5;
-                              handleCellChangeB(i, j, Math.min(255, Math.max(0, val + delta)));
-                            }}
-                          >
-                            <div className="editable-cell-inner compact-inner">
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={val}
-                                onFocus={(e) => e.target.select()}
-                                onChange={(e) => {
-                                  const parsed = parseInt(e.target.value);
-                                  const valid = isNaN(parsed) ? 0 : Math.min(255, Math.max(0, parsed));
-                                  handleCellChangeB(i, j, valid);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-                                    e.preventDefault();
-                                    handleCellChangeB(i, j, Math.min(255, val + 5));
-                                  } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-                                    e.preventDefault();
-                                    handleCellChangeB(i, j, Math.max(0, val - 5));
-                                  }
-                                }}
-                                className="matrix-cell-input compact-input"
-                                style={{ color: '#F59E0B' }}
-                              />
-                              <div className="stepper-arrow-buttons compact-steppers">
-                                <button
-                                  type="button"
-                                  className="stepper-arrow-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCellChangeB(i, j, Math.min(255, val + 10));
-                                  }}
-                                  title="+10"
-                                >
-                                  ▲
-                                </button>
-                                <button
-                                  type="button"
-                                  className="stepper-arrow-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCellChangeB(i, j, Math.max(0, val - 10));
-                                  }}
-                                  title="-10"
-                                >
-                                  ▼
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="matrix-right-bracket" style={{ borderColor: '#F59E0B' }} />
-            </div>
+          {/* Card Utility Actions */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '0.4rem',
+              marginTop: '0.65rem',
+              paddingTop: '0.45rem',
+              borderTop: '1px solid var(--border-color)'
+            }}
+          >
+            <button
+              className="preset-pill-btn"
+              onClick={handleInvertB}
+              type="button"
+              style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}
+            >
+              Invert B
+            </button>
+            <button
+              className="preset-pill-btn"
+              onClick={handleMidGrayB}
+              type="button"
+              style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}
+            >
+              128 Gray
+            </button>
           </div>
         </div>
 
-        {/* MATH OPERATOR: 🟰 */}
-        <div className="addition-operator-divider">
-          <div className="operator-badge equals-badge" title="Equals Result">
-            <Equal size={22} strokeWidth={2.8} />
+        {/* OPERATOR BADGE 2: (=) */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.35rem',
+            padding: '0 0.15rem'
+          }}
+        >
+          <div
+            style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '50%',
+              background: 'var(--bg-secondary)',
+              border: '1.5px solid var(--border-color)',
+              color: 'var(--text-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+            }}
+          >
+            <Equal size={18} strokeWidth={2.6} />
           </div>
-          <span className="operator-label">
+          <span
+            style={{
+              fontSize: '0.68rem',
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--text-muted)',
+              whiteSpace: 'nowrap'
+            }}
+          >
             Output C
           </span>
         </div>
 
-        {/* COLUMN 3: RESULTANT MATRIX & IMAGE C */}
-        <div className="addition-column-card card-matrix-c">
-          <div className="addition-column-header">
-            <div className="col-header-left">
-              <span className="matrix-title-badge badge-c">C</span>
-              <div>
-                <h3 className="addition-card-title">Result Matrix C</h3>
-                <span className="addition-card-subtitle" style={{ color: 'var(--accent-emerald)' }}>
-                  {operation === 'add' ? (
-                    mode === 'blend' ? 'Live Blended Output' : 'Live Direct Sum'
-                  ) : (
-                    subMode === 'abs' 
-                      ? 'Live Absolute Delta' 
-                      : subMode === 'weighted' 
-                        ? 'Live Weighted Difference' 
-                        : 'Live Direct Difference'
-                  )}
+        {/* CARD 3: RESULT C */}
+        <div
+          className="canvas-card glass-level-2"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: '0.85rem 1rem'
+          }}
+        >
+          <div>
+            {/* Header */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingBottom: '0.45rem',
+                marginBottom: '0.65rem',
+                borderBottom: '1px solid var(--border-color)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <span style={{ fontSize: '0.94rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  Result Matrix C
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 700,
+                    color: 'var(--accent-primary)',
+                    background: 'var(--accent-subtle)',
+                    border: '1px solid var(--border-color)',
+                    padding: '0.12rem 0.45rem',
+                    borderRadius: '5px'
+                  }}
+                >
+                  Live Output
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--text-muted)',
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                    padding: '0.12rem 0.45rem',
+                    borderRadius: '5px'
+                  }}
+                >
+                  4 × 4
                 </span>
               </div>
             </div>
-            <div className="col-header-right">
-              <span className="addition-weight-pill pill-c" title="Resulting mathematical formulation">
-                {operation === 'add' ? (
-                  mode === 'blend' ? 'C = αA + (1-α)B' : 'C = A + B'
-                ) : (
-                  subMode === 'abs' ? 'C = |A − B|' : subMode === 'weighted' ? 'C = clamp(A − αB)' : 'C = clamp(A − B)'
-                )}
-              </span>
-              <span className="matrix-dims" style={{ borderColor: 'rgba(16, 185, 129, 0.4)', color: '#10B981', background: 'rgba(16, 185, 129, 0.12)' }}>
-                4 × 4
-              </span>
-            </div>
-          </div>
 
-          {/* Interactive Visual + Numerical Matrix Stack */}
-          <div className="addition-card-body">
             {/* Visual Canvas Preview */}
-            <div className="canvas-subrow">
-              <CompactPixelCanvas
-                matrix={matrixC}
-                hoveredCell={hoveredCell}
-                onHoverCell={setHoveredCell}
-                pixelSize={28}
-                highlightColor="var(--accent-emerald)"
+            <BlendingPixelCanvas
+              matrix={matrixC}
+              hoveredCell={hoveredCell}
+              onHoverCell={setHoveredCell}
+              pixelSize={30}
+            />
+
+            {/* 4x4 Numerical Matrix Grid */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 'fit-content',
+                margin: '0.75rem auto 0.25rem'
+              }}
+            >
+              <div
+                style={{
+                  width: '7px',
+                  alignSelf: 'stretch',
+                  border: '2.5px solid var(--border-color)',
+                  borderRight: 'none',
+                  borderRadius: '7px 0 0 7px',
+                  marginRight: '5px'
+                }}
               />
-              <div className="canvas-subrow-info">
-                <span className="subrow-label" style={{ color: 'var(--text-primary)' }}>
-                  {operation === 'add' ? 'Combined Image C' : 'Difference Image C'}
-                </span>
-                <span className="subrow-hint">
-                  {operation === 'add' ? (
-                    mode === 'blend' ? (
-                      `Smooth convex transition at α = ${alpha.toFixed(2)}`
-                    ) : (
-                      clippedOverflowCount > 0 ? `${clippedOverflowCount} saturated pixels` : 'Direct element sum'
-                    )
-                  ) : (
-                    subMode === 'abs' ? (
-                      'Absolute change / motion detection'
-                    ) : subMode === 'weighted' ? (
-                      `Weighted subtraction at α = ${alpha.toFixed(2)}`
-                    ) : (
-                      clippedUnderflowCount > 0 ? `${clippedUnderflowCount} underflow pixels clamped to 0` : 'Direct difference clamp(A − B)'
-                    )
-                  )}
-                </span>
-                <div className="subrow-actions">
-                  <span className="status-live-indicator">
-                    <span className="pulse-dot"></span> Live Reactive
-                  </span>
-                </div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gap: '5px',
+                  width: 'fit-content'
+                }}
+              >
+                {matrixC.map((row, r) =>
+                  row.map((val, c) => {
+                    const rawAdd = matrixA[r][c] + matrixB[r][c];
+                    const isOverflow = operation === 'add' && mode === 'direct' && rawAdd > 255;
+                    const rawSub = subMode === 'weighted' ? matrixA[r][c] - alpha * matrixB[r][c] : matrixA[r][c] - matrixB[r][c];
+                    const isUnderflow = operation === 'sub' && subMode !== 'abs' && rawSub < 0;
+
+                    return (
+                      <ResultCell
+                        key={`c-${r}-${c}`}
+                        value={val}
+                        row={r}
+                        col={c}
+                        isHovered={hoveredCell && hoveredCell.row === r && hoveredCell.col === c}
+                        isOverflow={isOverflow}
+                        isUnderflow={isUnderflow}
+                        onHover={() => setHoveredCell({ row: r, col: c })}
+                      />
+                    );
+                  })
+                )}
               </div>
-            </div>
-
-            {/* Read-Only Resulting 4x4 Matrix Grid */}
-            <div className="matrix-bracket-container compact-bracket" style={{ '--bracket-color': 'var(--accent-emerald)' }}>
-              <div className="matrix-left-bracket" style={{ borderColor: 'var(--accent-emerald)' }} />
-              <div className="matrix-with-indices">
-                <div className="matrix-col-indices-row">
-                  {matrixC[0].map((_, cIdx) => (
-                    <span key={`col-c-${cIdx}`} className="matrix-index-num">c{cIdx}</span>
-                  ))}
-                </div>
-                <div className="matrix-body-row">
-                  <div className="matrix-row-indices-col">
-                    {matrixC.map((_, rIdx) => (
-                      <span key={`row-c-${rIdx}`} className="matrix-row-index-num">r{rIdx}</span>
-                    ))}
-                  </div>
-                  <div 
-                    className="matrix-grid compact-grid"
-                    style={{ gridTemplateColumns: `repeat(${matrixC[0].length}, 1fr)` }}
-                    onMouseLeave={() => setHoveredCell(null)}
-                  >
-                    {matrixC.map((row, i) =>
-                      row.map((val, j) => {
-                        const isHovered = hoveredCell && hoveredCell.row === i && hoveredCell.col === j;
-                        const valA = matrixA[i][j];
-                        const valB = matrixB[i][j];
-
-                        const rawDirectAdd = valA + valB;
-                        const isOverflow = operation === 'add' && mode === 'direct' && rawDirectAdd > 255;
-
-                        const rawDirectSub = valA - valB;
-                        const rawWeightedSub = valA - alpha * valB;
-                        const isUnderflow = operation === 'sub' && (
-                          (subMode === 'direct' && rawDirectSub < 0) ||
-                          (subMode === 'weighted' && rawWeightedSub < 0)
-                        );
-
-                        return (
-                          <div
-                            key={`c-${i}-${j}`}
-                            className={`matrix-cell result-cell compact-cell ${isHovered ? 'hovered' : ''} ${isOverflow ? 'clipped-cell' : ''} ${isUnderflow ? 'underflow-cell' : ''}`}
-                            style={{
-                              '--cell-accent': 'var(--accent-emerald)',
-                              borderColor: isHovered ? 'var(--accent-emerald)' : undefined,
-                              background: `linear-gradient(135deg, rgba(${val},${val},${val},0.18) 0%, var(--bg-secondary) 100%)`
-                            }}
-                            onMouseEnter={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                            onMouseMove={(e) => setHoveredCell({ row: i, col: j, x: e.clientX, y: e.clientY })}
-                          >
-                            <span 
-                              className="matrix-cell-val compact-val" 
-                              style={{ 
-                                color: isOverflow ? '#EF4444' : isUnderflow ? '#F59E0B' : isHovered ? '#FFFFFF' : 'var(--accent-emerald)',
-                                fontWeight: '800'
-                              }}
-                            >
-                              {val}
-                            </span>
-                            {isOverflow && (
-                              <span className="clipped-corner-tag" title={`Unclipped sum was ${rawDirectAdd}`}>
-                                MAX
-                              </span>
-                            )}
-                            {isUnderflow && (
-                              <span className="clipped-corner-tag underflow-corner-tag" title={`Raw negative difference was ${subMode === 'weighted' ? Math.round(rawWeightedSub) : rawDirectSub}`}>
-                                MIN
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="matrix-right-bracket" style={{ borderColor: 'var(--accent-emerald)' }} />
+              <div
+                style={{
+                  width: '7px',
+                  alignSelf: 'stretch',
+                  border: '2.5px solid var(--border-color)',
+                  borderLeft: 'none',
+                  borderRadius: '0 7px 7px 0',
+                  marginLeft: '5px'
+                }}
+              />
             </div>
           </div>
-        </div>
 
-      </div>
-
-      {/* FLOATING CURSOR TOOLTIP (Guarded against right-edge overflow to eliminate layout shaking) */}
-      {hoveredCell && hoveredCell.x !== undefined && (() => {
-        const tooltipWidth = 320;
-        const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-        const leftPos = hoveredCell.x > (screenWidth - tooltipWidth - 20)
-          ? Math.max(10, hoveredCell.x - tooltipWidth - 14)
-          : hoveredCell.x + 14;
-
-        return (
-          <div 
-            className="cursor-tooltip"
+          {/* Card Status Info */}
+          <div
             style={{
-              position: 'fixed',
-              left: `${leftPos}px`,
-              top: `${hoveredCell.y + 14}px`,
-              pointerEvents: 'none',
-              zIndex: 9999,
-              background: 'rgba(15, 23, 42, 0.95)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
-              backdropFilter: 'blur(8px)',
-              borderRadius: '20px',
-              padding: '0.35rem 0.85rem',
-              fontSize: '0.82rem',
-              fontFamily: 'var(--font-mono)',
-              color: '#FFFFFF',
-              whiteSpace: 'nowrap',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem'
+              justifyContent: 'center',
+              gap: '0.45rem',
+              marginTop: '0.65rem',
+              paddingTop: '0.45rem',
+              borderTop: '1px solid var(--border-color)',
+              fontSize: '0.72rem',
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--text-secondary)'
             }}
           >
-            <span style={{ color: 'var(--accent-purple)', fontWeight: 700 }}>
-              ({hoveredCell.row + 1}, {hoveredCell.col + 1})
-            </span>
-            <span style={{ opacity: 0.3 }}>|</span>
-            <span>A: <strong style={{ color: 'var(--accent-purple)' }}>{matrixA[hoveredCell.row][hoveredCell.col]}</strong></span>
-            <span style={{ opacity: 0.3 }}>+</span>
-            <span>B: <strong style={{ color: '#F59E0B' }}>{matrixB[hoveredCell.row][hoveredCell.col]}</strong></span>
-            <span style={{ opacity: 0.3 }}>=</span>
-            <span>C: <strong style={{ color: '#10B981' }}>{matrixC[hoveredCell.row][hoveredCell.col]}</strong></span>
+            {overflowCount > 0 ? (
+              <span style={{ color: '#DC2626', fontWeight: 700 }}>
+                {overflowCount} cell{overflowCount > 1 ? 's' : ''} saturated (&gt;255)
+              </span>
+            ) : underflowCount > 0 ? (
+              <span style={{ color: '#D97706', fontWeight: 700 }}>
+                {underflowCount} cell{underflowCount > 1 ? 's' : ''} clamped to 0
+              </span>
+            ) : (
+              <span>
+                {operation === 'add'
+                  ? mode === 'blend'
+                    ? 'Convex Superposition'
+                    : 'Direct Element Sum'
+                  : subMode === 'abs'
+                  ? 'Absolute Delta'
+                  : 'Element Difference'}
+              </span>
+            )}
           </div>
-        );
-      })()}
+        </div>
+      </div>
 
-      <StepFooter stepNumber={8} onSelectStep={onSelectStep} />
-    </motion.div>
+      {/* Bottom Math Inspector HUD */}
+      <MathInspectorHUD
+        title="Element-by-Element Arithmetic"
+        formula={
+          hoveredInfo
+            ? hoveredInfo.mathFormula
+            : operation === 'add'
+            ? mode === 'blend'
+              ? `C[i, j] = ${alpha.toFixed(2)} · A[i, j] + ${(1 - alpha).toFixed(2)} · B[i, j]`
+              : 'C[i, j] = min(255, A[i, j] + B[i, j])'
+            : subMode === 'abs'
+            ? 'C[i, j] = |A[i, j] − B[i, j]|'
+            : 'C[i, j] = max(0, A[i, j] − B[i, j])'
+        }
+        result={
+          hoveredInfo
+            ? hoveredInfo.mathResult
+            : operation === 'add'
+            ? mode === 'blend'
+              ? `Active blend at α = ${alpha.toFixed(2)} (${Math.round(alpha * 100)}% A + ${Math.round((1 - alpha) * 100)}% B)`
+              : overflowCount > 0
+              ? `${overflowCount} pixels clipped at max 255`
+              : 'Direct addition without overflow'
+            : subMode === 'abs'
+            ? 'Absolute difference measures delta for motion tracking'
+            : underflowCount > 0
+            ? `${underflowCount} negative pixels clamped to min 0`
+            : 'Direct difference without negative clipping'
+        }
+        note={
+          hoveredInfo
+            ? `Corresponding pixel [${hoveredInfo.row}, ${hoveredInfo.col}] in A (${hoveredInfo.valA}) and B (${hoveredInfo.valB}) combined to yield C (${hoveredInfo.valC}).`
+            : 'Hover any cell or drag the alpha slider to inspect pixel-by-pixel arithmetic across all three matrices.'
+        }
+      />
+    </StepWrapper>
   );
 }

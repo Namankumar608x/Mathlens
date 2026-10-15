@@ -576,67 +576,101 @@ export const MODULE_DOCUMENTATION = {
     code: '09',
     title: 'Background Detection',
     category: 'Visual Labs',
-    oneLiner: 'Subtract a static background matrix from the active camera frame to isolate moving foreground objects.',
-    formula: 'D(x, y) = |I(x, y) - B(x, y)| > \\theta',
-    formulaDisplay: 'D = |I − B| > θ',
+    oneLiner: 'Subtract an empty background from a video frame to isolate moving objects.',
+    formula: 'D = |I - B| > T, \\quad F = M \\odot I',
+    formulaDisplay: 'D = |I − B| > T,  F = M ⊙ I',
     whatIsThis:
-      'Background detection subtracts a known static reference image matrix B from an incoming video frame matrix I element-by-element. Static background elements cancel out to zero (black), while moving objects that entered the frame produce large difference values that exceed a noise threshold θ.',
+      'Background subtraction is the foundation of motion vision. A surveillance camera maintains a reference matrix B of an empty scene. When a person or vehicle moves into view in frame I, subtracting the two image matrices (D = |I − B|) cancels out all static background pixels to near-zero (black), leaving only the altered foreground pixels illuminated.',
     whyNeedIt:
-      'Security cameras, traffic monitors, and video analysis tools cannot process entire high-resolution video streams continuously. Background subtraction quickly isolates the active moving bounding boxes, reducing processing workloads by over 95%.',
+      'Video streams generate gigabytes of data every minute. Background subtraction allows computers to ignore 95% of every video frame, focusing expensive neural networks and trackers strictly on moving foreground objects.',
+    subsections: [
+      {
+        title: 'Matrix Subtraction for Background Cancellation',
+        content:
+          'When an empty room background matrix B is subtracted from active frame I, identical background pixels cancel to zero: I(x, y) − B(x, y) ≈ 0.\n' +
+          'Taking the absolute value D(x, y) = |I(x, y) − B(x, y)| ensures that both darker objects (e.g. black coat against white wall) and brighter objects (e.g. headlights at night) produce positive non-zero difference values.',
+        formula: 'D(x, y) = |I(x, y) - B(x, y)|'
+      },
+      {
+        title: 'Sensitivity Thresholding to Suppress Sensor Noise',
+        content:
+          'Physical camera sensors suffer from subtle thermal noise and illumination flickers (D ≈ 5 to 15) even in a completely static room.\n' +
+          'Applying a threshold cutoff T converts raw analog differences into a clean binary segmentation mask M:\n' +
+          'M(x, y) = 1 if D(x, y) > T (foreground), and 0 otherwise (background).',
+        formula: 'M(x, y) = \\begin{cases} 1 & \\text{if } D(x, y) > T \\\\ 0 & \\text{otherwise} \\end{cases}'
+      },
+      {
+        title: 'Foreground Object Extraction via Hadamard Masking',
+        content:
+          'Multiplying the original image I by the binary mask M via an element-wise Hadamard product isolates the moving subject in its original colors while completely erasing the background:\n' +
+          'F(x, y) = M(x, y) × I(x, y).',
+        formula: 'F = M \\odot I'
+      }
+    ],
     howItWorks: [
       {
         step: 1,
-        title: 'Capture Background Model B',
-        description: 'Record a baseline reference image of the empty scene without any objects.'
+        title: 'Save Background (B)',
+        description: 'Take a picture of the empty room as your baseline reference matrix.'
       },
       {
         step: 2,
-        title: 'Capture Current Frame I',
-        description: 'Capture the live frame containing moving subjects.'
+        title: 'Capture Active Frame (I)',
+        description: 'Capture a new picture when an object moves into the field of view.'
       },
       {
         step: 3,
-        title: 'Compute Absolute Difference',
-        description: 'Calculate D(x, y) = |I(x, y) - B(x, y)| for every pixel.'
+        title: 'Subtract Pixels (D)',
+        description: 'Calculate absolute matrix difference: D = |I − B|.'
       },
       {
         step: 4,
-        title: 'Threshold Segmentation',
-        description: 'If D(x, y) > θ, mark pixel as foreground (1); otherwise mark as background (0).'
+        title: 'Threshold & Segment (M)',
+        description: 'If D > T, flag as foreground mask (1); multiply F = M ⊙ I to isolate the subject.'
       }
     ],
     symbols: [
-      { symbol: 'I', name: 'Current Frame Matrix', meaning: 'The live image containing moving objects.' },
-      { symbol: 'B', name: 'Background Reference Matrix', meaning: 'The memorized empty scene baseline.' },
-      { symbol: 'D', name: 'Delta Difference Matrix', meaning: 'Absolute pixel-wise subtraction |I − B|.' },
-      { symbol: 'θ (theta)', name: 'Noise Threshold', meaning: 'Cutoff value to filter out subtle lighting and sensor noise.' }
+      { symbol: 'I', name: 'Active Frame Matrix', meaning: 'The live image containing the moving object.' },
+      { symbol: 'B', name: 'Background Matrix', meaning: 'The baseline reference image of the empty scene.' },
+      { symbol: 'D', name: 'Difference Matrix', meaning: 'Pixel-wise absolute delta: |I − B|.' },
+      { symbol: 'T', name: 'Detection Threshold', meaning: 'Minimum intensity delta required to trigger motion classification.' },
+      { symbol: 'M', name: 'Binary Segmentation Mask', meaning: 'Boolean matrix where 1 = Foreground, 0 = Background.' },
+      { symbol: 'F', name: 'Segmented Foreground', meaning: 'Extracted object image: F = M ⊙ I.' }
+    ],
+    additionalFormulas: [
+      { label: 'Difference Matrix', formula: 'D = |I - B|', desc: 'Element-wise absolute intensity difference.' },
+      { label: 'Binary Thresholding', formula: 'M(x, y) = \\mathbb{I}(D(x, y) > T)', desc: 'Indicator function creating binary motion mask.' },
+      { label: 'Foreground Isolation', formula: 'F = M \\odot I', desc: 'Hadamard product masking background to black.' }
     ],
     workedExample: {
-      title: 'Detecting a Moving Object Pixel',
-      input: 'Static wall background B[i, j] = 60. Moving person enters with jacket I[i, j] = 210. Threshold θ = 25:',
+      title: 'Checking One Pixel for Motion',
+      input: 'Empty wall pixel B = 60. Person enters wearing a bright jacket I = 210. Threshold T = 25:',
       matrixDisplay: [
         [60, 210]
       ],
       calculation:
-        'Delta D[i, j] = |210 - 60| = 150\n' +
+        'Difference D = |210 - 60| = 150\n' +
         'Compare against threshold: 150 > 25 (True)\n' +
-        'Binary Foreground Mask M[i, j] = 1 (White / Detected)',
-      output: 'The pixel is identified as active foreground motion and highlighted in the segmentation mask.'
+        'Mask result: M = 1 (Motion detected at this pixel!)\n' +
+        'Segmented value: F = 1 × 210 = 210 (Jacket preserved in full brightness)',
+      output: 'The system highlights this pixel as part of the moving person.'
     },
     observations: [
-      'Areas of the room that did not change produce |I - B| ≈ 0 and appear pure black.',
-      'Increasing the threshold θ removes camera sensor noise, but setting it too high might miss subtle motions.',
-      'The absolute value operator |·| ensures that darker objects on bright backgrounds are detected just as effectively as bright objects on dark backgrounds.'
+      'Areas of the room that did not change cancel out to 0 (pure black).',
+      'The threshold filters out subtle lighting flickers and camera sensor noise.',
+      'The absolute value | | ensures both dark objects and light objects get detected.',
+      'Setting threshold T too low introduces salt-and-pepper noise; setting T too high creates holes in the moving object.'
     ],
     applications: [
-      { name: 'Smart Security Surveillance', desc: 'Triggering alarms only when human motion is detected in secure facilities.' },
-      { name: 'Automated Traffic Speed & Count Cameras', desc: 'Detecting and counting vehicles crossing highway lanes in real time.' },
-      { name: 'Virtual Web-Cam Background Replacement', desc: 'Separating the speaker from their home office background without requiring a green screen.' }
+      { name: 'Security & Intrusion Surveillance', desc: 'Triggering alarms and video recording only when unauthorized motion enters a monitored zone.' },
+      { name: 'Smart Traffic Flow Monitoring', desc: 'Counting vehicles and estimating highway congestion speeds using overhead cameras.' },
+      { name: 'Video Conferencing Background Blur', desc: 'Segmenting the speaker’s silhouette in real time to apply virtual background blurs.' }
     ],
     keyTakeaways: [
-      'Matrix subtraction isolates visual changes between two frames.',
-      'Absolute value ensures all directional intensity shifts produce positive deltas.',
-      'Thresholding filters camera noise to create clean binary motion masks.'
+      'Subtracting two images reveals only what changed.',
+      'Unchanged areas cancel out to zero.',
+      'Thresholding removes sensor noise to create a clean binary motion map.',
+      'The binary mask isolates moving subjects via element-wise multiplication F = M ⊙ I.'
     ]
   },
 
@@ -645,67 +679,88 @@ export const MODULE_DOCUMENTATION = {
     code: '10',
     title: 'Change Detection',
     category: 'Visual Labs',
-    oneLiner: 'Compare an inspection image against a golden reference matrix to detect manufacturing defects.',
-    formula: 'D = |A_{\\text{test}} - A_{\\text{ref}}|, \\quad M = (D \\ge \\tau)',
-    formulaDisplay: 'D = |A_test − A_ref|',
+    oneLiner: 'Compare two photos of the same scene to spot what was added, removed, or moved.',
+    formula: 'D = |A - B| > T',
+    formulaDisplay: 'D = |A − B| > T',
     whatIsThis:
-      'Change detection is a high-precision quality control technique. A newly manufactured item (such as a printed circuit board or silicon wafer) is photographed and compared against a golden CAD reference matrix. Any discrepancy above a strict tolerance threshold τ immediately exposes missing traces, cracks, or contaminants.',
+      'Change detection compares two photographs of the same scene captured at different times (Time 1 vs Time 2). Unchanged structures cancel out to zero, while any object that was added, removed, or displaced produces a non-zero difference matrix D = |A − B|.',
     whyNeedIt:
-      'Human quality inspectors get tired and miss micro-defects smaller than a hair. Automated optical inspection (AOI) uses matrix subtraction to inspect thousands of microchips per minute with mathematical precision.',
+      'Human visual inspection struggles with subtle changes across complex visual scenes, such as a missing microscopic resistor on a circuit board or structural crack growth on a bridge. Matrix differencing spots alterations in milliseconds.',
+    subsections: [
+      {
+        title: 'Differential Image Analysis & Matrix Subtraction',
+        content:
+          'Given baseline matrix A and inspection matrix B, subtraction identifies every spatial pixel location where scene reflectance altered:\n' +
+          'D(x, y) = |A(x, y) − B(x, y)|.\n' +
+          'When an object is moved from position P₁ to position P₂, change detection produces two distinct difference clusters: a negative void at P₁ (where the object was taken) and a positive delta at P₂ (where the object was placed).',
+        formula: 'D = |A - B|'
+      },
+      {
+        title: 'Sensitivity Threshold Parameter Tuning',
+        content:
+          'Natural changes in ambient sunlight, cloud cover, and sensor exposure cause global baseline shifts across all pixels.\n' +
+          'By tuning threshold parameter T, users separate minor atmospheric noise from genuine structural deviations.',
+        formula: 'M(x, y) = 1 \\iff D(x, y) > T'
+      }
+    ],
     howItWorks: [
       {
         step: 1,
-        title: 'Calibrate Reference Template',
-        description: 'Load the verified golden reference matrix A_ref.'
+        title: 'Reference Photo (A)',
+        description: 'Capture the original baseline picture of the scene before any changes.'
       },
       {
         step: 2,
-        title: 'Align Test Sample',
-        description: 'Capture test sample A_test and align it to sub-pixel accuracy.'
+        title: 'Inspection Photo (B)',
+        description: 'Capture a second picture after alterations occur.'
       },
       {
         step: 3,
-        title: 'Matrix Difference Map',
-        description: 'Calculate absolute matrix difference D = |A_test - A_ref|.'
+        title: 'Matrix Difference (D)',
+        description: 'Compute absolute difference: D = |A − B|.'
       },
       {
         step: 4,
-        title: 'Anomaly Highlighting',
-        description: 'Generate a defect heatmap highlighting any coordinates where D exceeds tolerance τ.'
+        title: 'Threshold Flagging (M)',
+        description: 'Highlight pixels exceeding sensitivity threshold T as verified alterations.'
       }
     ],
     symbols: [
-      { symbol: 'A_ref', name: 'Reference Matrix', meaning: 'The flawless gold-standard baseline image.' },
-      { symbol: 'A_test', name: 'Inspection Matrix', meaning: 'The manufactured sample being tested.' },
-      { symbol: 'D', name: 'Discrepancy Matrix', meaning: 'Pixel-wise difference map.' },
-      { symbol: 'τ (tau)', name: 'Tolerance Threshold', meaning: 'Permissible variation margin before flagging a defect.' }
+      { symbol: 'A', name: 'Reference Matrix', meaning: 'Original photograph taken at time t₁.' },
+      { symbol: 'B', name: 'Inspection Matrix', meaning: 'Second photograph taken at time t₂.' },
+      { symbol: 'D', name: 'Difference Matrix', meaning: 'Absolute pixel change: |A − B|.' },
+      { symbol: 'T', name: 'Sensitivity Threshold', meaning: 'Cutoff below which differences are attributed to lighting noise.' }
+    ],
+    additionalFormulas: [
+      { label: 'Differential Change Map', formula: 'D = |A - B|', desc: 'Absolute pixel difference between two scenes.' },
+      { label: 'Thresholded Change Flag', formula: 'M(x, y) = (D(x, y) > T)', desc: 'Boolean map highlighting confirmed physical alterations.' }
     ],
     workedExample: {
-      title: 'Detecting a Broken PCB Circuit Trace',
-      input: 'Reference PCB trace A_ref[2, 3] = 230 (Copper line present). Defective board A_test[2, 3] = 40 (Broken copper trace). Tolerance τ = 30:',
+      title: 'Spotting a Missing Object',
+      input: 'Photo 1 has a key on the desk (pixel = 230). Photo 2 has the key removed (desk pixel = 50). Threshold T = 30:',
       matrixDisplay: [
-        [230, 40]
+        [230, 50]
       ],
       calculation:
-        'D[2, 3] = |40 - 230| = 190\n' +
-        'Inspection check: 190 ≥ 30 (DEFECT FLAGGED)\n' +
-        'Heatmap marks coordinate (2, 3) in bright alert color.',
-      output: 'The inspection pipeline instantly flags a severed electrical trace.'
+        'Difference D = |230 - 50| = 180\n' +
+        'Check against threshold: 180 > 30 (True)\n' +
+        'Result: An altered area is flagged at this pixel coordinate.',
+      output: 'The system highlights the spot where the key was picked up.'
     },
     observations: [
-      'Matching areas between the two images cancel out completely to zero.',
-      'Defects appear as bright, high-contrast anomalies on the delta heatmap.',
-      'Toggle defect types in the controls to see how short circuits and missing components create distinct mathematical signatures.'
+      'Areas that stayed the same turn black (0 difference).',
+      'When an object moves, it creates two spots: where it was taken from, and where it was placed.',
+      'A good threshold prevents minor room lighting changes from looking like real alterations.'
     ],
     applications: [
-      { name: 'PCB & Semiconductor Inspection', desc: 'Automated microscopes verify millions of microchip transistors per hour.' },
-      { name: 'Satellite Environmental Monitoring', desc: 'Comparing annual satellite matrices to measure deforestation and polar ice melting.' },
-      { name: 'Medical Retinal Scanning', desc: 'Comparing annual eye scans to detect early micro-vascular changes in diabetes patients.' }
+      { name: 'Factory Quality Control', desc: 'Checking manufactured circuit boards to catch missing components.' },
+      { name: 'Satellite Monitoring', desc: 'Tracking changes like deforestation or new construction over time.' },
+      { name: 'Security Monitoring', desc: 'Detecting when an unattended bag is left in an airport hallway.' }
     ],
     keyTakeaways: [
-      'Comparative matrix subtraction provides objective, automated anomaly inspection.',
-      'Flawless regions produce zero difference; defective regions generate sharp peaks.',
-      'Threshold tuning balances defect detection sensitivity against benign surface variations.'
+      'Matrix subtraction highlights differences instantly.',
+      'Identical regions cancel out to zero.',
+      'Thresholding separates real physical changes from lighting fluctuations.'
     ]
   },
 
@@ -714,68 +769,98 @@ export const MODULE_DOCUMENTATION = {
     code: '11',
     title: 'Image Inversion',
     category: 'Visual Labs',
-    oneLiner: 'Invert image intensities via complement arithmetic: A\' = 255 − A.',
-    formula: 'A\' = 255 - A',
-    formulaDisplay: 'A\' = 255 − A',
+    oneLiner: 'Flip dark and light pixel values using complement math: A′ = 255 − A.',
+    formula: 'A\' = 255 - A, \\quad A\'\' = 255 - (255 - A) = A',
+    formulaDisplay: 'A\' = 255 − A,  A\'\' = A',
     whatIsThis:
-      'Image inversion reverses the tonal hierarchy of an image. Every pixel value a_{ij} is replaced by its 8-bit complement: a\'_{ij} = 255 - a_{ij}. Pure black (0) becomes pure white (255), pure white (255) becomes pure black (0), and mid-gray (128) maps back to 127.',
+      'Image inversion converts an image into its photographic negative by subtracting each pixel intensity from the maximum 8-bit dynamic range ceiling (255). Pure black (0) flips to pure white (255), pure white (255) flips to pure black (0), and midtone gray (128) maps to 127.',
     whyNeedIt:
-      'Human vision is more sensitive to subtle dark variations on a bright background than bright variations on a dark background. Radiologists frequently invert medical X-rays and CT scans to reveal hairline fractures and micro-calcifications.',
+      'Human visual perception detects subtle low-contrast edges and fine structural lines more reliably when dark shadows are transformed into bright highlights against dark backdrops. Medical radiography (X-ray scans), astronomy, and document restoration rely heavily on negative image representations.',
+    subsections: [
+      {
+        title: 'Complementary Dynamic Range Inversion',
+        content:
+          'In standard 8-bit digital imaging, intensities are bounded in [0, 255].\n' +
+          'Inversion computes the algebraic complement of each pixel:\n' +
+          'A′(x, y) = 255 − A(x, y).\n' +
+          'Because the sum of any pixel and its inverted counterpart always equals 255 (A + A′ = 255), total dynamic range energy is symmetrically conserved across the grayscale spectrum.',
+        formula: 'A\'(x, y) = 255 - A(x, y) \\iff A(x, y) + A\'(x, y) = 255'
+      },
+      {
+        title: 'Medical Radiography & X-Ray Absorption Physics',
+        content:
+          'Medical X-ray film measures tissue density. Dense calcium in bones absorbs X-ray photons, casting an optical shadow that leaves underlying film crystals unexposed (dark in standard development).\n' +
+          'Inverting the radiograph flips bone shadows into brilliant white structures, allowing radiologists to inspect hairline fractures with maximum visual clarity.',
+        formula: '\\text{Bone Shadow } (0 \\le A \\le 30) \\implies \\text{Inverted Highlight } (225 \\le A\' \\le 255)'
+      },
+      {
+        title: 'The Involution Property: Perfect Lossless Reversibility',
+        content:
+          'Like matrix inverse A⁻¹(Ax) = x and mirror reflection R² = I, photographic inversion is a mathematical involution:\n' +
+          'A′′ = 255 − (255 − A) = 255 − 255 + A = A.\n' +
+          'Applying inversion twice returns the original image with zero numerical loss.',
+        formula: 'A\'\' = 255 - (255 - A) = A'
+      }
+    ],
     howItWorks: [
       {
         step: 1,
-        title: 'Dynamic Range Constant',
-        description: 'Set the maximum dynamic range constant C = 255 (for 8-bit depth).'
+        title: 'Read Pixel Intensity',
+        description: 'Read the discrete 8-bit integer A(x, y) ∈ [0, 255].'
       },
       {
         step: 2,
-        title: 'Complement Subtraction',
-        description: 'Subtract every matrix entry from 255: a\'_{ij} = 255 - a_{ij}.'
+        title: 'Subtract from 255',
+        description: 'Calculate complementary intensity: A′(x, y) = 255 − A(x, y).'
       },
       {
         step: 3,
-        title: 'Involution Property',
-        description: 'Inverting an inverted image returns the exact original matrix: 255 - (255 - A) = A.'
+        title: 'Global Array Transformation',
+        description: 'Execute the subtraction across all H × W matrix cells.'
       },
       {
         step: 4,
-        title: 'Render Negative Image',
-        description: 'Display the inverted matrix.'
+        title: 'Render Negative Canvas',
+        description: 'Display inverted highlights and shadows.'
       }
     ],
     symbols: [
-      { symbol: 'A', name: 'Original Matrix', meaning: 'The input grayscale image.' },
-      { symbol: '255', name: 'Max Range Constant', meaning: 'Upper bound of 8-bit dynamic range.' },
-      { symbol: 'A\'', name: 'Inverted Matrix', meaning: 'The photographic negative image matrix.' }
+      { symbol: 'A', name: 'Original Pixel Intensity', meaning: 'Input brightness value between 0 (black) and 255 (white).' },
+      { symbol: '255', name: 'Dynamic Range Ceiling', meaning: 'Upper bound of 8-bit unsigned integer depth (2⁸ − 1).' },
+      { symbol: 'A\'', name: 'Inverted Pixel', meaning: 'Complementary brightness value: 255 − A.' },
+      { symbol: 'k', name: 'Blend Factor', meaning: 'Continuous slider blending from original (k = 0) to full negative (k = 1).' }
+    ],
+    additionalFormulas: [
+      { label: 'Negative Transformation', formula: 'A\' = 255 - A', desc: 'Direct 8-bit complementary intensity inversion.' },
+      { label: 'Involution Identity', formula: '255 - (255 - A) = A', desc: 'Inverting twice returns the original image losslessly.' },
+      { label: 'Inversion Blend Interpolation', formula: 'A\'_k = (1 - k)A + k(255 - A)', desc: 'Smooth transition from positive to negative photograph.' }
     ],
     workedExample: {
-      title: 'Inverting a 2×2 Contrast Matrix',
-      input: 'Matrix A containing black, dark gray, light gray, and white:',
+      title: 'Inverting Light and Dark Pixels',
+      input: 'A dark shadow pixel (A = 25) and a bright highlight pixel (A = 235):',
       matrixDisplay: [
-        [0, 60],
-        [190, 255]
+        [25, 235]
       ],
       calculation:
-        'A\'[0, 0] = 255 - 0 = 255 (Black becomes White)\n' +
-        'A\'[0, 1] = 255 - 60 = 195 (Dark becomes Light)\n' +
-        'A\'[1, 0] = 255 - 190 = 65 (Light becomes Dark)\n' +
-        'A\'[1, 1] = 255 - 255 = 0 (White becomes Black)',
-      output: 'The inverted matrix displays reversed contrast with mirrored brightness levels.'
+        'Dark pixel: 255 - 25 = 230 (becomes a bright highlight)\n' +
+        'Bright pixel: 255 - 235 = 20 (becomes a dark shadow)\n' +
+        'Midtone pixel: 255 - 128 = 127 (barely changes)',
+      output: 'The brightness scale is completely reversed.'
     },
     observations: [
-      'Inversion is an involution: applying it twice returns the original matrix without any data loss.',
-      'The sum of any original pixel and its inverted partner always equals exactly 255.',
-      'Dense bone structures that appear bright in raw X-rays invert into dark silhouettes that are easier to trace.'
+      'Inverting twice returns the exact original picture: 255 - (255 - A) = A.',
+      'The sum of any original pixel and its inverted partner always equals 255.',
+      'Midtone gray (128) is right at the center, so it barely changes.'
     ],
     applications: [
-      { name: 'Medical Radiography & CT', desc: 'Doctors toggle between positive and negative views to spot fine hairline bone fractures.' },
-      { name: 'Film Photography Darkrooms', desc: 'Traditional analog negative film is digitized and inverted into normal positive photographs.' },
-      { name: 'Astronomical Astrophotography', desc: 'Faint distant stars and galaxies are easier to detect as black dots on a white sky background.' }
+      { name: 'Medical X-Rays', desc: 'Viewing dense bone details as bright shapes on dark film.' },
+      { name: 'Faded Document Recovery', desc: 'Making dark or faded handwriting on old paper easier to read.' },
+      { name: 'Photo Film Processing', desc: 'Reversing camera film negatives into normal positive photographs.' }
     ],
     keyTakeaways: [
-      'Image inversion computes the 8-bit complement: A\' = 255 − A.',
-      'Inversion preserves all fine edge information while flipping tonal contrast.',
-      'It is an involution: inverting twice restores the original image perfectly.'
+      'Inversion subtracts each pixel from 255.',
+      'Dark becomes light, and light becomes dark.',
+      'Doing it twice returns the original image without any loss.'
     ]
   },
 
@@ -786,11 +871,45 @@ export const MODULE_DOCUMENTATION = {
     category: 'Visual Labs',
     oneLiner: 'Understand the determinant of a 2×2 matrix as the geometric area scaling factor.',
     formula: '\\det(A) = ad - bc \\quad \\text{for} \\quad A = \\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}',
-    formulaDisplay: 'det(A) = ad − bc',
+    formulaDisplay: 'det(A) = ad − bc,  Area\' = |det(A)| · Area',
     whatIsThis:
-      'The determinant of a 2×2 transformation matrix A = [[a, b], [c, d]] is the scalar value det(A) = ad - bc. Geometrically, it represents the exact factor by which any 2D area expands or shrinks under that transformation. If det(A) = 0, the 2D plane collapses into a flat 1D line or point.',
+      'The determinant of a 2×2 transformation matrix A = [[a, b], [c, d]] is the scalar quantity det(A) = ad − bc. Geometrically, it measures the exact factor by which any 2D surface area expands or contracts under that linear transformation. The sign of the determinant indicates spatial orientation: positive preserves orientation; negative flips orientation (mirror reflection); zero indicates dimensional collapse onto a 1D line.',
     whyNeedIt:
-      'The determinant reveals critical geometric properties of a transformation: whether it preserves area (|det(A)| = 1), whether it flips orientation (det(A) < 0), and whether the transformation is invertible (det(A) ≠ 0).',
+      'The determinant reveals fundamental geometric capabilities of any linear system: whether space expands or contracts, whether coordinates preserve chiral handedness, and whether the transformation can be reversed (det(A) ≠ 0).',
+    subsections: [
+      {
+        title: 'The 2×2 Determinant Formula: det(A) = ad − bc',
+        content:
+          'For a matrix A = [[a, b], [c, d]], basis vector î = [1, 0]ᵀ maps to [a, c]ᵀ and ĵ = [0, 1]ᵀ maps to [b, d]ᵀ.\n' +
+          'The determinant calculates the cross-difference of main and off-diagonals:\n' +
+          'det(A) = (a × d) − (b × c).',
+        formula: '\\det(A) = ad - bc'
+      },
+      {
+        title: 'Geometric Area Scaling Factor',
+        content:
+          'Any geometric shape in the 2D plane (a polygon, circle, or digital photograph) with initial area S transforms into a shape with area S′ given by:\n' +
+          'Area′ = |det(A)| × Area_initial.\n' +
+          '• If |det(A)| > 1: The transformation stretches and expands area.\n' +
+          '• If |det(A)| < 1: The transformation compresses and minifies area.\n' +
+          '• If |det(A)| = 1: Area is perfectly preserved (e.g. pure rotations and shears).',
+        formula: '\\text{Area}\' = |\\det(A)| \\cdot \\text{Area}_{\\text{initial}}'
+      },
+      {
+        title: 'Signed Determinants & Orientation Reversal (det < 0)',
+        content:
+          'When det(A) < 0, the transformation contains a spatial reflection (mirror reversal).\n' +
+          'The shape is flipped inside-out, reversing the clockwise vs counter-clockwise orientation of coordinate vertices.',
+        formula: '\\det(A) < 0 \\implies \\text{Spatial Reflection (Chiral Reversal)}'
+      },
+      {
+        title: 'Singular Matrices & 1D Dimensional Collapse (det = 0)',
+        content:
+          'When det(A) = 0, columns [a, c]ᵀ and [b, d]ᵀ are linearly dependent (collinear).\n' +
+          'The entire 2D plane collapses into a flat 1D line or point (Rank 1 or 0), causing permanent area loss (Area′ = 0). Such matrices cannot be inverted.',
+        formula: '\\det(A) = 0 \\implies \\text{Dimensional Collapse (Non-Invertible)}'
+      }
+    ],
     howItWorks: [
       {
         step: 1,
@@ -805,7 +924,7 @@ export const MODULE_DOCUMENTATION = {
       {
         step: 3,
         title: 'Compute Difference',
-        description: 'Subtract the off-diagonal product from the main diagonal: det(A) = ad - bc.'
+        description: 'Subtract the off-diagonal product from the main diagonal: det(A) = ad − bc.'
       },
       {
         step: 4,
@@ -818,6 +937,11 @@ export const MODULE_DOCUMENTATION = {
       { symbol: 'det(A)', name: 'Determinant', meaning: 'Signed area scaling factor ad − bc.' },
       { symbol: '|det(A)|', name: 'Absolute Area Scale', meaning: 'Magnitude of area scaling.' },
       { symbol: 'det(A) = 0', name: 'Singularity', meaning: 'Degenerate transformation that collapses 2D space into a 1D line.' }
+    ],
+    additionalFormulas: [
+      { label: '2×2 Determinant', formula: '\\det(A) = ad - bc', desc: 'Formula for determinant of 2×2 matrix.' },
+      { label: 'Area Transformation', formula: '\\text{Area}\' = |\\det(A)| \\cdot \\text{Area}', desc: 'Surface area expands or contracts by |det(A)|.' },
+      { label: 'Product Determinant Theorem', formula: '\\det(A \\cdot B) = \\det(A) \\cdot \\det(B)', desc: 'The determinant of a product is the product of determinants.' }
     ],
     workedExample: {
       title: 'Scaling Matrix Area Expansion',
@@ -855,38 +979,74 @@ export const MODULE_DOCUMENTATION = {
     title: 'Matrix Inverse',
     category: 'Visual Labs',
     oneLiner: 'Use the inverse matrix A⁻¹ to reverse transformations and restore original image coordinates.',
-    formula: 'A^{-1} A = I \\implies X = A^{-1} X\', \\quad A^{-1} = \\frac{1}{ad - bc} \\begin{bmatrix} d & -b \\\\ -c & a \\end{bmatrix}',
-    formulaDisplay: 'A⁻¹ · A = I,  X = A⁻¹ · X\'',
+    formula: 'A^{-1} A = I \\implies x = A^{-1} x\', \\quad A^{-1} = \\frac{1}{\\det(A)} \\begin{bmatrix} d & -b \\\\ -c & a \\end{bmatrix}',
+    formulaDisplay: 'A⁻¹ · A = I,  x = A⁻¹ · x\'',
     whatIsThis:
-      'The inverse of a square matrix A is a matrix denoted A⁻¹ that undoes the transformation performed by A. Multiplying A by A⁻¹ yields the identity matrix I (the matrix equivalent of the number 1). A matrix has an inverse if and only if its determinant is non-zero (det(A) ≠ 0).',
+      'The inverse of a square matrix A is a unique matrix denoted A⁻¹ that undoes the spatial transformation performed by A. When A maps coordinate vector x to x′ via x′ = Ax, multiplying by A⁻¹ maps x′ right back to original x: x = A⁻¹x′. Multiplying A by A⁻¹ yields the identity matrix I (A⁻¹ · A = I), the matrix equivalent of the scalar number 1. A matrix has an inverse if and only if its determinant is non-zero (det(A) ≠ 0).',
     whyNeedIt:
-      'If an image is distorted, rotated, or sheared during transmission or optical capture, computing and applying A⁻¹ allows us to reconstruct the original geometry without distortion.',
+      'When an image undergoes optical distortion, perspective tilt, camera shake, or coordinate deformation during physical capture or transmission, computing and applying A⁻¹ enables exact geometric reconstruction, returning every pixel and feature to its true original position.',
+    subsections: [
+      {
+        title: 'Determinant & Invertibility Criterion (det(A) ≠ 0)',
+        content:
+          'A matrix is invertible (non-singular) if and only if its determinant is non-zero: det(A) ≠ 0.\n' +
+          '• If det(A) ≠ 0: The matrix performs a bijective (one-to-one and onto) mapping across 2D space. Every input coordinate maps to a distinct output coordinate, preserving full 2D area (Rank 2).\n' +
+          '• If det(A) = 0: The matrix is singular. It squashes 2D space onto a 1D line (Rank 1) or a single point (Rank 0). Multiple distinct points collapse onto the same line, resulting in irreversible information loss where no inverse function can exist (division by zero).',
+        formula: '\\det(A) = ad - bc \\neq 0 \\implies A^{-1} \\text{ exists}'
+      },
+      {
+        title: 'Adjugate Matrix Construction for 2×2 Matrices',
+        content:
+          'For any 2×2 matrix A = [[a, b], [c, d]], the inverse is computed algebraically using the adjugate matrix adj(A):\n' +
+          '1. Swap the main diagonal entries: a ↔ d.\n' +
+          '2. Negate the off-diagonal entries: b ➔ −b and c ➔ −c.\n' +
+          '3. Scale every element of the resulting adjugate matrix by 1 / det(A).',
+        formula: 'A^{-1} = \\frac{1}{ad - bc} \\begin{bmatrix} d & -b \\\\ -c & a \\end{bmatrix}'
+      },
+      {
+        title: 'Bijective Mapping & The Round-Trip Identity',
+        content:
+          'The round-trip composition of forward matrix A followed by inverse matrix A⁻¹ leaves every coordinate vector unchanged:\n' +
+          'x = A⁻¹(Ax) = (A⁻¹A)x = Ix = x.\n' +
+          'Likewise, applying the inverse first followed by the forward matrix produces the identity: A(A⁻¹x) = (AA⁻¹)x = Ix = x.',
+        formula: 'A^{-1} \\cdot A = A \\cdot A^{-1} = I = \\begin{bmatrix} 1 & 0 \\\\ 0 & 1 \\end{bmatrix}'
+      }
+    ],
     howItWorks: [
       {
         step: 1,
-        title: 'Check Invertibility',
-        description: 'Calculate determinant det(A) = ad - bc. If det(A) = 0, the matrix is singular and cannot be inverted.'
+        title: 'Evaluate Determinant',
+        description: 'Calculate det(A) = ad − bc. If det(A) = 0, the matrix is singular and cannot be inverted.'
       },
       {
         step: 2,
-        title: 'Construct Adjugate Matrix',
-        description: 'Swap main diagonal entries (a and d) and negate off-diagonal entries (-b and -c).'
+        title: 'Form Adjugate Matrix',
+        description: 'Swap main diagonal entries (a and d) and negate off-diagonal entries (−b and −c).'
       },
       {
         step: 3,
-        title: 'Scale by 1 / det(A)',
-        description: 'Multiply every entry of the adjugate matrix by the scalar factor 1 / det(A).'
+        title: 'Multiply by 1 / det(A)',
+        description: 'Multiply every entry of the adjugate matrix by the scalar reciprocal factor 1 / det(A).'
       },
       {
         step: 4,
-        title: 'Reconstruction Multiplication',
-        description: 'Multiply distorted coordinates by A⁻¹ to restore original coordinates: X = A⁻¹ X\'.'
+        title: 'Coordinate Reconstruction',
+        description: 'Multiply distorted coordinates x′ by A⁻¹ to restore original coordinates: x = A⁻¹ x′.'
       }
     ],
     symbols: [
-      { symbol: 'A', name: 'Forward Matrix', meaning: 'The original transformation matrix.' },
+      { symbol: 'A', name: 'Forward Matrix', meaning: 'The original 2×2 linear transformation matrix [[a, b], [c, d]].' },
       { symbol: 'A⁻¹', name: 'Inverse Matrix', meaning: 'The unique matrix satisfying A⁻¹ · A = I.' },
-      { symbol: 'I', name: 'Identity Matrix', meaning: 'The neutral matrix [[1, 0], [0, 1]] that leaves coordinates unchanged.' }
+      { symbol: 'I', name: 'Identity Matrix', meaning: 'The neutral matrix [[1, 0], [0, 1]] that leaves coordinates unchanged.' },
+      { symbol: 'det(A)', name: 'Determinant', meaning: 'Signed area scaling factor ad − bc. Must be non-zero for invertibility.' },
+      { symbol: 'adj(A)', name: 'Adjugate Matrix', meaning: 'Matrix formed by swapping diagonal elements and negating off-diagonals.' },
+      { symbol: 'x, x\'', name: 'Coordinate Vectors', meaning: 'Original coordinate point x = [x, y]ᵀ and transformed coordinate point x′ = [x′, y′]ᵀ.' }
+    ],
+    additionalFormulas: [
+      { label: 'Round-Trip Identity', formula: 'A^{-1} \\cdot A = I', desc: 'Multiplying a matrix by its inverse yields the 2×2 identity matrix.' },
+      { label: 'Coordinate Recovery', formula: 'x = A^{-1} \\cdot x\'', desc: 'Applying A⁻¹ to transformed coordinates restores original positions.' },
+      { label: 'Determinant Reciprocal', formula: '\\det(A^{-1}) = \\frac{1}{\\det(A)}', desc: 'The determinant of the inverse matrix is the reciprocal of det(A).' },
+      { label: 'Product Inverse Rule', formula: '(AB)^{-1} = B^{-1} A^{-1}', desc: 'The inverse of a matrix product reverses the order of operations.' }
     ],
     workedExample: {
       title: 'Inverting a 2×2 Scaling Matrix',
@@ -905,59 +1065,97 @@ export const MODULE_DOCUMENTATION = {
     observations: [
       'Applying A and then A⁻¹ returns all points to their starting coordinates.',
       'If you drag a slider such that det(A) = 0, the inverse matrix ceases to exist (division by zero).',
-      'The inverse of a rotation by angle θ is simply a rotation by -θ.'
+      'The inverse of a rotation by angle θ is simply a rotation by −θ: R(θ)⁻¹ = R(−θ).',
+      'The inverse of a pure shear matrix S(k) = [[1, k], [0, 1]] is S(−k) = [[1, −k], [0, 1]].'
     ],
     applications: [
-      { name: 'Camera Lens Distortion Correction', desc: 'Inverting fish-eye and barrel distortion matrices in action cameras.' },
+      { name: 'Camera Lens Distortion Correction', desc: 'Inverting fish-eye and barrel distortion matrices in action cameras and aerial drones.' },
       { name: 'Photogrammetry & 3D Scanning', desc: 'Inverting projection matrices to calculate real-world 3D coordinates from 2D photos.' },
+      { name: 'Computer Graphics Undo & Scene Graphs', desc: 'Traversing inverted hierarchical matrices to transform mouse clicks back into model space.' },
       { name: 'Public Key Cryptography', desc: 'Matrix inversion forms the mathematical basis of Hill Cipher encryption and decryption.' }
     ],
     keyTakeaways: [
       'The inverse matrix A⁻¹ completely reverses the effect of transformation matrix A.',
       'A matrix can be inverted if and only if its determinant is non-zero (det(A) ≠ 0).',
-      'Multiplying a matrix by its inverse always produces the Identity Matrix I.'
+      'Multiplying a matrix by its inverse always produces the Identity Matrix I: A⁻¹ · A = I.',
+      'Singular matrices (det = 0) collapse dimensions, resulting in permanent information loss that cannot be undone.'
     ]
   },
 
   14: {
     stepNumber: 14,
     code: '14',
-    title: 'Zoom & Scaling',
+    title: 'Zoom & Matrix Inversion',
     category: 'Visual Labs',
-    oneLiner: 'Resize images using diagonal scaling matrices and investigate sampling and interpolation.',
-    formula: 'S = \\begin{bmatrix} k & 0 \\\\ 0 & k \\end{bmatrix}, \\quad S^{-1} = \\begin{bmatrix} 1/k & 0 \\\\ 0 & 1/k \\end{bmatrix}',
-    formulaDisplay: 'S = diag(k, k),  X\' = S · X',
+    oneLiner: 'Resize images using diagonal scaling matrices S = diag(k, k) and reverse zoom via S⁻¹ = diag(1/k, 1/k).',
+    formula: 'S = \\begin{bmatrix} k & 0 \\\\ 0 & k \\end{bmatrix}, \\quad S^{-1} = \\begin{bmatrix} 1/k & 0 \\\\ 0 & 1/k \\end{bmatrix}, \\quad S^{-1} \\cdot S = I',
+    formulaDisplay: 'S = diag(k, k),  S⁻¹ = diag(1/k, 1/k),  S⁻¹ · S = I',
     whatIsThis:
-      'Zooming and scaling expands or contracts an image spatially using a diagonal scaling matrix S = [[k, 0], [0, k]]. When k > 1, the image is enlarged (magnified); when 0 < k < 1, the image is minified. Because digital images are discrete grids, enlarging requires resampling and interpolation to fill in gaps between pixels.',
+      'Camera zoom and image scaling are diagonal linear coordinate transformations governed by the matrix S = [[k, 0], [0, k]]. When scale factor k > 1, coordinates expand away from the origin (magnification/zoom in); when 0 < k < 1, coordinates contract toward the origin (minification/zoom out). Applying the inverse diagonal scaling matrix S⁻¹ = [[1/k, 0], [0, 1/k]] precisely cancels the magnification and restores the initial coordinate scale without distortion.',
     whyNeedIt:
-      'Screen resolutions vary from small smartwatch displays to massive 8K televisions. Digital scaling algorithms ensure images display correctly at any arbitrary target size.',
+      'Digital displays vary from tiny smartwatches to massive ultra-wide monitors. Understanding scaling matrices is essential for responsive graphics, GPU texture sampling, image resizing, and optical zoom calibration.',
+    subsections: [
+      {
+        title: 'Uniform Scaling Geometry & Diagonal Matrices',
+        content:
+          'A diagonal scaling matrix S = [[k, 0], [0, k]] acts on any coordinate point [x, y]ᵀ via matrix multiplication:\n' +
+          'x′ = k·x and y′ = k·y.\n' +
+          'Because both coordinate axes are multiplied by the exact same scalar factor k, the aspect ratio is strictly conserved, angles between vectors remain identical, and shapes expand isotropically without angular shearing.',
+        formula: '\\begin{bmatrix} x\' \\\\ y\' \\end{bmatrix} = \\begin{bmatrix} k & 0 \\\\ 0 & k \\end{bmatrix} \\begin{bmatrix} x \\\\ y \\end{bmatrix} = \\begin{bmatrix} k x \\\\ k y \\end{bmatrix}'
+      },
+      {
+        title: 'Area Scaling & The Quadratic Determinant Rule',
+        content:
+          'While linear dimensions (width and height) grow by factor k, 2D surface area scales quadratically by the determinant:\n' +
+          'det(S) = (k)(k) − (0)(0) = k².\n' +
+          'For example, a 2× zoom (k = 2) quadruples the image area (4× pixel count), while a 3× zoom yields a 9× area expansion.\n' +
+          'Conversely, the inverse scaling matrix has determinant det(S⁻¹) = 1/k², guaranteeing det(S⁻¹) · det(S) = (1/k²) · k² = 1 upon round-trip.',
+        formula: '\\det(S) = k^2, \\quad \\det(S^{-1}) = \\frac{1}{k^2}, \\quad \\det(S^{-1}) \\cdot \\det(S) = 1'
+      },
+      {
+        title: 'Digital Resampling & Interpolation Algorithms',
+        content:
+          'In continuous geometry, scaling is seamless. However, digital images are discrete 2D arrays of pixels. When zooming in (k > 1), new pixels must be synthesized:\n' +
+          '• Nearest Neighbor Interpolation: Copies the intensity of the nearest pixel coordinate. Fast and preserves original values, but creates visible blocky pixelation at high zoom.\n' +
+          '• Bilinear Interpolation: Computes a weighted average of the 4 surrounding pixels, producing smooth gradients and softening jagged edges.\n' +
+          '• Digital Zoom vs Optical Zoom: Digital zoom merely resamples existing discrete pixel data; unlike physical optical lenses, it cannot create new physical optical photons or resolve details below camera sensor resolution.',
+        formula: '(x, y) = S^{-1}(x\', y\') = \\left(\\frac{x\'}{k}, \\frac{y\'}{k}\\right)'
+      }
+    ],
     howItWorks: [
       {
         step: 1,
-        title: 'Choose Zoom Factor',
-        description: 'Set uniform zoom factor k (e.g. k = 2 for 2× magnification).'
+        title: 'Choose Zoom Factor (k)',
+        description: 'Set uniform zoom factor k (e.g. k = 2.0 for 2× magnification, k = 0.5 for 50% minification).'
       },
       {
         step: 2,
-        title: 'Backward Coordinate Mapping',
-        description: 'For each output pixel (x\', y\'), compute original location via inverse: (x, y) = S⁻¹(x\', y\') = (x\'/k, y\'/k).'
+        title: 'Construct Diagonal Matrix S',
+        description: 'Place scale factor k on the main diagonal: S = [[k, 0], [0, k]]. Determinant is det(S) = k².'
       },
       {
         step: 3,
-        title: 'Pixel Interpolation',
-        description: 'Estimate pixel intensity using Nearest Neighbor (sharp blocks) or Bilinear Interpolation (smooth blending).'
+        title: 'Construct Inverse Matrix S⁻¹',
+        description: 'Compute reciprocal 1/k for diagonal entries: S⁻¹ = [[1/k, 0], [0, 1/k]]. Determinant is 1/k².'
       },
       {
         step: 4,
-        title: 'Render Rescaled Canvas',
-        description: 'Draw the resampled matrix on the display.'
+        title: 'Reverse Zoom via S⁻¹',
+        description: 'Multiply scaled coordinates by S⁻¹ to restore initial 1.00× scale: S⁻¹ · S = I.'
       }
     ],
     symbols: [
-      { symbol: 'k', name: 'Zoom Scale Factor', meaning: 'Spatial magnification factor (k > 1 enlarges, k < 1 shrinks).' },
-      { symbol: 'S', name: 'Scaling Matrix', meaning: 'Diagonal matrix [[k, 0], [0, k]].' },
-      { symbol: 'S⁻¹', name: 'Inverse Zoom Matrix', meaning: 'Diagonal matrix [[1/k, 0], [0, 1/k]].' },
-      { symbol: 'k²', name: 'Area Factor', meaning: 'Total pixel count scales proportionately with k².' }
+      { symbol: 'k', name: 'Zoom Scale Factor', meaning: 'Uniform linear magnification factor along both axes (k > 1 enlarges, k < 1 shrinks).' },
+      { symbol: 'S', name: 'Scaling Matrix', meaning: 'Diagonal matrix [[k, 0], [0, k]] that scales coordinates isotropically.' },
+      { symbol: 'S⁻¹', name: 'Inverse Zoom Matrix', meaning: 'Diagonal matrix [[1/k, 0], [0, 1/k]] that precisely reverses zoom S.' },
+      { symbol: 'det(S) = k²', name: 'Area Scale Factor', meaning: 'The determinant of S; surface area expands quadratically with k².' },
+      { symbol: 'I', name: 'Identity Matrix', meaning: 'The 2×2 neutral matrix [[1, 0], [0, 1]] representing 1.00× standard scale.' }
+    ],
+    additionalFormulas: [
+      { label: 'Scaling Matrix', formula: 'S = \\begin{bmatrix} k & 0 \\\\ 0 & k \\end{bmatrix}', desc: 'Diagonal matrix for uniform 2D expansion.' },
+      { label: 'Inverse Diagonal Rule', formula: 'S^{-1} = \\begin{bmatrix} 1/k & 0 \\\\ 0 & 1/k \\end{bmatrix}', desc: 'The inverse of a diagonal matrix is formed by taking the reciprocal of diagonal entries.' },
+      { label: 'Quadratic Area Scaling', formula: '\\text{Area}\' = k^2 \\cdot \\text{Area}', desc: 'Surface area expands proportionately to the square of linear scale k.' },
+      { label: 'Round-Trip Identity', formula: 'S^{-1} \\cdot S = I', desc: 'Restores the original coordinate proportions exactly.' }
     ],
     workedExample: {
       title: '2× Magnification on a 2×2 Image',
@@ -969,22 +1167,27 @@ export const MODULE_DOCUMENTATION = {
       calculation:
         'Original area: 2 × 2 = 4 pixels\n' +
         'Scaled area: (2 × 2) × k² = 4 × 2² = 16 pixels\n' +
-        'Each original single pixel expands into a 2×2 block of identical values under nearest neighbor.',
-      output: 'The image becomes twice as wide and twice as tall while preserving total energy.'
+        'Each original single pixel expands into a 2×2 block of identical values under nearest neighbor.\n' +
+        'Applying S⁻¹ = [[0.5, 0], [0, 0.5]]:\n' +
+        'S⁻¹ · S = [[0.5×2, 0], [0, 0.5×2]] = [[1, 0], [0, 1]] = I (Restores 2×2 scale).',
+      output: 'The image becomes twice as wide and twice as tall, and is perfectly restored by S⁻¹.'
     },
     observations: [
       'Digital zoom (unlike physical optical lens zoom) cannot create new optical detail; it resamples existing pixels.',
       'Zooming in too far reveals individual square pixel blocks (pixelation).',
-      'The total number of pixels in the image scales with the square of the zoom factor (k²).'
+      'The total number of pixels in the image scales with the square of the zoom factor (k²).',
+      'Because S is diagonal, its inverse S⁻¹ is trivially computed by taking 1/k without cross-multiplication.'
     ],
     applications: [
-      { name: 'Smartphone Pinch-to-Zoom', desc: 'Real-time GPU texture scaling with bilinear/bicubic sampling filters.' },
-      { name: 'Satellite Imagery Super-Resolution', desc: 'Deep learning models hallucinate fine street details when upscaling aerial photos.' },
-      { name: 'Medical Endoscopy Zooming', desc: 'Surgeons zoom into high-definition camera feeds during laparoscopic surgery.' }
+      { name: 'Smartphone Camera Pinch-to-Zoom', desc: 'Real-time GPU texture scaling with bilinear/bicubic sampling filters.' },
+      { name: 'Satellite Imagery Super-Resolution', desc: 'Deep learning neural networks upscaling low-resolution aerial photos.' },
+      { name: 'Medical Endoscopy Magnification', desc: 'Surgeons zooming into micro-vascular tissue feeds during laparoscopic surgery.' },
+      { name: 'Responsive Web Design', desc: 'SVG vector graphics and CSS transform: scale(k) rendering across high-DPI screens.' }
     ],
     keyTakeaways: [
       'Spatial zooming is governed by a diagonal scaling matrix S = diag(k, k).',
-      'Image area scales with k² (e.g. 3× zoom yields 9× the pixel area).',
+      'Linear dimensions scale by k, but image surface area scales quadratically by det(S) = k².',
+      'The inverse zoom matrix S⁻¹ = diag(1/k, 1/k) exactly reverses scaling without shear distortion.',
       'Digital upscaling requires interpolation to approximate pixel values between discrete grid coordinates.'
     ]
   },
@@ -992,42 +1195,104 @@ export const MODULE_DOCUMENTATION = {
   15: {
     stepNumber: 15,
     code: '15',
-    title: 'Matrix Multiplication & Shadows',
+    title: 'Matrix Multiplication & Optical Shadows',
     category: 'Visual Labs',
-    oneLiner: 'Compare row-by-column matrix multiplication (C = A·B) against element-wise shadow masks (B = A ⊙ S).',
+    oneLiner: 'Compare row-by-column matrix multiplication (C = A·B ≠ B·A) with element-wise Hadamard shadow masks (B = A ⊙ S).',
     formula: 'C = A \\cdot B \\quad \\text{vs} \\quad B = A \\odot S \\implies A = B \\oslash S',
-    formulaDisplay: 'C = A · B,  c_ij = ∑ a_ik · b_kj',
+    formulaDisplay: 'C = A · B (c_ij = ∑ a_ik · b_kj)  vs  B = A ⊙ S ⟹ A = B ⊘ S',
     whatIsThis:
-      'This module contrasts two fundamental forms of matrix multiplication in computer vision: standard matrix multiplication (row-column dot products, C = A·B, non-commutative) used for geometric and optical transformations, and Hadamard element-wise multiplication (B = A ⊙ S) used to model physical shadows cast across a photograph.',
+      'This module contrasts two fundamental forms of matrix multiplication in computer vision and linear algebra:\n' +
+      '1. Standard Matrix Multiplication (C = A · B): Combines rows of A with columns of B via dot products. It is non-commutative (AB ≠ BA) and models directional geometric transformations, lens cascades, and coordinate changes.\n' +
+      '2. Hadamard Element-Wise Product (B = A ⊙ S): Multiplies corresponding matrix cells directly (b_ij = a_ij × s_ij). It models physical optical shadows falling across an image and can be mathematically inverted using entry-by-entry division: A = B ⊘ S.',
     whyNeedIt:
-      'Understanding the difference between standard matrix multiplication and element-wise Hadamard products is essential in machine learning, computer graphics shading, and photographic shadow removal.',
+      'Confusing standard row-by-column matrix multiplication with element-wise multiplication is one of the most common pitfalls in machine learning, graphics rendering, and computer vision. Recognizing when to use dot products (geometry/filtering) versus entry-wise products (shadows/attenuation) is fundamental.',
+    subsections: [
+      {
+        title: 'Standard Matrix Multiplication & Row-Column Dot Products',
+        content:
+          'Unlike scalar numbers where 3 × 5 = 5 × 3, matrix multiplication C = AB computes directional dot products between each row of A and each column of B:\n' +
+          'c_{ij} = a_{i1}b_{1j} + a_{i2}b_{2j} + ... + a_{in}b_{nj} = ∑_{k=1}^n a_{ik} b_{kj}.\n' +
+          'Geometrically, AB represents composite mapping: transformation B is applied first, followed by transformation A.',
+        formula: 'c_{ij} = \\sum_{k=1}^n a_{ik} b_{kj}'
+      },
+      {
+        title: 'Why Matrix Multiplication Does Not Commute (AB ≠ BA)',
+        content:
+          'In general, matrix multiplication is non-commutative: AB ≠ BA.\n' +
+          '• Directional Pairing: AB dots rows of A with columns of B, whereas BA dots rows of B with columns of A.\n' +
+          '• Visual Image Transposition: Multiplying pixel matrices AB vs BA causes horizontal visual features to rotate into vertical features.\n' +
+          '• Commuting Cases: Commutativity (AB = BA) holds only in special symmetric cases, such as when multiplying by the Identity matrix I (AI = IA = A) or when both matrices share the exact same eigenvector basis.',
+        formula: 'A \\cdot B \\neq B \\cdot A \\quad (\\text{Non-Commutative})'
+      },
+      {
+        title: 'Optical Shadows via Hadamard Product (A ⊙ S)',
+        content:
+          'When an opaque obstacle casts a shadow on a real scene, light intensity is attenuated locally at each pixel rather than mixing across rows and columns. This is mathematically modeled by the element-wise Hadamard product:\n' +
+          'B[i, j] = A[i, j] × S[i, j],\n' +
+          'where A is the unshaded image matrix and S is the shadow transmission mask with values between 0.0 (total occlusion) and 1.0 (unobstructed ambient light).',
+        formula: 'B = A \\odot S, \\quad b_{ij} = a_{ij} \\cdot s_{ij}'
+      },
+      {
+        title: 'Exact Mathematical Shadow Inversion (A = B ⊘ S)',
+        content:
+          'Because the Hadamard product operates strictly entry-by-entry, it can be mathematically inverted without computing matrix inverses:\n' +
+          'A[i, j] = B[i, j] / S[i, j]  (for all S[i, j] > 0).\n' +
+          'In physical digital cameras, 8-bit quantization introduces slight roundoff in deep shadows, but the unshaded illumination is mathematically restored.',
+        formula: 'A = B \\oslash S, \\quad a_{ij} = \\frac{b_{ij}}{s_{ij}}'
+      }
+    ],
     howItWorks: [
       {
         step: 1,
-        title: 'Standard Multiplication (A · B)',
-        description: 'Entry c_{ij} is the dot product of row i of matrix A with column j of matrix B.'
+        title: 'Compute Product AB',
+        description: 'Take row i of A and column j of B to compute dot product entry c_{ij} = ∑ a_{ik}b_{kj}.'
       },
       {
         step: 2,
-        title: 'Non-Commutativity Check',
-        description: 'In general, A · B ≠ B · A. The order of operations matters.'
+        title: 'Compute Product BA',
+        description: 'Reverse the order: dot row i of B with column j of A to observe disparity AB ≠ BA.'
       },
       {
         step: 3,
-        title: 'Hadamard Shadow Mask (A ⊙ S)',
-        description: 'Each pixel b_{ij} = a_{ij} × s_{ij}, where shadow coefficient s_{ij} ∈ [0, 1] attenuates incoming light.'
+        title: 'Evaluate Disparity Matrix',
+        description: 'Calculate numerical difference Δ = |AB − BA| to measure non-commutativity.'
       },
       {
         step: 4,
-        title: 'Shadow Removal (B ⊘ S)',
-        description: 'Recover the unshaded image by dividing the shadowed photograph by the shadow mask: a_{ij} = b_{ij} / s_{ij}.'
+        title: 'Cast & Invert Shadows',
+        description: 'Apply shadow mask via B = A ⊙ S, then recover unshaded pixels via element-wise division A = B ⊘ S.'
       }
     ],
     symbols: [
-      { symbol: 'A · B', name: 'Matrix Product', meaning: 'Standard linear algebraic dot product of rows and columns.' },
-      { symbol: '⊙', name: 'Hadamard Product', meaning: 'Element-by-element multiplication: c_{ij} = a_{ij} × b_{ij}.' },
-      { symbol: 'S', name: 'Shadow Mask Matrix', meaning: 'Spatial attenuation matrix with values between 0.0 (full shadow) and 1.0 (unshaded).' },
-      { symbol: '⊘', name: 'Hadamard Division', meaning: 'Element-wise division used to recover unshaded pixels.' }
+      { symbol: 'A · B', name: 'Matrix Product', meaning: 'Standard linear algebraic dot product of rows and columns (non-commutative).' },
+      { symbol: '⊙', name: 'Hadamard Product', meaning: 'Element-by-element matrix multiplication: c_{ij} = a_{ij} × b_{ij}.' },
+      { symbol: '⊘', name: 'Hadamard Division', meaning: 'Element-by-element matrix division used to invert optical shadows: a_{ij} = b_{ij} / s_{ij}.' },
+      { symbol: 'S', name: 'Shadow Mask Matrix', meaning: 'Spatial attenuation matrix with transmission coefficients between 0.0 (shadow) and 1.0 (bright).' },
+      { symbol: 'Δ = |AB − BA|', name: 'Disparity Matrix', meaning: 'Matrix measuring the cell-by-cell numerical difference between AB and BA.' }
+    ],
+    additionalFormulas: [
+      { label: 'Dot Product Definition', formula: 'c_{ij} = \\sum_{k=1}^n a_{ik} b_{kj}', desc: 'Standard row-by-column matrix multiplication formula.' },
+      { label: 'Commuting Exception', formula: 'A \\cdot I = I \\cdot A = A', desc: 'Multiplying by the Identity matrix always commutes.' },
+      { label: 'Shadow Attenuation', formula: 'B = A \\odot S, \\quad b_{ij} = a_{ij} \\cdot s_{ij}', desc: 'Casting an optical shadow by element-wise multiplication.' },
+      { label: 'Shadow Inversion', formula: 'A = B \\oslash S, \\quad a_{ij} = b_{ij} / s_{ij}', desc: 'Exact mathematical shadow recovery via Hadamard division.' }
+    ],
+    guidedInquiry: [
+      {
+        question: '1. Do AB and BA share identical dimensions?',
+        answer: 'Yes. Since A is n×n and B is n×n, both AB and BA produce valid n×n square outputs with identical shape.'
+      },
+      {
+        question: '2. Are numerical values equal?',
+        answer: 'Generally No. Unless A and B are commuting matrices (such as when B = I), AB and BA have completely distinct numerical entries.'
+      },
+      {
+        question: '3. Do their resulting images match?',
+        answer: 'No. Visual image matrices show that horizontal gradients in AB orient vertically in BA due to reversed row-column pairing.'
+      },
+      {
+        question: '4. Why does matrix multiplication not commute?',
+        answer: 'Real numbers commute (3 × 5 = 5 × 3), but matrices represent directional coordinate mappings: rotating and then shearing is fundamentally different from shearing first and then rotating.'
+      }
     ],
     workedExample: {
       title: 'Casting and Removing a 50% Shadow',
@@ -1043,18 +1308,21 @@ export const MODULE_DOCUMENTATION = {
     },
     observations: [
       'Standard matrix multiplication mixes rows and columns together, whereas Hadamard multiplication only interacts with corresponding cells.',
-      'Multiplying by the Identity matrix I leaves any matrix unchanged (A · I = A).',
+      'Multiplying by the Identity matrix I leaves any matrix unchanged (A · I = I · A = A).',
+      'Reversing multiplication order (BA instead of AB) alters the resulting image dramatically.',
       'Shadowed regions can be restored by element-wise division as long as the shadow mask values are strictly greater than zero.'
     ],
     applications: [
       { name: 'Video Game Shading Pipelines', desc: 'Rendering engines multiply albedo texture matrices by dynamic ambient occlusion and shadow maps.' },
       { name: 'Satellite Terrain Shadow Normalization', desc: 'Removing mountain shadows in satellite imagery to accurately classify ground vegetation.' },
-      { name: 'Deep Learning Convolution Layers', desc: 'Convolutional neural networks compute millions of dot products per frame.' }
+      { name: 'Deep Learning Convolution Layers', desc: 'Convolutional neural networks compute millions of dot products per frame.' },
+      { name: 'Computational Photography', desc: 'Smartphone HDR burst photography isolating and brightening shadows in portraits.' }
     ],
     keyTakeaways: [
       'Standard matrix multiplication C = A · B computes dot products and is non-commutative (AB ≠ BA).',
       'Optical shadows are element-wise Hadamard products B = A ⊙ S.',
-      'Shadowed images can be mathematically recovered by element-wise division: A = B ⊘ S.'
+      'Shadowed images can be mathematically recovered by element-wise division: A = B ⊘ S.',
+      'Commutativity (AB = BA) occurs only under special symmetric conditions, such as with the Identity matrix.'
     ]
   },
 
@@ -1063,13 +1331,49 @@ export const MODULE_DOCUMENTATION = {
     code: '16',
     title: 'My Image, My Matrix',
     category: 'Visual Labs',
-    oneLiner: 'Upload your own custom image or capture from webcam to inspect its live pixel matrix and apply transformations.',
-    formula: 'A\' = f(A), \\quad \\dim(A) = H \\times W \\times C',
-    formulaDisplay: 'A\' = f(A),  dim(A) = H × W',
+    oneLiner: 'Upload your own custom image or capture from webcam to inspect its live pixel matrix and apply 8 fundamental operations.',
+    formula: 'A\' = f(A), \\quad \\dim(A) = H \\times W \\times C, \\quad C \\in \\{1, 3\\}',
+    formulaDisplay: 'A\' = f(A),  dim(A) = H × W × C',
     whatIsThis:
-      'This open laboratory bridges mathematical theory with real-world digital media. Upload any photo from your device or capture a live frame from your webcam. Inspect the raw numerical values of your own face or surroundings, select custom regions of interest (ROI), and apply every matrix operation learned throughout MathLens.',
+      'This open laboratory bridges linear algebra theory with real-world digital media. Upload any photo from your device or capture a live frame from your webcam. Inspect the raw numerical values of your own face or surroundings, select custom regions of interest (ROI), and apply 8 core matrix operations explored throughout MathLens: scalar multiplication, addition, subtraction, rotation, scaling, reflection, shearing, and matrix inversion.',
     whyNeedIt:
-      'Theoretical models are most powerful when applied to real-world data. Seeing your own photograph translated directly into rows and columns of numbers cements the core premise of visual linear algebra.',
+      'Theoretical models are most powerful when applied to real-world data. Seeing your own photograph translated directly into rows and columns of numbers cements the core premise of visual linear algebra: every image is a matrix, and all image processing is matrix algebra.',
+    subsections: [
+      {
+        title: 'Digital Images as 2D Arrays and 3D Spatial Tensors',
+        content:
+          'Every photograph stored on a computer or smartphone is represented as an array of numerical light values:\n' +
+          '• Grayscale Images: A 2D matrix of dimensions H × W (Height rows by Width columns) where each entry A[r, c] ∈ [0, 255] represents monochrome brightness.\n' +
+          '• Color Images: A 3D tensor of shape H × W × 3, consisting of three stacked 2D matrices for the Red, Green, and Blue color channels.',
+        formula: 'A \\in \\mathbb{R}^{H \\times W \\times C}, \\quad C \\in \\{1, 3\\}'
+      },
+      {
+        title: 'Pixel Intensity Operations (Point Arithmetic)',
+        content:
+          'Point operations alter brightness values without altering spatial coordinates:\n' +
+          '• Scalar Multiplication: A′ = clamp(k · A, 0, 255). Uniformly brightens (k > 1) or dims (k < 1) the photograph.\n' +
+          '• Matrix Addition (Blending): C = αA + (1 − α)B. Linear combination of two image matrices for cross-dissolves and watermark overlays.\n' +
+          '• Matrix Subtraction (Inversion): A′ = 255 − A. Flips light and shadow into a photographic negative.',
+        formula: 'A\'[i, j] = g(A[i, j])'
+      },
+      {
+        title: '2D Spatial Coordinate Transformations',
+        content:
+          'Geometric transformations relocate pixel coordinates via 2×2 matrix multiplication [x′, y′]ᵀ = M · [x, y]ᵀ:\n' +
+          '• Rotation R(θ): Rotates pixels around the origin by angle θ.\n' +
+          '• Scaling S(k): Expands or contracts image dimensions.\n' +
+          '• Reflection: Flips coordinates across coordinate axes (M_x or M_y).\n' +
+          '• Shearing: Slants one coordinate axis proportionately to the other: [x + s_x·y, y]ᵀ.\n' +
+          '• Inverse Mapping: To avoid empty holes in the output canvas, computer graphics uses backward coordinate mapping: (x, y) = M⁻¹(x′, y′).',
+        formula: '\\begin{bmatrix} x\' \\\\ y\' \\end{bmatrix} = M \\begin{bmatrix} x \\\\ y \\end{bmatrix}'
+      },
+      {
+        title: 'Sub-Matrices and Regions of Interest (ROI)',
+        content:
+          'Cropping an image is mathematically equivalent to extracting a sub-matrix A[r₁:r₂, c₁:c₂]. Inspecting local 5×5 or 10×10 ROIs exposes the discrete pixel quantization, local contrast gradients, and color variations that blend into smooth visual pictures.',
+        formula: '\\text{ROI} = A[r_1:r_2, \\, c_1:c_2]'
+      }
+    ],
     howItWorks: [
       {
         step: 1,
@@ -1079,24 +1383,31 @@ export const MODULE_DOCUMENTATION = {
       {
         step: 2,
         title: 'Resolution Resampling',
-        description: 'Resample the image to an interactive matrix grid (e.g. 4×4, 8×8, 16×16) to make individual numbers legible.'
+        description: 'Resample the image to an interactive matrix grid (10×10, 20×20, 50×50, 100×100) to make numbers legible.'
       },
       {
         step: 3,
         title: 'ROI Pixel Inspection',
-        description: 'Hover or click any region of your photo to inspect its exact numerical RGB tensor values.'
+        description: 'Click any pixel on the photo to inspect its exact numerical grayscale or RGB tensor values.'
       },
       {
         step: 4,
         title: 'Execute Matrix Operations',
-        description: 'Apply scalar brightness, inversion, channel decomposition, and geometric transformations to your own image.'
+        description: 'Select from 8 operations (scalar, addition, subtraction, rotation, scaling, reflection, shearing, inverse) and test predictions.'
       }
     ],
     symbols: [
-      { symbol: 'A', name: 'User Image Matrix', meaning: 'The 2D/3D matrix extracted directly from your file or webcam.' },
-      { symbol: 'f(A)', name: 'Matrix Operator', meaning: 'Any linear algebraic transformation function applied to the array.' },
-      { symbol: 'H × W', name: 'Array Dimensions', meaning: 'The height (rows) and width (columns) of your photo.' },
-      { symbol: 'ROI', name: 'Region of Interest', meaning: 'A localized sub-matrix cropped for detailed mathematical analysis.' }
+      { symbol: 'A', name: 'User Image Matrix', meaning: 'The 2D/3D numerical matrix extracted directly from your photo or camera.' },
+      { symbol: 'f(A)', name: 'Matrix Operator', meaning: 'Linear algebraic transformation applied to the array.' },
+      { symbol: 'H × W', name: 'Array Dimensions', meaning: 'Height (number of rows) and width (number of columns).' },
+      { symbol: 'M', name: '2×2 Geometric Matrix', meaning: 'Transformation matrix mapping coordinate vectors [x, y]ᵀ to [x′, y′]ᵀ.' },
+      { symbol: 'ROI', name: 'Region of Interest', meaning: 'A localized sub-matrix cropped for detailed pixel inspection.' }
+    ],
+    additionalFormulas: [
+      { label: 'Scalar Brightness', formula: 'A\' = k \\cdot A, \\quad k \\in [0.1, 3.0]', desc: 'Multiplies pixel intensities by scalar factor k.' },
+      { label: 'Alpha Blending', formula: 'C = \\alpha A + (1 - \\alpha) B', desc: 'Weighted linear combination of two image matrices.' },
+      { label: '2D Rotation Matrix', formula: 'R(\\theta) = \\begin{bmatrix} \\cos\\theta & -\\sin\\theta \\\\ \\sin\\theta & \\cos\\theta \\end{bmatrix}', desc: 'Rigid rotation preserving angles and lengths.' },
+      { label: 'Horizontal Shear', formula: 'H_x = \\begin{bmatrix} 1 & s_x \\\\ 0 & 1 \\end{bmatrix}', desc: 'Slants x coordinates proportionately to y.' }
     ],
     workedExample: {
       title: 'Inverting a 2×2 User Photo Crop',
@@ -1114,59 +1425,112 @@ export const MODULE_DOCUMENTATION = {
     observations: [
       'Every photograph stored on your phone or computer is fundamentally a matrix of numbers.',
       'Switching between resolution levels shows how high-resolution continuous photos emerge from discrete pixel matrices.',
-      'All professional image editing software (Photoshop, Lightroom) operates by running matrix algebra on your photos.'
+      'All professional image editing software (Photoshop, Lightroom) operates by running matrix algebra on your photos.',
+      'Interactive pixel inspection reveals that visual edges correspond to sharp numerical differences between neighboring matrix entries.'
     ],
     applications: [
-      { name: 'Computer Vision Training Pipelines', desc: 'Loading diverse user photos as normalized NumPy / PyTorch tensors for neural network training.' },
-      { name: 'Biometric Face Recognition', desc: 'Extracting landmark feature matrices from user webcam images to verify identity.' },
-      { name: 'Forensic Image Analysis', desc: 'Examining subtle matrix quantization artifacts to detect photo tampering and AI deepfakes.' }
+      { name: 'Computer Vision Training Pipelines', desc: 'Loading user photos as normalized NumPy / PyTorch tensors for neural network training.' },
+      { name: 'Biometric Face Recognition', desc: 'Extracting landmark feature matrices from webcam images to verify identity.' },
+      { name: 'Forensic Image Analysis', desc: 'Examining subtle matrix quantization artifacts to detect photo tampering and AI deepfakes.' },
+      { name: 'Digital Photography Filters', desc: 'Real-time camera shader passes applying color balance and spatial warps on smartphones.' }
     ],
     keyTakeaways: [
       'Any photograph is a matrix of integers ready for mathematical analysis.',
+      'Point operations modify pixel values; geometric operations relocate pixel coordinates.',
       'Sub-matrices (ROIs) can be isolated and processed independently.',
-      'All image processing tools are built upon the fundamental matrix operations explored here.'
+      'All modern image processing tools are built upon the fundamental matrix operations explored in MathLens.'
     ]
   },
 
   17: {
     stepNumber: 17,
     code: '17',
-    title: 'Exploring Ray Optics Through Matrices',
+    title: 'Ray Optics & Optical Matrices',
     category: 'Ray Optics',
     oneLiner: 'Model light rays as 2D direction vectors and optical reflections as 2×2 linear matrix transformations.',
-    formula: '\\vec{d}\' = R \\cdot \\vec{d}, \\quad R_x = \\begin{bmatrix} 1 & 0 \\\\ 0 & -1 \\end{bmatrix}, \\quad R_y = \\begin{bmatrix} -1 & 0 \\\\ 0 & 1 \\end{bmatrix}, \\quad R_x R_y = -I',
-    formulaDisplay: 'r\' = R · r,  R_x · R_y = −I',
+    formula: 'd\' = R \\cdot d, \\quad R_x = \\begin{bmatrix} 1 & 0 \\\\ 0 & -1 \\end{bmatrix}, \\quad R_y = \\begin{bmatrix} -1 & 0 \\\\ 0 & 1 \\end{bmatrix}, \\quad R_y R_x = R_x R_y = -I',
+    formulaDisplay: 'd\' = R · d,  R_x = [1 0; 0 −1],  R_y = [−1 0; 0 1],  R_y · R_x = −I',
     whatIsThis:
-      'In classical ray optics, a light ray traveling in a 2D plane is represented as a direction vector d = [dx, dy]ᵀ. When a ray reflects off a plane mirror, the Law of Reflection (angle of incidence equals angle of reflection) is mathematically equivalent to multiplying the ray vector by a 2×2 reflection matrix R.',
+      'In geometric and matrix optics, a light ray traveling through a 2D optical system is modeled as a direction vector d = [dx, dy]ᵀ. When a light ray strikes a mirror or passes through optical components, Snell\'s Law and the Law of Reflection are expressed as linear matrix multiplications d′ = R · d. By chaining matrices together, optical engineers track millions of laser beams through complex lens trains, mirrors, and retroreflectors.',
     whyNeedIt:
-      'Optical engineers designing telescope lenses, laser cavities, camera objectives, and retroreflectors use ray transfer matrix analysis (ABCD matrix formalism) to calculate the paths of millions of light rays through complex optical trains.',
+      'Designing telescope systems, laser resonators, camera lenses, and retroreflectors requires calculating light ray trajectories with extreme precision. Ray Transfer Matrix Analysis (ABCD matrix formalism) replaces laborious manual trigonometry with compact, high-speed matrix multiplications.',
+    subsections: [
+      {
+        title: 'Light Rays as 2D Direction Vectors',
+        content:
+          'A propagating beam of light in the xy-plane is formalized as a direction vector d = [dx, dy]ᵀ:\n' +
+          '• Horizontal velocity component dx and vertical velocity component dy.\n' +
+          '• Ray slope: m = dy / dx.\n' +
+          '• Propagation angle relative to the optical x-axis: θ = atan2(dy, dx).\n' +
+          '• Beam magnitude/speed: ‖d‖ = √(dx² + dy²).',
+        formula: 'd = \\begin{bmatrix} dx \\\\ dy \\end{bmatrix}, \\quad m = \\frac{dy}{dx}, \\quad \\|d\\| = \\sqrt{dx^2 + dy^2}'
+      },
+      {
+        title: 'Specular Mirror Reflection & The Involution Property (R² = I)',
+        content:
+          'When light strikes a flat mirror, the angle of incidence equals the angle of reflection (θ_i = θ_r):\n' +
+          '• Horizontal Mirror (x-axis): Reverses vertical velocity dy while preserving dx: R_x = [[1, 0], [0, −1]].\n' +
+          '• Vertical Mirror (y-axis): Reverses horizontal velocity dx while preserving dy: R_y = [[−1, 0], [0, 1]].\n' +
+          '• Normal Incidence: When incidence angle i = 0°, reflection angle r = 0°, bouncing the beam directly back along its normal.\n' +
+          '• Involution Property: Reflecting twice across the same mirror returns the ray to its initial state: R_x² = I and R_y² = I.\n' +
+          '• Orientation Inversion: Every single reflection has determinant det(R) = −1, flipping ray chirality (handedness).',
+        formula: 'R_x = \\begin{bmatrix} 1 & 0 \\\\ 0 & -1 \\end{bmatrix}, \\quad R_x^2 = I, \\quad \\det(R_x) = -1'
+      },
+      {
+        title: 'Beam Rotation via Rotation Matrices R(θ)',
+        content:
+          'Rotating a light beam by angle θ is achieved by multiplying the ray vector by the standard 2D rotation matrix R(θ):\n' +
+          'd′ = R(θ) · d = [[cosθ, −sinθ], [sinθ, cosθ]] · [dx, dy]ᵀ.\n' +
+          'Because det(R(θ)) = cos²θ + sin²θ = 1, rotation preserves ray magnitude ‖d‖ and orientation without reflection.',
+        formula: 'R(\\theta) = \\begin{bmatrix} \\cos\\theta & -\\sin\\theta \\\\ \\sin\\theta & \\cos\\theta \\end{bmatrix}, \\quad \\det(R(\\theta)) = 1'
+      },
+      {
+        title: 'Successive Reflections & 90° Corner Cube Retroreflection',
+        content:
+          'When light bounces off two perpendicular plane mirrors at 90° (first horizontal mirror R_x, then vertical mirror R_y):\n' +
+          'R_total = R_y · R_x = [[−1, 0], [0, 1]] · [[1, 0], [0, −1]] = [[−1, 0], [0, −1]] = −I.\n' +
+          'Notice that R_y · R_x = R_x · R_y = −I (the matrices commute to −I!).\n' +
+          'Multiplying any incoming ray d by −I yields d′′ = −I · d = −d.\n' +
+          'The beam emerges exactly anti-parallel (180° reversed) to its incoming direction, regardless of the angle of incidence!\n' +
+          'For two plane mirrors intersecting at an arbitrary angle α, two successive reflections produce a pure rotation by angle 2α: R₂ · R₁ = R(2α).',
+        formula: 'R_y \\cdot R_x = R_x \\cdot R_y = -I = \\begin{bmatrix} -1 & 0 \\\\ 0 & -1 \\end{bmatrix} \\implies d\'\' = -d'
+      }
+    ],
     howItWorks: [
       {
         step: 1,
-        title: 'Define Ray Vector',
-        description: 'Express the propagating light ray as a vector d = [dx, dy]ᵀ where dx and dy represent directional velocity.'
+        title: 'Define Ray Vector (d)',
+        description: 'Represent the propagating light beam as direction vector d = [dx, dy]ᵀ.'
       },
       {
         step: 2,
-        title: 'Construct Mirror Matrix',
-        description: 'A horizontal mirror (along the x-axis) reverses vertical velocity dy while preserving dx: R_x = [[1, 0], [0, -1]].'
+        title: 'Apply Reflection Matrix',
+        description: 'Multiply by mirror matrix R_x to invert vertical velocity: d′ = R_x · d = [dx, −dy]ᵀ.'
       },
       {
         step: 3,
-        title: 'Matrix Vector Product',
-        description: 'Compute reflected direction: d\' = R_x · d = [dx, -dy]ᵀ.'
+        title: 'Rotate via R(θ)',
+        description: 'Multiply by rotation matrix R(θ) to steer the light beam through angle θ without distortion.'
       },
       {
         step: 4,
-        title: 'Successive Reflections',
-        description: 'Reflecting off two perpendicular mirrors (x then y) multiplies matrices: R_y · R_x = -I, reversing the ray 180° back to its source!'
+        title: '90° Retroreflection',
+        description: 'Reflect off perpendicular mirrors to achieve matrix product −I, sending light 180° back to its source.'
       }
     ],
     symbols: [
-      { symbol: 'd = [dx, dy]ᵀ', name: 'Ray Vector', meaning: 'Direction vector of the propagating light beam.' },
-      { symbol: 'R_x', name: 'Horizontal Mirror Matrix', meaning: '[[1, 0], [0, -1]] reflecting across the horizontal axis.' },
-      { symbol: 'R_y', name: 'Vertical Mirror Matrix', meaning: '[[-1, 0], [0, 1]] reflecting across the vertical axis.' },
-      { symbol: '-I', name: 'Retroreflector Matrix', meaning: '[[-1, 0], [0, -1]] reversing ray direction completely regardless of incidence angle.' }
+      { symbol: 'd = [dx, dy]ᵀ', name: 'Ray Direction Vector', meaning: 'Spatial direction and velocity vector of propagating light ray.' },
+      { symbol: 'R_x', name: 'Horizontal Mirror Matrix', meaning: '[[1, 0], [0, −1]] reflecting across the horizontal plane.' },
+      { symbol: 'R_y', name: 'Vertical Mirror Matrix', meaning: '[[−1, 0], [0, 1]] reflecting across the vertical plane.' },
+      { symbol: '-I', name: 'Retroreflector Matrix', meaning: '[[−1, 0], [0, −1]] reversing ray direction 180° back toward source.' },
+      { symbol: 'R(θ)', name: 'Beam Rotation Matrix', meaning: '[[cosθ, −sinθ], [sinθ, cosθ]] steering beam angle.' },
+      { symbol: 'α', name: 'Mirror Intersection Angle', meaning: 'Angle between two intersecting mirrors; successive reflection yields R(2α).' }
+    ],
+    additionalFormulas: [
+      { label: 'Ray Direction Vector', formula: 'd = [dx, dy]^T, \\quad \\|d\\| = \\sqrt{dx^2 + dy^2}', desc: 'Cartesian representation of propagating light ray.' },
+      { label: 'Mirror Involution Property', formula: 'R_x^2 = I, \\quad R_y^2 = I', desc: 'Reflecting twice across the same mirror returns original ray.' },
+      { label: 'Corner Cube Retroreflection', formula: 'R_y \\cdot R_x = -I \\implies d\'\' = -d', desc: 'Perpendicular mirrors reverse ray direction by 180° regardless of incidence.' },
+      { label: 'Dual Mirror Rotation Theorem', formula: 'R_2 \\cdot R_1 = R(2\\alpha)', desc: 'Reflecting across two mirrors angled at α produces a pure rotation by 2α.' }
     ],
     workedExample: {
       title: 'Ray Hitting a Perpendicular Corner Cube Reflector',
@@ -1179,53 +1543,91 @@ export const MODULE_DOCUMENTATION = {
         'First reflection: d\' = R_x · d = [[1, 0], [0, -1]] · [3, -2]ᵀ = [3, 2]ᵀ\n' +
         'Second reflection: d\'\' = R_y · d\' = [[-1, 0], [0, 1]] · [3, 2]ᵀ = [-3, 2]ᵀ\n' +
         'Total transformation: R_y · R_x = [[-1, 0], [0, -1]] = -I\n' +
-        '-I · [3, -2]ᵀ = [-3, 2]ᵀ = -[3, -2]ᵀ (Exact reverse direction!)',
+        '-I · [3, -2]ᵀ = [-3, 2]ᵀ = -[3, -2]ᵀ (Exact 180° reverse direction!)',
       output: 'The light ray reflects back exactly parallel to its original incoming path.'
     },
     observations: [
       'A plane mirror is an involution: R² = I (reflecting twice across the same mirror returns the original direction).',
-      'Two perpendicular mirrors form a retroreflector with matrix product R_x · R_y = -I.',
-      'A retroreflector returns any light ray back toward its source regardless of the initial angle of incidence.'
+      'Two perpendicular mirrors form a retroreflector with matrix product R_y · R_x = −I.',
+      'A retroreflector returns any light ray back toward its source regardless of the initial angle of incidence.',
+      'Single reflections reverse chiral orientation (det = −1), while two reflections restore orientation (det = (−1)(−1) = +1).'
     ],
     applications: [
-      { name: 'Lunar Laser Ranging Retroreflectors', desc: 'Apollo astronauts placed corner-cube prism reflectors on the Moon to measure Earth-Moon distance with millimeter laser precision.' },
-      { name: 'Bicycle & Highway Safety Reflectors', desc: 'Plastic corner reflectors bounce car headlight beams directly back to the driver’s eyes in the dark.' },
-      { name: 'Laser Cavity Resonators', desc: 'ABCD optical matrices simulate photon bouncing inside helium-neon and fiber laser cavities.' }
+      { name: 'Apollo Lunar Laser Ranging Retroreflectors', desc: 'Astronauts placed corner-cube prism reflectors on the Moon to measure Earth-Moon distance with millimeter laser precision.' },
+      { name: 'Highway & Bicycle Safety Reflectors', desc: 'Corner-cube reflectors bounce car headlight beams directly back to the driver’s eyes in the dark.' },
+      { name: 'Laser Cavity Resonators', desc: 'ABCD optical transfer matrices simulate photon round-trips inside helium-neon and ultrafast fiber laser cavities.' },
+      { name: 'Surveying & LIDAR Prisms', desc: 'Optical surveying total stations measure kilometer distances using retroreflecting target prisms.' }
     ],
     keyTakeaways: [
       'Light rays in 2D are vectors [dx, dy]ᵀ; optical reflections are matrix multiplications.',
-      'A single mirror matrix has det(R) = -1 (orientation reversing reflection).',
-      'Perpendicular mirrors multiply to -I, returning rays directly back toward their source.'
+      'A single mirror reflection matrix has det(R) = −1 and satisfies the involution rule R² = I.',
+      'Perpendicular mirrors multiply to −I, returning rays directly back toward their source.',
+      'Successive reflections across mirrors angled at α equal a pure rotation by 2α: R₂ · R₁ = R(2α).'
     ]
   },
 
   18: {
     stepNumber: 18,
     code: '18',
-    title: 'Eigenvalues & Eigenvectors — Finding Special Directions',
-    category: 'Advanced: Eigenvalues',
+    title: 'Eigenvalues & Eigenvectors',
+    category: 'Visual Labs',
     oneLiner: 'Discover the invariant directions where a linear transformation acts as pure scalar stretching: Av = λv.',
-    formula: 'A \\vec{v} = \\lambda \\vec{v}, \\quad \\det(A - \\lambda I) = 0',
-    formulaDisplay: 'A · v = λ · v,  det(A − λI) = 0',
+    formula: 'A \\vec{v} = \\lambda \\vec{v}, \\quad \\det(A - \\lambda I) = 0, \\quad (A - \\lambda I)\\vec{v} = \\vec{0}',
+    formulaDisplay: 'A · v = λ · v,  det(A − λI) = 0,  (A − λI)v = 0',
     whatIsThis:
-      'When a matrix transforms space, it usually rotates and shears vectors onto completely new lines. However, for every transformation there exist special invariant directions called eigenvectors (v). When matrix A acts on an eigenvector v, it does not rotate it at all—it merely stretches or shrinks it by a scalar factor called the eigenvalue (λ): Av = λv.',
+      'When a matrix transforms space, it usually rotates and shears vectors onto completely new lines. However, for every transformation there exist special invariant directions called eigenvectors (v). When matrix A acts on an eigenvector v, it does not rotate it at all—it merely stretches, shrinks, or reflects it along its original directional line by a scalar factor called the eigenvalue (λ): Av = λv.',
     whyNeedIt:
-      'Eigenvalues and eigenvectors simplify complex matrix transformations by breaking them down into their natural, uncoupled axes. They form the foundation of Google’s PageRank algorithm, facial recognition (Eigenfaces), quantum mechanics (wavefunctions and energy levels), and vibration analysis in civil engineering.',
+      'Eigenvalues and eigenvectors simplify complex multidimensional matrix transformations by breaking them down into their natural, uncoupled coordinate axes. They form the foundation of Google’s PageRank algorithm, facial recognition (Eigenfaces/PCA), quantum mechanical wavefunctions, and structural vibration analysis in engineering.',
+    subsections: [
+      {
+        title: 'The Invariant Direction Principle (Av = λv)',
+        content:
+          'For almost any vector x, the transformed vector Ax points in a completely different direction. But if vector v is an eigenvector, transformation by matrix A maintains its exact straight-line span:\n' +
+          'Av = λv.\n' +
+          'The transformation along this line acts purely as scalar multiplication by eigenvalue λ.',
+        formula: 'A \\vec{v} = \\lambda \\vec{v}'
+      },
+      {
+        title: 'Solving the Characteristic Equation: det(A − λI) = 0',
+        content:
+          'Rearranging Av = λv yields the homogeneous linear system (A − λI)v = 0.\n' +
+          'For a non-zero eigenvector v to exist, the matrix (A − λI) must be non-invertible (singular). This requires its determinant to vanish:\n' +
+          'det(A − λI) = 0.\n' +
+          'For a 2×2 matrix, this expands into the characteristic quadratic polynomial: λ² − tr(A)λ + det(A) = 0. The roots of this equation are the eigenvalues λ.',
+        formula: '\\det(A - \\lambda I) = \\lambda^2 - \\text{tr}(A)\\lambda + \\det(A) = 0'
+      },
+      {
+        title: 'Geometric Spectrum of Eigenvalues (λ > 0, λ < 0, λ = 0)',
+        content:
+          '• λ > 1: Expands/stretches vectors outward along the eigenvector direction.\n' +
+          '• 0 < λ < 1: Compresses/shrinks vectors inward toward the origin.\n' +
+          '• λ = 1: Fixed invariant subspace (vectors along this axis remain completely unchanged).\n' +
+          '• λ = −1: Negative eigenvalue reflection! For mirror matrix A = [[−1, 0], [0, 1]], the vector v₁ = [1, 0]ᵀ maps to [−1, 0]ᵀ = −1·v₁. It points backward, yet remains on the exact same invariant straight-line subspace!\n' +
+          '• λ = 0: Dimensional collapse. The eigenvector lies in the null space (kernel) of matrix A.',
+        formula: 'A \\begin{bmatrix} 1 \\\\ 0 \\end{bmatrix} = \\begin{bmatrix} -1 \\\\ 0 \\end{bmatrix} = (-1) \\begin{bmatrix} 1 \\\\ 0 \\end{bmatrix}'
+      },
+      {
+        title: 'Why Pure 2D Rotations Lack Real Eigenvectors',
+        content:
+          'When an object rotates in the 2D plane by angle θ (other than 0° or 180°), every single direction in the plane rotates off its line. Solving det(R(θ) − λI) = 0 yields complex conjugate roots λ = cosθ ± i·sinθ = e^{±iθ}. Because there are no real roots, no real 1D line in the plane remains invariant.',
+        formula: '\\det(R(\\theta) - \\lambda I) = \\lambda^2 - 2\\lambda\\cos\\theta + 1 = 0 \\implies \\lambda = e^{\\pm i\\theta}'
+      }
+    ],
     howItWorks: [
       {
         step: 1,
         title: 'The Invariant Condition',
-        description: 'Set up the fundamental equation: A v = λ v, which rearranges to (A - λ I) v = 0.'
+        description: 'Set up the fundamental relation: Av = λv, which rearranges to (A − λI)v = 0.'
       },
       {
         step: 2,
         title: 'Solve Characteristic Equation',
-        description: 'For non-zero eigenvectors to exist, det(A - λ I) must equal 0. Solve this polynomial to find eigenvalues λ.'
+        description: 'Set det(A − λI) = 0 and solve the quadratic polynomial to find eigenvalues λ.'
       },
       {
         step: 3,
-        title: 'Determine Eigenvectors',
-        description: 'Substitute each eigenvalue λ back into (A - λ I) v = 0 to solve for the invariant direction vectors v.'
+        title: 'Solve for Eigenvectors',
+        description: 'Substitute each eigenvalue λ back into (A − λI)v = 0 to solve for the invariant vector directions.'
       },
       {
         step: 4,
@@ -1235,9 +1637,35 @@ export const MODULE_DOCUMENTATION = {
     ],
     symbols: [
       { symbol: 'A', name: 'Transformation Matrix', meaning: 'The n×n linear operator acting on vector space.' },
-      { symbol: 'v', name: 'Eigenvector', meaning: 'A non-zero vector whose direction remains unchanged under A.' },
+      { symbol: 'v', name: 'Eigenvector', meaning: 'A non-zero vector whose direction remains unchanged under A: Av = λv.' },
       { symbol: 'λ (lambda)', name: 'Eigenvalue', meaning: 'The scalar scaling factor by which eigenvector v is stretched or shrunk.' },
-      { symbol: 'I', name: 'Identity Matrix', meaning: 'Square identity matrix matching the dimensions of A.' }
+      { symbol: 'I', name: 'Identity Matrix', meaning: 'Square identity matrix matching the dimensions of A.' },
+      { symbol: 'det(A − λI) = 0', name: 'Characteristic Equation', meaning: 'Polynomial whose roots yield the eigenvalues of A.' },
+      { symbol: 'tr(A)', name: 'Matrix Trace', meaning: 'Sum of main diagonal entries (a + d), equal to the sum of eigenvalues λ₁ + λ₂.' }
+    ],
+    additionalFormulas: [
+      { label: 'Eigenvalue Definition', formula: 'A \\vec{v} = \\lambda \\vec{v} \\iff (A - \\lambda I)\\vec{v} = \\vec{0}', desc: 'Fundamental eigenvector equation.' },
+      { label: 'Characteristic Polynomial', formula: '\\lambda^2 - \\text{tr}(A)\\lambda + \\det(A) = 0', desc: 'Quadratic equation to compute 2×2 eigenvalues.' },
+      { label: 'Trace & Determinant Relation', formula: '\\text{tr}(A) = \\lambda_1 + \\lambda_2, \\quad \\det(A) = \\lambda_1 \\lambda_2', desc: 'Trace is sum of eigenvalues; determinant is product of eigenvalues.' },
+      { label: 'Reflection Invariant Subspace', formula: 'A = \\begin{bmatrix} -1 & 0 \\\\ 0 & 1 \\end{bmatrix} \\implies \\lambda_1 = -1, \\, \\lambda_2 = 1', desc: 'Reflection matrices have eigenvalues ±1 preserving orthogonal axes.' }
+    ],
+    guidedInquiry: [
+      {
+        question: '1. Why do most vectors rotate off their span, but eigenvectors do not?',
+        answer: 'Matrix transformations generally shear and rotate coordinate space. Eigenvectors represent the natural principal axes of the transformation where shear is zero and the mapping reduces to simple 1D scalar stretching.'
+      },
+      {
+        question: '2. What happens when an eigenvalue is negative (e.g. λ = −1)?',
+        answer: 'The vector flips 180° backward along the exact same straight line (Av = −v). The direction flips, but the 1D linear subspace (the line through the origin) remains invariant.'
+      },
+      {
+        question: '3. Can a rotation matrix have real eigenvectors in 2D?',
+        answer: 'Only for 0° (identity matrix, all vectors are eigenvectors with λ = 1) and 180° (all vectors are eigenvectors with λ = −1). For all other angles, every vector rotates off its span, yielding complex eigenvalues.'
+      },
+      {
+        question: '4. What does an eigenvalue of zero (λ = 0) mean geometrically?',
+        answer: 'If λ = 0, then Av = 0·v = 0. The matrix crushes that entire eigenvector dimension down to a single point at the origin. This occurs if and only if the matrix is singular (det(A) = 0).'
+      }
     ],
     workedExample: {
       title: 'Finding Eigenvalues of A = [[2, 0], [0, 1]]',
@@ -1256,16 +1684,19 @@ export const MODULE_DOCUMENTATION = {
     observations: [
       'Rotate the input vector X. When X and AX lie on the exact same straight line, you have found an eigenvector!',
       'When λ > 1, the eigenvector expands; when 0 < λ < 1, it contracts; when λ < 0, it flips direction 180° along the same line.',
-      'For pure rotation matrices (by angles other than 0° or 180°), there are no real eigenvectors because all vectors rotate off their line.'
+      'For pure rotation matrices (by angles other than 0° or 180°), there are no real eigenvectors because all vectors rotate off their line.',
+      'The determinant equals the product of eigenvalues: det(A) = λ₁ · λ₂. If any eigenvalue is 0, det(A) = 0.'
     ],
     applications: [
       { name: 'Google PageRank Algorithm', desc: 'Ranking billions of web pages by computing the dominant eigenvector of the global web link transition matrix.' },
-      { name: 'Eigenfaces Facial Recognition', desc: 'Compressing facial databases by projecting photographs onto the principal eigenvectors of pixel covariance.' },
-      { name: 'Bridge & Earthquake Resonance Analysis', desc: 'Civil engineers compute the lowest eigenvalues of structural stiffness matrices to avoid resonance collapses.' }
+      { name: 'Eigenfaces Facial Recognition', desc: 'Compressing facial image databases by projecting photographs onto the principal eigenvectors of pixel covariance (PCA).' },
+      { name: 'Bridge & Earthquake Resonance Analysis', desc: 'Civil engineers compute the lowest eigenvalues of structural stiffness matrices to avoid catastrophic resonance collapses.' },
+      { name: 'Quantum Mechanical Energy States', desc: 'In quantum physics, physical observables are Hermitian operators whose eigenvalues correspond to measurable energy levels.' }
     ],
     keyTakeaways: [
       'Eigenvectors are special directions that do not rotate when transformed by matrix A.',
       'Eigenvalues λ are the scalar factors by which eigenvectors are stretched or shrunk: Av = λv.',
+      'Negative eigenvalues (λ = −1) preserve straight-line subspaces while flipping vector direction.',
       'Eigen-decomposition reveals the fundamental axes of vibration, variance, and stability in physical and digital systems.'
     ]
   }

@@ -1,72 +1,102 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { CATEGORIES, FEATURES } from '../config/features';
 
 export default function CurriculumScreen({ onSelectStep }) {
   return (
     <div className="curriculum-page-container">
-      {/* Header with clear, simple, inviting title and subtitle */}
-      <div className="curriculum-masthead">
+      {/* Refined Editorial Masthead */}
+      <header className="curriculum-masthead">
         <h1 className="curriculum-title">Learning Path</h1>
         <p className="curriculum-subtitle">
-          A clear, step-by-step journey through visual linear algebra. Discover how numbers become pixels, colors, shapes, and optical reflections through {FEATURES.length} interactive experiments.
+          A structured visual journey through linear algebra — transforming numbers into pixels, geometric spaces, and optical reflections.
         </p>
-      </div>
 
-      {/* Chapters */}
+        {/* Delicate Metric / Scope Strip */}
+        <div className="curriculum-stats-strip">
+          <div className="curriculum-stat-item">
+            <span className="stat-number">{FEATURES.length}</span>
+            <span className="stat-label">Interactive Experiments</span>
+          </div>
+          <span className="curriculum-stat-divider" aria-hidden="true" />
+          <div className="curriculum-stat-item">
+            <span className="stat-number">{CATEGORIES.length}</span>
+            <span className="stat-label">Thematic Chapters</span>
+          </div>
+          <span className="curriculum-stat-divider" aria-hidden="true" />
+          <div className="curriculum-stat-item">
+            <span className="stat-number">Real-Time</span>
+            <span className="stat-label">Matrix Computations</span>
+          </div>
+        </div>
+      </header>
+
+      {/* Chapters / Sections List */}
       <div className="curriculum-chapters-list">
         {CATEGORIES.map((cat, idx) => {
-          const catFeatures = FEATURES.filter(f => f.category === cat.id);
-          const CatIcon = cat.icon;
+          const catFeatures = FEATURES.filter((f) => f.category === cat.id);
 
           return (
-            <div key={cat.id} className="curriculum-chapter-card glass-level-2">
+            <section key={cat.id} className="curriculum-chapter-section">
+              {/* Airy, Elegant Section Header with integrated rule */}
               <div className="chapter-header-row">
-                <div className="chapter-num-box">
-                  <span>0{idx + 1}</span>
-                </div>
-                <div className="chapter-meta">
-                  <div className="chapter-tag-row">
-                    <span className="chapter-cat-label">{cat.label}</span>
-                    <span className="chapter-count-label">{catFeatures.length} Modules</span>
+                <div className="chapter-header-left">
+                  <span className="chapter-index-pill">0{idx + 1}</span>
+                  <div className="chapter-header-info">
+                    <div className="chapter-title-group">
+                      <h2 className="chapter-headline">{cat.label}</h2>
+                      <span className="chapter-count-pill">{catFeatures.length} Experiments</span>
+                    </div>
+                    <p className="chapter-desc">{cat.description}</p>
                   </div>
-                  <h2 className="chapter-headline">{cat.description}</h2>
                 </div>
               </div>
 
+              {/* Responsive Cards Grid */}
               <div className="chapter-steps-grid">
                 {catFeatures.map((feat) => {
                   const Icon = feat.icon;
                   return (
                     <motion.div
                       key={feat.id}
-                      className="chapter-step-item glass-level-1"
-                      whileHover={{ y: -3, borderColor: 'var(--border-hover)' }}
+                      className="chapter-step-item"
+                      whileHover={{ y: -3 }}
+                      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
                       onClick={() => onSelectStep(feat.stepNumber)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onSelectStep(feat.stepNumber);
+                        }
+                      }}
+                      aria-label={`Open experiment ${feat.code}: ${feat.title}`}
                     >
-                      <div className="step-item-top">
-                        <div className="step-icon-bubble">
-                          <Icon size={16} />
+                      <div className="step-item-header">
+                        <div className="step-item-tag">
+                          <span className="step-icon-bubble">
+                            <Icon size={14} />
+                          </span>
+                          <span className="step-item-number">EXP {feat.code}</span>
                         </div>
-                        <span className="step-item-number">Module {feat.code}</span>
+                        <span className="step-item-arrow-wrap">
+                          <ArrowUpRight size={14} className="step-item-arrow" />
+                        </span>
                       </div>
 
-                      <h3 className="step-item-title">{feat.title}</h3>
-
-                      <div className="step-item-formula-box">
-                        <code>{feat.formula}</code>
-                      </div>
-
-                      <div className="step-item-footer">
-                        <span>Open Experiment</span>
-                        <ArrowRight size={14} />
+                      <div className="step-item-body">
+                        <h3 className="step-item-title">{feat.title}</h3>
+                        {feat.summary && (
+                          <p className="step-item-summary">{feat.summary}</p>
+                        )}
                       </div>
                     </motion.div>
                   );
                 })}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>

@@ -50,6 +50,14 @@ export function formatMathText(str) {
     .replace(/\\alpha/g, 'α')
     .replace(/\\beta/g, 'β')
     .replace(/\\theta/g, 'θ')
+    .replace(/\\odot/g, '⊙')
+    .replace(/\\oslash/g, '⊘')
+    .replace(/\\approx/g, '≈')
+    .replace(/\\deg/g, '°')
+    .replace(/\\begin\{bmatrix\}/g, '[')
+    .replace(/\\end\{bmatrix\}/g, ']')
+    .replace(/\\begin\{pmatrix\}/g, '(')
+    .replace(/\\end\{pmatrix\}/g, ')')
     .replace(/\\left\[/g, '[')
     .replace(/\\right\]/g, ']')
     .replace(/\\left\(/g, '(')
@@ -61,8 +69,8 @@ export function formatMathText(str) {
     .replace(/\\,/g, ' ');
 }
 
-export default function ModuleDocumentation({ stepNumber = 1 }) {
-  const [isOpen, setIsOpen] = useState(true);
+export default function ModuleDocumentation({ stepNumber = 1, defaultOpen = false }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const [activeTab, setActiveTab] = useState('concept'); // 'concept' | 'math' | 'applications'
   const [copiedFormula, setCopiedFormula] = useState(false);
 
@@ -178,6 +186,38 @@ export default function ModuleDocumentation({ stepNumber = 1 }) {
                   </div>
                 </div>
 
+                {/* Core Working Principles & Mathematical Subsections */}
+                {doc.subsections && doc.subsections.length > 0 && (
+                  <div className="docs-subsections-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <h3 className="docs-steps-heading" style={{ margin: '0.2rem 0 0 0' }}>
+                      Core Working Principles &amp; Mathematical Concepts
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: doc.subsections.length > 1 ? 'repeat(auto-fit, minmax(280px, 1fr))' : '1fr', gap: '0.75rem' }}>
+                      {doc.subsections.map((sub, sIdx) => (
+                        <div key={sIdx} className="docs-subcard">
+                          <div className="docs-subcard-header">
+                            <Compass size={15} className="docs-subcard-icon" />
+                            <h4 className="docs-subcard-title">{sub.title}</h4>
+                          </div>
+                          <p className="docs-prose" style={{ whiteSpace: 'pre-line' }}>{sub.content}</p>
+                          {sub.formula && (
+                            <div className="formula-banner-code-box" style={{ marginTop: '0.5rem', padding: '0.35rem 0.65rem' }}>
+                              <code style={{ fontSize: '0.78rem' }}>{formatMathText(sub.formula)}</code>
+                            </div>
+                          )}
+                          {sub.points && sub.points.length > 0 && (
+                            <ul style={{ margin: '0.45rem 0 0 1rem', padding: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                              {sub.points.map((pt, pIdx) => (
+                                <li key={pIdx}>{pt}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Full Width: How Does It Work? */}
                 <div className="docs-steps-card">
                   <h3 className="docs-steps-heading">How Does It Work?</h3>
@@ -250,6 +290,29 @@ export default function ModuleDocumentation({ stepNumber = 1 }) {
                   </div>
                 </div>
 
+                {/* Additional Formulas & Identities */}
+                {doc.additionalFormulas && doc.additionalFormulas.length > 0 && (
+                  <div className="docs-subcard">
+                    <div className="docs-subcard-header">
+                      <Calculator size={16} className="docs-subcard-icon" />
+                      <h3 className="docs-subcard-title">Key Associated Formulas &amp; Identities</h3>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: doc.additionalFormulas.length > 1 ? 'repeat(auto-fit, minmax(260px, 1fr))' : '1fr', gap: '0.65rem', marginTop: '0.5rem' }}>
+                      {doc.additionalFormulas.map((fItem, fIdx) => (
+                        <div key={fIdx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', padding: '0.55rem 0.75rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+                          <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--accent-primary)' }}>{fItem.label}</span>
+                          <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem', color: 'var(--text-primary)' }}>
+                            {formatMathText(fItem.formula)}
+                          </code>
+                          {fItem.desc && (
+                            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', lineHeight: 1.35 }}>{fItem.desc}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Worked Numerical Example Card */}
                 {doc.workedExample && (
                   <div className="docs-worked-example-card">
@@ -317,6 +380,24 @@ export default function ModuleDocumentation({ stepNumber = 1 }) {
                     ))}
                   </ul>
                 </div>
+
+                {/* Guided Inquiry & Mathematical Insights */}
+                {doc.guidedInquiry && doc.guidedInquiry.length > 0 && (
+                  <div className="docs-observations-card">
+                    <div className="docs-subcard-header">
+                      <HelpCircle size={16} className="docs-subcard-icon" />
+                      <h3 className="docs-subcard-title">Guided Inquiry &amp; Mathematical Insights</h3>
+                    </div>
+                    <div className="step15-inquiry-grid" style={{ marginTop: '0.65rem' }}>
+                      {doc.guidedInquiry.map((inq, iIdx) => (
+                        <div key={iIdx} className="step15-inquiry-item">
+                          <span className="step15-inquiry-q">{inq.question}</span>
+                          <span className="step15-inquiry-a">{inq.answer}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Real-World Applications Grid */}
                 <div className="docs-applications-card">

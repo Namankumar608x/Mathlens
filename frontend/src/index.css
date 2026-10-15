@@ -54,7 +54,7 @@
 
   --font-sans: 'Plus Jakarta Sans', 'Manrope', system-ui, -apple-system, sans-serif;
   --font-serif: 'Fraunces', 'STIX Two Text', Georgia, serif;
-  --font-mono: 'JetBrains Mono', 'STIX Two Text', monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
   color-scheme: dark;
   color: var(--text-secondary);

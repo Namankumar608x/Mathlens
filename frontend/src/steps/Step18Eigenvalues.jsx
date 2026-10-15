@@ -5,35 +5,30 @@ import {
   RotateCcw,
   Sparkles,
   HelpCircle,
-  ChevronDown,
-  ChevronUp,
   Layers,
-  ArrowRight,
   Compass,
-  Repeat,
   CheckCircle2,
-  Info,
-  Maximize2,
-  Upload,
   Sliders,
-  Eye,
+  Upload,
   FlipHorizontal,
   RefreshCw,
   Check,
   X,
-  Zap
+  Zap,
+  Info
 } from 'lucide-react';
 import StepFooter from '../components/layout/StepFooter';
+import ModuleDocumentation from '../components/experiment/ModuleDocumentation';
 
-// Draw procedural preset graphics onto an offscreen canvas
+// Procedural preset graphics rendered onto an offscreen canvas
 function drawPresetGraphic(ctx, presetId, size) {
   ctx.clearRect(0, 0, size, size);
 
   if (presetId === 'flower') {
-    // Radial gradient background
+    // Elegant radial background
     const bg = ctx.createRadialGradient(size / 2, size / 2, 5, size / 2, size / 2, size * 0.7);
-    bg.addColorStop(0, '#134e4a');
-    bg.addColorStop(1, '#022c22');
+    bg.addColorStop(0, '#1E261B');
+    bg.addColorStop(1, '#0F140D');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, size, size);
 
@@ -45,25 +40,25 @@ function drawPresetGraphic(ctx, presetId, size) {
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(a);
-      ctx.fillStyle = i % 2 === 0 ? '#f43f5e' : '#fb7185';
+      ctx.fillStyle = i % 2 === 0 ? '#C27373' : '#DB9292';
       ctx.beginPath();
       ctx.ellipse(0, size * 0.26, size * 0.11, size * 0.22, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = '#be123c';
+      ctx.strokeStyle = '#9E5555';
       ctx.lineWidth = Math.max(1, size / 120);
       ctx.stroke();
       ctx.restore();
     }
     // Flower Center
-    ctx.fillStyle = '#facc15';
+    ctx.fillStyle = '#D4A359';
     ctx.beginPath();
     ctx.arc(cx, cy, size * 0.13, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#d97706';
+    ctx.strokeStyle = '#B8863B';
     ctx.lineWidth = Math.max(1, size / 100);
     ctx.stroke();
-    // Inner dots
-    ctx.fillStyle = '#78350f';
+    // Inner center dots
+    ctx.fillStyle = '#6E4918';
     for (let d = 0; d < 6; d++) {
       const da = (d * 2 * Math.PI) / 6;
       ctx.beginPath();
@@ -71,28 +66,28 @@ function drawPresetGraphic(ctx, presetId, size) {
       ctx.fill();
     }
   } else if (presetId === 'portrait') {
-    ctx.fillStyle = '#0f172a';
+    ctx.fillStyle = '#14181F';
     ctx.fillRect(0, 0, size, size);
 
     const grad = ctx.createLinearGradient(0, 0, size, size);
-    grad.addColorStop(0, '#38bdf8');
-    grad.addColorStop(1, '#6366f1');
+    grad.addColorStop(0, '#4A5B70');
+    grad.addColorStop(1, '#2D3748');
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(size / 2, size * 0.4, size * 0.22, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#818cf8';
+    ctx.fillStyle = '#64748B';
     ctx.beginPath();
     ctx.ellipse(size / 2, size * 0.85, size * 0.36, size * 0.24, 0, 0, Math.PI * 2);
     ctx.fill();
   } else {
     // Geometric Grid
-    ctx.fillStyle = '#09090b';
+    ctx.fillStyle = '#141416';
     ctx.fillRect(0, 0, size, size);
 
-    ctx.strokeStyle = 'rgba(236, 72, 153, 0.4)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 1.2;
     for (let x = 0; x <= size; x += size / 6) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -105,7 +100,7 @@ function drawPresetGraphic(ctx, presetId, size) {
       ctx.lineTo(size, y);
       ctx.stroke();
     }
-    ctx.fillStyle = '#f43f5e';
+    ctx.fillStyle = '#8BA871';
     ctx.beginPath();
     ctx.arc(size / 2, size / 2, size * 0.28, 0, Math.PI * 2);
     ctx.fill();
@@ -115,6 +110,17 @@ function drawPresetGraphic(ctx, presetId, size) {
 export default function Step18Eigenvalues({ onSelectStep }) {
   // Navigation Tabs: 'explore' | 'eigenvalues' | 'image-scaling' | 'reflection-challenge'
   const [activeTab, setActiveTab] = useState('explore');
+
+  // Detect Light vs Dark Mode dynamically
+  const [theme, setTheme] = useState(() => (typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') || 'dark' : 'dark'));
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+  const isLight = theme === 'light';
 
   // --- TAB 1: FINDING SPECIAL DIRECTIONS (VECTOR ROTATE / SCALE) ---
   const [vectorAngle, setVectorAngle] = useState(30); // in degrees: 0 to 360
@@ -145,22 +151,8 @@ export default function Step18Eigenvalues({ onSelectStep }) {
   const eigenCanvasRef = useRef(null);
   const imageCanvasRef = useRef(null);
   const reflectionCanvasRef = useRef(null);
-
-  // Offscreen canvas for preset generation
   const offscreenCanvasRef = useRef(null);
   const [presetCanvasKey, setPresetCanvasKey] = useState(0);
-
-  // Pulse animation for eigenvector alignment
-  const [pulse, setPulse] = useState(0);
-  useEffect(() => {
-    let frameId;
-    const animate = () => {
-      setPulse(p => (p + 0.04) % (Math.PI * 2));
-      frameId = requestAnimationFrame(animate);
-    };
-    frameId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frameId);
-  }, []);
 
   // Preset Image preparation
   useEffect(() => {
@@ -202,12 +194,11 @@ export default function Step18Eigenvalues({ onSelectStep }) {
 
   // Check Collinearity between inV and outV:
   // inVx * outVy - inVy * outVx == 0
-  // inVx * (1 * inVy) - inVy * (2 * inVx) = -inVx * inVy
   const crossProduct = Math.abs(inVx * outVy - inVy * outVx);
-  const isCollinear = crossProduct < 0.06;
+  const isCollinear = crossProduct < 0.08;
 
-  const isHorizontalEigen = isCollinear && Math.abs(inVy) < 0.08 && Math.abs(inVx) > 0.1;
-  const isVerticalEigen = isCollinear && Math.abs(inVx) < 0.08 && Math.abs(inVy) > 0.1;
+  const isHorizontalEigen = isCollinear && Math.abs(inVy) < 0.1 && Math.abs(inVx) > 0.1;
+  const isVerticalEigen = isCollinear && Math.abs(inVx) < 0.1 && Math.abs(inVy) > 0.1;
 
   useEffect(() => {
     if (isHorizontalEigen && !foundX1) setFoundX1(true);
@@ -236,10 +227,10 @@ export default function Step18Eigenvalues({ onSelectStep }) {
 
     const originX = width / 2;
     const originY = height / 2;
-    const scale = Math.min(width, height) / 14; // coordinate scale
+    const scale = Math.min(width, height) / 14;
 
-    // 1. Grid
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    // 1. Grid Lines (Neutral, Never Green!)
+    ctx.strokeStyle = isLight ? 'rgba(41, 47, 37, 0.08)' : 'rgba(255, 255, 255, 0.08)';
     ctx.lineWidth = 1;
     for (let x = -7; x <= 7; x++) {
       ctx.beginPath();
@@ -255,8 +246,8 @@ export default function Step18Eigenvalues({ onSelectStep }) {
     }
 
     // 2. Axes
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = isLight ? '#707568' : 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
     ctx.moveTo(0, originY);
     ctx.lineTo(width, originY);
@@ -264,34 +255,24 @@ export default function Step18Eigenvalues({ onSelectStep }) {
     ctx.lineTo(originX, height);
     ctx.stroke();
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-    ctx.font = '11px monospace';
-    ctx.fillText('+x', width - 24, originY - 8);
-    ctx.fillText('+y', originX + 8, 20);
+    ctx.fillStyle = isLight ? '#707568' : 'rgba(255, 255, 255, 0.65)';
+    ctx.font = '10px monospace';
+    ctx.fillText('+x', width - 22, originY - 6);
+    ctx.fillText('+y', originX + 6, 16);
 
-    // 3. Highlight Special Eigen-axes (Span lines for X1 and X2)
-    ctx.strokeStyle = 'rgba(34, 211, 238, 0.15)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 6]);
-    // Horizontal axis line
-    ctx.beginPath();
-    ctx.moveTo(0, originY);
-    ctx.lineTo(width, originY);
-    ctx.stroke();
-    // Vertical axis line
-    ctx.beginPath();
-    ctx.moveTo(originX, 0);
-    ctx.lineTo(originX, height);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // 4. Line of Span of Vector X (Dashed guideline to easily see collinearity!)
+    // 3. 1D Span Line Guideline of Vector v
     ctx.save();
     const spanLength = 12;
     const dirX = Math.cos(angleRad);
     const dirY = Math.sin(angleRad);
-    ctx.strokeStyle = isCollinear ? 'rgba(236, 72, 153, 0.5)' : 'rgba(255, 255, 255, 0.15)';
-    ctx.lineWidth = isCollinear ? 2.5 : 1.2;
+    ctx.strokeStyle = isCollinear
+      ? (isLight ? 'rgba(105, 121, 81, 0.85)' : 'rgba(168, 189, 217, 0.95)')
+      : (isLight ? 'rgba(41, 47, 37, 0.22)' : 'rgba(255, 255, 255, 0.25)');
+    ctx.lineWidth = isCollinear ? 2.0 : 1.2;
+    if (!isLight && isCollinear) {
+      ctx.shadowColor = 'rgba(168, 189, 217, 0.45)';
+      ctx.shadowBlur = 6;
+    }
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
     ctx.moveTo(originX - dirX * spanLength * scale, originY + dirY * spanLength * scale);
@@ -299,94 +280,107 @@ export default function Step18Eigenvalues({ onSelectStep }) {
     ctx.stroke();
     ctx.restore();
 
-    // 5. Draw Transformed Vector AX (Emerald or Rose if collinear)
+    // 4. Draw Transformed Vector Av
     const axTipX = originX + outVx * scale;
     const axTipY = originY - outVy * scale;
+    const avColor = isCollinear
+      ? (isLight ? '#697951' : '#A8BDD9')
+      : (isLight ? '#707568' : '#CBD5E1');
 
     ctx.save();
-    if (isCollinear) {
-      ctx.shadowColor = '#ec4899';
-      ctx.shadowBlur = 14 + Math.sin(pulse) * 4;
-      ctx.strokeStyle = '#ec4899';
-    } else {
-      ctx.shadowColor = '#10b981';
-      ctx.shadowBlur = 8;
-      ctx.strokeStyle = '#10b981';
+    if (!isLight) {
+      ctx.shadowColor = isCollinear ? 'rgba(168, 189, 217, 0.5)' : 'rgba(255, 255, 255, 0.35)';
+      ctx.shadowBlur = 6;
     }
-    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = avColor;
+    ctx.lineWidth = 3.2;
     ctx.beginPath();
     ctx.moveTo(originX, originY);
     ctx.lineTo(axTipX, axTipY);
     ctx.stroke();
 
-    // Transformed Vector Arrowhead
+    // Arrowhead for Av
     const axAngle = Math.atan2(-outVy, outVx);
-    ctx.fillStyle = isCollinear ? '#ec4899' : '#10b981';
+    ctx.fillStyle = avColor;
     ctx.beginPath();
     ctx.moveTo(axTipX, axTipY);
-    ctx.lineTo(axTipX - 12 * Math.cos(axAngle - Math.PI / 7), axTipY - 12 * Math.sin(axAngle - Math.PI / 7));
-    ctx.lineTo(axTipX - 12 * Math.cos(axAngle + Math.PI / 7), axTipY - 12 * Math.sin(axAngle + Math.PI / 7));
+    ctx.lineTo(axTipX - 11 * Math.cos(axAngle - Math.PI / 7), axTipY - 11 * Math.sin(axAngle - Math.PI / 7));
+    ctx.lineTo(axTipX - 11 * Math.cos(axAngle + Math.PI / 7), axTipY - 11 * Math.sin(axAngle + Math.PI / 7));
     ctx.closePath();
     ctx.fill();
     ctx.restore();
 
-    // 6. Draw Input Vector X (Electric Cyan)
-    const xTipX = originX + inVx * scale;
-    const xTipY = originY - inVy * scale;
+    // 5. Draw Input Vector v
+    const vTipX = originX + inVx * scale;
+    const vTipY = originY - inVy * scale;
+    const inVColor = isLight ? '#292F25' : '#FFFFFF';
 
     ctx.save();
-    ctx.shadowColor = '#22d3ee';
-    ctx.shadowBlur = 8;
-    ctx.strokeStyle = '#22d3ee';
-    ctx.lineWidth = 3;
+    if (!isLight) {
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.52)';
+      ctx.shadowBlur = 6;
+    }
+    ctx.strokeStyle = inVColor;
+    ctx.lineWidth = 2.6;
     ctx.beginPath();
     ctx.moveTo(originX, originY);
-    ctx.lineTo(xTipX, xTipY);
+    ctx.lineTo(vTipX, vTipY);
     ctx.stroke();
 
-    // Input Vector Arrowhead
-    ctx.fillStyle = '#22d3ee';
+    // Arrowhead for v
+    ctx.fillStyle = inVColor;
     ctx.beginPath();
-    ctx.moveTo(xTipX, xTipY);
-    ctx.lineTo(xTipX - 10 * Math.cos(angleRad - Math.PI / 7), xTipY + 10 * Math.sin(angleRad - Math.PI / 7));
-    ctx.lineTo(xTipX - 10 * Math.cos(angleRad + Math.PI / 7), xTipY + 10 * Math.sin(angleRad + Math.PI / 7));
+    ctx.moveTo(vTipX, vTipY);
+    ctx.lineTo(vTipX - 9 * Math.cos(angleRad - Math.PI / 7), vTipY + 9 * Math.sin(angleRad - Math.PI / 7));
+    ctx.lineTo(vTipX - 9 * Math.cos(angleRad + Math.PI / 7), vTipY + 9 * Math.sin(angleRad + Math.PI / 7));
     ctx.closePath();
     ctx.fill();
     ctx.restore();
 
-    // 7. Labels
-    ctx.font = 'bold 12px Inter, sans-serif';
-    ctx.fillStyle = '#22d3ee';
-    ctx.fillText(`X [${inVx.toFixed(1)}, ${inVy.toFixed(1)}]`, xTipX + 8, xTipY - 6);
-
-    ctx.fillStyle = isCollinear ? '#f472b6' : '#34d399';
-    ctx.fillText(`AX [${outVx.toFixed(1)}, ${outVy.toFixed(1)}]`, axTipX + 8, axTipY + 16);
-
-    // 8. Collinearity Status Floating Banner
+    // 6. Vector Labels
     ctx.save();
-    const bannerW = 340;
-    const bannerH = 34;
+    ctx.font = 'bold 11px var(--font-mono), monospace';
+    if (!isLight) {
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+      ctx.shadowBlur = 4;
+    }
+    ctx.fillStyle = inVColor;
+    ctx.fillText(`v [${inVx.toFixed(1)}, ${inVy.toFixed(1)}]`, vTipX + 8, vTipY - 6);
+
+    ctx.fillStyle = avColor;
+    ctx.fillText(`Av [${outVx.toFixed(1)}, ${outVy.toFixed(1)}]`, axTipX + 8, axTipY + 16);
+    ctx.restore();
+
+    // 7. Floating Collinearity Status Pill
+    ctx.save();
+    const bannerW = 320;
+    const bannerH = 30;
     const bannerX = width / 2 - bannerW / 2;
-    const bannerY = 16;
-    ctx.fillStyle = isCollinear ? 'rgba(236, 72, 153, 0.2)' : 'rgba(15, 23, 42, 0.75)';
-    ctx.strokeStyle = isCollinear ? '#ec4899' : 'rgba(255, 255, 255, 0.15)';
-    ctx.lineWidth = 1.5;
+    const bannerY = 14;
+
+    ctx.fillStyle = isLight
+      ? (isCollinear ? '#EFF4E7' : '#FAF9F2')
+      : (isCollinear ? 'rgba(168, 189, 217, 0.15)' : 'rgba(19, 15, 13, 0.85)');
+    ctx.strokeStyle = isLight
+      ? (isCollinear ? '#697951' : '#DCE2D2')
+      : (isCollinear ? '#A8BDD9' : 'rgba(255, 255, 255, 0.15)');
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 8);
+    ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 9999);
     ctx.fill();
     ctx.stroke();
 
-    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.font = 'bold 11px var(--font-sans), sans-serif';
     ctx.textAlign = 'center';
     if (isCollinear) {
-      ctx.fillStyle = '#f472b6';
-      ctx.fillText(`✨ EIGENVECTOR FOUND! Lies on same line (λ = ${measuredLambda?.toFixed(1)})`, width / 2, bannerY + 21);
+      ctx.fillStyle = isLight ? '#424F34' : '#FFFFFF';
+      ctx.fillText(`✓ Eigenvector Found! Lies on span line (λ = ${measuredLambda?.toFixed(1)})`, width / 2, bannerY + 19);
     } else {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.fillText(`Rotates off span line (Not an Eigenvector)`, width / 2, bannerY + 21);
+      ctx.fillStyle = isLight ? '#707568' : 'rgba(255, 255, 255, 0.7)';
+      ctx.fillText(`Rotates off span line (Not an Eigenvector)`, width / 2, bannerY + 19);
     }
     ctx.restore();
-  }, [activeTab, inVx, inVy, outVx, outVy, isCollinear, measuredLambda, angleRad, pulse]);
+  }, [activeTab, inVx, inVy, outVx, outVy, isCollinear, measuredLambda, angleRad, isLight]);
 
   // ----------------------------------------------------------------------
   // CANVAS 2: DYNAMIC EIGENVALUE MATRIX RENDERER
@@ -405,7 +399,7 @@ export default function Step18Eigenvalues({ onSelectStep }) {
     const scale = Math.min(width, height) / 12;
 
     // Background Grid
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.strokeStyle = isLight ? 'rgba(41, 47, 37, 0.08)' : 'rgba(255, 255, 255, 0.08)';
     ctx.lineWidth = 1;
     for (let x = -6; x <= 6; x++) {
       ctx.beginPath();
@@ -421,8 +415,8 @@ export default function Step18Eigenvalues({ onSelectStep }) {
     }
 
     // Axes
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = isLight ? '#707568' : 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
     ctx.moveTo(0, originY);
     ctx.lineTo(width, originY);
@@ -430,12 +424,15 @@ export default function Step18Eigenvalues({ onSelectStep }) {
     ctx.lineTo(originX, height);
     ctx.stroke();
 
-    // 1. Transformed Ellipse from Unit Circle
+    // 1. Transformed Unit Circle (Deformation Ellipse)
     if (showGridMesh) {
-      // Draw transformed unit circle
       ctx.save();
-      ctx.strokeStyle = 'rgba(168, 85, 247, 0.35)';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = isLight ? 'rgba(105, 121, 81, 0.45)' : 'rgba(168, 189, 217, 0.65)';
+      ctx.lineWidth = 2.0;
+      if (!isLight) {
+        ctx.shadowColor = 'rgba(168, 189, 217, 0.35)';
+        ctx.shadowBlur = 5;
+      }
       ctx.beginPath();
       const numPts = 72;
       for (let i = 0; i <= numPts; i++) {
@@ -450,115 +447,126 @@ export default function Step18Eigenvalues({ onSelectStep }) {
         else ctx.lineTo(pX, pY);
       }
       ctx.closePath();
-      ctx.fillStyle = 'rgba(168, 85, 247, 0.08)';
+      ctx.fillStyle = isLight ? 'rgba(105, 121, 81, 0.06)' : 'rgba(168, 189, 217, 0.10)';
       ctx.fill();
       ctx.stroke();
       ctx.restore();
     }
 
-    // 2. Vector X1 (Horizontal Eigenvector: [1, 0]^T -> [lambdaX, 0]^T)
+    // 2. Vector v1 (Horizontal Eigenvector: [1, 0]^T -> [lambdaX, 0]^T)
     const origX1TipX = originX + 1.0 * scale;
-    const origX1TipY = originY;
     const transX1TipX = originX + lambdaX * scale;
-    const transX1TipY = originY;
+    const x1Color = isLight ? '#292F25' : '#FFFFFF';
 
-    // Original X1 ghost
+    // Original v1 ghost
     ctx.save();
-    ctx.strokeStyle = 'rgba(34, 211, 238, 0.4)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = isLight ? 'rgba(41, 47, 37, 0.35)' : 'rgba(255, 255, 255, 0.35)';
+    ctx.lineWidth = 1.5;
     ctx.setLineDash([3, 3]);
     ctx.beginPath();
     ctx.moveTo(originX, originY);
-    ctx.lineTo(origX1TipX, origX1TipY);
+    ctx.lineTo(origX1TipX, originY);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Transformed X1 (Scaled by lambdaX)
-    ctx.shadowColor = '#22d3ee';
-    ctx.shadowBlur = 10;
-    ctx.strokeStyle = '#22d3ee';
-    ctx.lineWidth = 3.5;
+    // Transformed v1
+    if (!isLight) {
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.52)';
+      ctx.shadowBlur = 6;
+    }
+    ctx.strokeStyle = x1Color;
+    ctx.lineWidth = 2.8;
     ctx.beginPath();
     ctx.moveTo(originX, originY);
-    ctx.lineTo(transX1TipX, transX1TipY);
+    ctx.lineTo(transX1TipX, originY);
     ctx.stroke();
 
-    // Arrowhead for transX1
     const x1Angle = lambdaX >= 0 ? 0 : Math.PI;
-    ctx.fillStyle = '#22d3ee';
+    ctx.fillStyle = x1Color;
     ctx.beginPath();
-    ctx.moveTo(transX1TipX, transX1TipY);
-    ctx.lineTo(transX1TipX - 10 * Math.cos(x1Angle - Math.PI / 7), transX1TipY - 10 * Math.sin(x1Angle - Math.PI / 7));
-    ctx.lineTo(transX1TipX - 10 * Math.cos(x1Angle + Math.PI / 7), transX1TipY - 10 * Math.sin(x1Angle + Math.PI / 7));
+    ctx.moveTo(transX1TipX, originY);
+    ctx.lineTo(transX1TipX - 9 * Math.cos(x1Angle - Math.PI / 7), originY - 9 * Math.sin(x1Angle - Math.PI / 7));
+    ctx.lineTo(transX1TipX - 9 * Math.cos(x1Angle + Math.PI / 7), originY - 9 * Math.sin(x1Angle + Math.PI / 7));
     ctx.closePath();
     ctx.fill();
     ctx.restore();
 
-    // 3. Vector X2 (Vertical Eigenvector: [0, 1]^T -> [0, lambdaY]^T)
-    const origX2TipX = originX;
+    // 3. Vector v2 (Vertical Eigenvector: [0, 1]^T -> [0, lambdaY]^T)
     const origX2TipY = originY - 1.0 * scale;
-    const transX2TipX = originX;
     const transX2TipY = originY - lambdaY * scale;
+    const x2Color = isLight ? '#697951' : '#A8BDD9';
 
-    // Original X2 ghost
+    // Original v2 ghost
     ctx.save();
-    ctx.strokeStyle = 'rgba(52, 211, 153, 0.4)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = isLight ? 'rgba(105, 121, 81, 0.4)' : 'rgba(168, 189, 217, 0.4)';
+    ctx.lineWidth = 1.5;
     ctx.setLineDash([3, 3]);
     ctx.beginPath();
     ctx.moveTo(originX, originY);
-    ctx.lineTo(origX2TipX, origX2TipY);
+    ctx.lineTo(originX, origX2TipY);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Transformed X2 (Scaled by lambdaY)
-    ctx.shadowColor = '#34d399';
-    ctx.shadowBlur = 10;
-    ctx.strokeStyle = '#34d399';
-    ctx.lineWidth = 3.5;
+    // Transformed v2
+    if (!isLight) {
+      ctx.shadowColor = 'rgba(168, 189, 217, 0.5)';
+      ctx.shadowBlur = 6;
+    }
+    ctx.strokeStyle = x2Color;
+    ctx.lineWidth = 2.8;
     ctx.beginPath();
     ctx.moveTo(originX, originY);
-    ctx.lineTo(transX2TipX, transX2TipY);
+    ctx.lineTo(originX, transX2TipY);
     ctx.stroke();
 
-    // Arrowhead for transX2
     const x2Angle = lambdaY >= 0 ? -Math.PI / 2 : Math.PI / 2;
-    ctx.fillStyle = '#34d399';
+    ctx.fillStyle = x2Color;
     ctx.beginPath();
-    ctx.moveTo(transX2TipX, transX2TipY);
-    ctx.lineTo(transX2TipX - 10 * Math.cos(x2Angle - Math.PI / 7), transX2TipY - 10 * Math.sin(x2Angle - Math.PI / 7));
-    ctx.lineTo(transX2TipX - 10 * Math.cos(x2Angle + Math.PI / 7), transX2TipY - 10 * Math.sin(x2Angle + Math.PI / 7));
+    ctx.moveTo(originX, transX2TipY);
+    ctx.lineTo(originX - 9 * Math.cos(x2Angle - Math.PI / 7), transX2TipY - 9 * Math.sin(x2Angle - Math.PI / 7));
+    ctx.lineTo(originX - 9 * Math.cos(x2Angle + Math.PI / 7), transX2TipY - 9 * Math.sin(x2Angle + Math.PI / 7));
     ctx.closePath();
     ctx.fill();
     ctx.restore();
 
-    // 4. Probe Vector X_probe (demonstrates off-axis skew)
+    // 4. Arbitrary Probe Vector (demonstrating off-axis rotation)
     const pRad = (probeAngle * Math.PI) / 180;
     const pInX = 1.4 * Math.cos(pRad);
     const pInY = 1.4 * Math.sin(pRad);
     const pOutX = lambdaX * pInX;
     const pOutY = lambdaY * pInY;
 
-    // Probe transformed
     ctx.save();
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.8)';
-    ctx.lineWidth = 2.5;
+    const probeCol = isLight ? '#B45309' : '#FCD34D';
+    if (!isLight) {
+      ctx.shadowColor = 'rgba(252, 211, 77, 0.45)';
+      ctx.shadowBlur = 5;
+    }
+    ctx.strokeStyle = probeCol;
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
     ctx.moveTo(originX, originY);
     ctx.lineTo(originX + pOutX * scale, originY - pOutY * scale);
     ctx.stroke();
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillText('Probe AX', originX + pOutX * scale + 6, originY - pOutY * scale);
+    ctx.fillStyle = probeCol;
+    ctx.font = '10px var(--font-mono), monospace';
+    ctx.fillText('Probe Av', originX + pOutX * scale + 6, originY - pOutY * scale);
     ctx.restore();
 
     // Labels
-    ctx.font = 'bold 11px Inter, sans-serif';
-    ctx.fillStyle = '#22d3ee';
-    ctx.fillText(`AX₁ = [${lambdaX.toFixed(1)}, 0]ᵀ (${lambdaX.toFixed(1)}·X₁)`, transX1TipX + (lambdaX >= 0 ? 8 : -110), originY + 18);
+    ctx.save();
+    ctx.font = 'bold 11px var(--font-mono), monospace';
+    if (!isLight) {
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+      ctx.shadowBlur = 4;
+    }
+    ctx.fillStyle = x1Color;
+    ctx.fillText(`Av₁ = [${lambdaX.toFixed(1)}, 0]ᵀ`, transX1TipX + (lambdaX >= 0 ? 8 : -95), originY + 16);
 
-    ctx.fillStyle = '#34d399';
-    ctx.fillText(`AX₂ = [0, ${lambdaY.toFixed(1)}]ᵀ (${lambdaY.toFixed(1)}·X₂)`, originX + 8, transX2TipY + (lambdaY >= 0 ? -8 : 16));
-  }, [activeTab, lambdaX, lambdaY, probeAngle, showGridMesh]);
+    ctx.fillStyle = x2Color;
+    ctx.fillText(`Av₂ = [0, ${lambdaY.toFixed(1)}]ᵀ`, originX + 8, transX2TipY + (lambdaY >= 0 ? -6 : 14));
+    ctx.restore();
+  }, [activeTab, lambdaX, lambdaY, probeAngle, showGridMesh, isLight]);
 
   // ----------------------------------------------------------------------
   // CANVAS 3: IMAGE SCALING & EIGENVECTOR OVERLAY
@@ -573,26 +581,20 @@ export default function Step18Eigenvalues({ onSelectStep }) {
 
     ctx.clearRect(0, 0, width, height);
 
-    // Source image / offscreen preset
-    const source = customImageSrc
-      ? new Image()
-      : offscreenCanvasRef.current;
+    const source = customImageSrc ? new Image() : offscreenCanvasRef.current;
 
     const renderImageStretch = (imgSource) => {
       ctx.clearRect(0, 0, width, height);
       const originX = width / 2;
       const originY = height / 2;
 
-      // Base dimensions for displayed image
-      const baseW = 160;
-      const baseH = 160;
-
-      // Scaled dimensions under A = [imageLambdaX 0; 0 imageLambdaY]
+      const baseW = 150;
+      const baseH = 150;
       const scaledW = baseW * imageLambdaX;
       const scaledH = baseH * imageLambdaY;
 
-      // Background grid
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      // Background Grid
+      ctx.strokeStyle = isLight ? 'rgba(41, 47, 37, 0.08)' : 'rgba(255, 255, 255, 0.06)';
       ctx.lineWidth = 1;
       for (let x = 0; x <= width; x += 30) {
         ctx.beginPath();
@@ -607,11 +609,11 @@ export default function Step18Eigenvalues({ onSelectStep }) {
         ctx.stroke();
       }
 
-      // Draw dashed reference box for original unscaled dimensions
+      // Dashed reference box for original unscaled dimensions
       ctx.save();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.strokeStyle = isLight ? 'rgba(41, 47, 37, 0.28)' : 'rgba(255, 255, 255, 0.25)';
       ctx.setLineDash([4, 4]);
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.2;
       ctx.strokeRect(originX - baseW / 2, originY - baseH / 2, baseW, baseH);
       ctx.restore();
 
@@ -619,57 +621,68 @@ export default function Step18Eigenvalues({ onSelectStep }) {
       if (imgSource) {
         ctx.save();
         ctx.translate(originX, originY);
-        // Note: handles negative scaling (reflection) smoothly!
         ctx.drawImage(imgSource, -scaledW / 2, -scaledH / 2, scaledW, scaledH);
         ctx.restore();
       }
 
-      // Draw Invariant Eigenvector Direction Overlays
+      // Invariant Eigenvector Direction Overlays
       ctx.save();
-      // Horizontal Eigenvector X1 (Cyan Arrow)
-      const arrowLenX = (scaledW / 2) + 25;
-      ctx.strokeStyle = '#22d3ee';
-      ctx.lineWidth = 3;
-      ctx.shadowColor = '#22d3ee';
-      ctx.shadowBlur = 8;
+      // Horizontal Eigenvector v1
+      const arrowLenX = (scaledW / 2) + 24;
+      const arrowXColor = isLight ? '#292F25' : '#FFFFFF';
+      if (!isLight) {
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.55)';
+        ctx.shadowBlur = 6;
+      }
+      ctx.strokeStyle = arrowXColor;
+      ctx.lineWidth = 2.8;
       ctx.beginPath();
       ctx.moveTo(originX, originY);
       ctx.lineTo(originX + arrowLenX, originY);
       ctx.stroke();
-      ctx.fillStyle = '#22d3ee';
+      ctx.fillStyle = arrowXColor;
       ctx.beginPath();
       ctx.moveTo(originX + arrowLenX, originY);
-      ctx.lineTo(originX + arrowLenX - 10, originY - 6);
-      ctx.lineTo(originX + arrowLenX - 10, originY + 6);
+      ctx.lineTo(originX + arrowLenX - 9, originY - 5);
+      ctx.lineTo(originX + arrowLenX - 9, originY + 5);
       ctx.closePath();
       ctx.fill();
 
-      // Vertical Eigenvector X2 (Emerald Arrow)
-      const arrowLenY = (scaledH / 2) + 25;
-      ctx.strokeStyle = '#34d399';
-      ctx.lineWidth = 3;
-      ctx.shadowColor = '#34d399';
-      ctx.shadowBlur = 8;
+      // Vertical Eigenvector v2
+      const arrowLenY = (scaledH / 2) + 24;
+      const arrowYColor = isLight ? '#697951' : '#A8BDD9';
+      if (!isLight) {
+        ctx.shadowColor = 'rgba(168, 189, 217, 0.5)';
+        ctx.shadowBlur = 6;
+      }
+      ctx.strokeStyle = arrowYColor;
+      ctx.lineWidth = 2.8;
       ctx.beginPath();
       ctx.moveTo(originX, originY);
       ctx.lineTo(originX, originY - arrowLenY);
       ctx.stroke();
-      ctx.fillStyle = '#34d399';
+      ctx.fillStyle = arrowYColor;
       ctx.beginPath();
       ctx.moveTo(originX, originY - arrowLenY);
-      ctx.lineTo(originX - 6, originY - arrowLenY + 10);
-      ctx.lineTo(originX + 6, originY - arrowLenY + 10);
+      ctx.lineTo(originX - 5, originY - arrowLenY + 9);
+      ctx.lineTo(originX + 5, originY - arrowLenY + 9);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
 
-      // Text Labels
-      ctx.font = 'bold 12px Inter, sans-serif';
-      ctx.fillStyle = '#22d3ee';
-      ctx.fillText(`Eigenvector X₁ (Horizontal) · Stretch × ${imageLambdaX.toFixed(1)}`, originX + 12, originY + 18);
+      // Labels
+      ctx.save();
+      ctx.font = 'bold 11px var(--font-mono), monospace';
+      if (!isLight) {
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+        ctx.shadowBlur = 4;
+      }
+      ctx.fillStyle = arrowXColor;
+      ctx.fillText(`v₁ (Horizontal) · Factor ${imageLambdaX.toFixed(1)}`, originX + 12, originY + 16);
 
-      ctx.fillStyle = '#34d399';
-      ctx.fillText(`Eigenvector X₂ (Vertical) · Stretch × ${imageLambdaY.toFixed(1)}`, originX + 12, originY - arrowLenY + 12);
+      ctx.fillStyle = arrowYColor;
+      ctx.fillText(`v₂ (Vertical) · Factor ${imageLambdaY.toFixed(1)}`, originX + 12, originY - arrowLenY + 12);
+      ctx.restore();
     };
 
     if (customImageSrc) {
@@ -679,7 +692,7 @@ export default function Step18Eigenvalues({ onSelectStep }) {
     } else {
       renderImageStretch(source);
     }
-  }, [activeTab, customImageSrc, selectedPreset, imageLambdaX, imageLambdaY, presetCanvasKey]);
+  }, [activeTab, customImageSrc, selectedPreset, imageLambdaX, imageLambdaY, presetCanvasKey, isLight]);
 
   // ----------------------------------------------------------------------
   // CANVAS 4: REFLECTION & NEGATIVE LAMBDA VISUALIZER
@@ -698,7 +711,7 @@ export default function Step18Eigenvalues({ onSelectStep }) {
     const scale = Math.min(width, height) / 10;
 
     // Background Grid
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.strokeStyle = isLight ? 'rgba(41, 47, 37, 0.08)' : 'rgba(255, 255, 255, 0.08)';
     ctx.lineWidth = 1;
     for (let x = -5; x <= 5; x++) {
       ctx.beginPath();
@@ -714,8 +727,8 @@ export default function Step18Eigenvalues({ onSelectStep }) {
     }
 
     // Axes
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = isLight ? '#707568' : 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
     ctx.moveTo(0, originY);
     ctx.lineTo(width, originY);
@@ -723,26 +736,29 @@ export default function Step18Eigenvalues({ onSelectStep }) {
     ctx.lineTo(originX, height);
     ctx.stroke();
 
-    // Mirror line (y-axis)
+    // Mirror plane line (y-axis)
     ctx.save();
-    ctx.strokeStyle = '#ec4899';
-    ctx.lineWidth = 2.5;
-    ctx.shadowColor = '#ec4899';
-    ctx.shadowBlur = 10;
+    const mirrorLineCol = isLight ? '#697951' : '#9EC5AB';
+    if (!isLight) {
+      ctx.shadowColor = 'rgba(158, 197, 171, 0.45)';
+      ctx.shadowBlur = 5;
+    }
+    ctx.strokeStyle = mirrorLineCol;
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
     ctx.moveTo(originX, 10);
     ctx.lineTo(originX, height - 10);
     ctx.stroke();
     ctx.restore();
 
-    ctx.fillStyle = '#ec4899';
-    ctx.font = 'bold 11px Inter, sans-serif';
-    ctx.fillText('Reflection Plane (x = 0)', originX + 8, 25);
+    ctx.fillStyle = mirrorLineCol;
+    ctx.font = 'bold 10px var(--font-sans), sans-serif';
+    ctx.fillText('Reflection Plane (x = 0)', originX + 8, 22);
 
     // Render flower image reflected
     const source = customImageSrc ? new Image() : offscreenCanvasRef.current;
-    const imgW = 120;
-    const imgH = 120;
+    const imgW = 110;
+    const imgH = 110;
 
     const drawReflectedScene = (img) => {
       if (img) {
@@ -753,68 +769,85 @@ export default function Step18Eigenvalues({ onSelectStep }) {
         ctx.restore();
       }
 
-      // Vector X1 under reflection A = [-1 0; 0 1]
-      // Original X1 = [1, 0]^T
-      // Reflected X1 = [-1, 0]^T
       const vOriginalTipX = originX + 2.0 * scale;
       const vReflectedTipX = originX - 2.0 * scale;
 
       // Guideline (The horizontal 1D line)
       ctx.save();
-      ctx.strokeStyle = 'rgba(236, 72, 153, 0.4)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = isLight ? 'rgba(105, 121, 81, 0.4)' : 'rgba(168, 189, 217, 0.45)';
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([4, 4]);
       ctx.beginPath();
       ctx.moveTo(0, originY);
       ctx.lineTo(width, originY);
       ctx.stroke();
       ctx.restore();
 
-      // Original vector X1 (Cyan)
+      // Original vector v1
       ctx.save();
-      ctx.strokeStyle = '#22d3ee';
-      ctx.lineWidth = 3;
+      const origVCol = isLight ? '#292F25' : '#FFFFFF';
+      if (!isLight) {
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.52)';
+        ctx.shadowBlur = 6;
+      }
+      ctx.strokeStyle = origVCol;
+      ctx.lineWidth = 2.8;
       ctx.beginPath();
       ctx.moveTo(originX, originY);
       ctx.lineTo(vOriginalTipX, originY);
       ctx.stroke();
-      ctx.fillStyle = '#22d3ee';
+      ctx.fillStyle = origVCol;
       ctx.beginPath();
       ctx.moveTo(vOriginalTipX, originY);
-      ctx.lineTo(vOriginalTipX - 10, originY - 6);
-      ctx.lineTo(vOriginalTipX - 10, originY + 6);
+      ctx.lineTo(vOriginalTipX - 9, originY - 5);
+      ctx.lineTo(vOriginalTipX - 9, originY + 5);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
 
-      // Reflected vector AX1 (Rose)
+      // Reflected vector Av1
       if (reflectionAnim === -1) {
         ctx.save();
-        ctx.strokeStyle = '#f43f5e';
-        ctx.lineWidth = 3.5;
-        ctx.shadowColor = '#f43f5e';
-        ctx.shadowBlur = 12;
+        const reflVCol = isLight ? '#697951' : '#A8BDD9';
+        if (!isLight) {
+          ctx.shadowColor = 'rgba(168, 189, 217, 0.5)';
+          ctx.shadowBlur = 6;
+        }
+        ctx.strokeStyle = reflVCol;
+        ctx.lineWidth = 3.2;
         ctx.beginPath();
         ctx.moveTo(originX, originY);
         ctx.lineTo(vReflectedTipX, originY);
         ctx.stroke();
-        ctx.fillStyle = '#f43f5e';
+        ctx.fillStyle = reflVCol;
         ctx.beginPath();
         ctx.moveTo(vReflectedTipX, originY);
-        ctx.lineTo(vReflectedTipX + 10, originY - 6);
-        ctx.lineTo(vReflectedTipX + 10, originY + 6);
+        ctx.lineTo(vReflectedTipX + 9, originY - 5);
+        ctx.lineTo(vReflectedTipX + 9, originY + 5);
         ctx.closePath();
         ctx.fill();
         ctx.restore();
 
-        ctx.font = 'bold 12px Inter, sans-serif';
-        ctx.fillStyle = '#f43f5e';
-        ctx.fillText('AX₁ = [-1, 0]ᵀ = (-1)·X₁', vReflectedTipX - 140, originY - 12);
+        ctx.save();
+        ctx.font = 'bold 11px var(--font-mono), monospace';
+        if (!isLight) {
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+          ctx.shadowBlur = 4;
+        }
+        ctx.fillStyle = isLight ? '#697951' : '#A8BDD9';
+        ctx.fillText('Av₁ = [-1, 0]ᵀ = (-1)·v₁', vReflectedTipX - 130, originY - 10);
+        ctx.restore();
       }
 
-      ctx.font = 'bold 12px Inter, sans-serif';
-      ctx.fillStyle = '#22d3ee';
-      ctx.fillText('Original X₁ = [1, 0]ᵀ', vOriginalTipX + 12, originY - 12);
+      ctx.save();
+      ctx.font = 'bold 11px var(--font-mono), monospace';
+      if (!isLight) {
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+        ctx.shadowBlur = 4;
+      }
+      ctx.fillStyle = isLight ? '#292F25' : '#FFFFFF';
+      ctx.fillText('Original v₁ = [1, 0]ᵀ', vOriginalTipX + 10, originY - 10);
+      ctx.restore();
     };
 
     if (customImageSrc) {
@@ -824,278 +857,251 @@ export default function Step18Eigenvalues({ onSelectStep }) {
     } else {
       drawReflectedScene(source);
     }
-  }, [activeTab, customImageSrc, reflectionAnim, presetCanvasKey]);
+  }, [activeTab, customImageSrc, reflectionAnim, presetCanvasKey, isLight]);
 
   return (
-    <div className="math-step-view" style={{ maxWidth: '1240px', margin: '0 auto', padding: '1.5rem 1rem' }}>
-      {/* HEADER SECTION */}
-      <div className="step-header-box" style={{ marginBottom: '1.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.45rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <span
-              className="modal-badge-tag"
-              style={{
-                margin: 0,
-                background: 'rgba(236, 72, 153, 0.15)',
-                color: '#ec4899',
-                borderColor: 'rgba(236, 72, 153, 0.35)'
-              }}
-            >
-              Advanced Track · Module 1
-            </span>
-            <span style={{ fontSize: '0.85rem', color: '#ec4899', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-              Special Directions &amp; Invariant Subspaces
-            </span>
-          </div>
+    <div className="math-step-view" style={{ maxWidth: '1220px', margin: '0 auto', padding: '1.25rem 1rem' }}>
+      {/* 1. COMPACT STANDARDIZED HEADER */}
+      <div className="step-header-box" style={{ marginBottom: '1rem', padding: '0.9rem 1.15rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.45rem', marginBottom: '0.3rem' }}>
+          <h2 className="step-heading" style={{ margin: 0 }}>
+            Eigenvalues &amp; Eigenvectors
+          </h2>
+          <span className="badge-tag-mini" style={{ fontSize: '0.74rem', padding: '0.15rem 0.5rem' }}>
+            Invariant Directions: A·v = λ·v
+          </span>
         </div>
 
-        <h2 className="step-heading">
-          Eigenvalues and Eigenvectors: Finding Special Directions
-        </h2>
-        <p className="step-description">
-          <strong>Learning Objective:</strong> Understand that some vectors retain their direction when a matrix transforms them,
-          although their length or orientation may change. Uncover invariant axes, test horizontal stretch on photographs (A = [2 0; 0 1]),
-          and discover why negative eigenvalues (λ = -1) preserve directional lines during reflection (A = [-1 0; 0 1]).
+        <p className="step-description" style={{ fontSize: '0.80rem', margin: 0 }}>
+          Some vectors preserve their directional span when transformed by matrix A: <code>Av = λv</code>.
+          Discover invariant coordinate axes, scale image dimensions under <code>A = [2 0; 0 1]</code>, and explore why negative eigenvalues
+          (<code>λ = −1</code>) preserve straight-line subspaces during reflection.
         </p>
-      </div>
 
-      {/* NAVIGATION TABS */}
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white/5 border border-white/10 mb-6 overflow-x-auto custom-scrollbar">
-        <button
-          type="button"
-          onClick={() => setActiveTab('explore')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'explore'
-              ? 'bg-pink-500/20 text-pink-300 border border-pink-500/40 shadow-lg shadow-pink-500/10'
-              : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
-          }`}
-        >
-          <Compass size={16} />
-          <span>1. Rotate &amp; Find Eigenvectors</span>
-        </button>
+        {/* NAVIGATION TABS */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setActiveTab('explore')}
+            className={`sub-chapter-pill ${activeTab === 'explore' ? 'active' : ''}`}
+            style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            <Compass size={14} />
+            <span>1. Rotate &amp; Find Eigenvectors</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('eigenvalues')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'eigenvalues'
-              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-lg shadow-cyan-500/10'
-              : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
-          }`}
-        >
-          <Sliders size={16} />
-          <span>2. Eigenvalue Scaling Matrix</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('eigenvalues')}
+            className={`sub-chapter-pill ${activeTab === 'eigenvalues' ? 'active' : ''}`}
+            style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            <Sliders size={14} />
+            <span>2. Eigenvalue Scaling Matrix</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('image-scaling')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'image-scaling'
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
-              : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
-          }`}
-        >
-          <Layers size={16} />
-          <span>3. Try Your Own Image (Flower Lab)</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('image-scaling')}
+            className={`sub-chapter-pill ${activeTab === 'image-scaling' ? 'active' : ''}`}
+            style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            <Layers size={14} />
+            <span>3. Image Scaling</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('reflection-challenge')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'reflection-challenge'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-lg shadow-amber-500/10'
-              : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
-          }`}
-        >
-          <HelpCircle size={16} />
-          <span>4. Reflection &amp; Negative λ Challenge</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('reflection-challenge')}
+            className={`sub-chapter-pill ${activeTab === 'reflection-challenge' ? 'active' : ''}`}
+            style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            <HelpCircle size={14} />
+            <span>4. Reflection Challenge (λ = −1)</span>
+          </button>
+        </div>
       </div>
 
       {/* ========================================================================= */}
       {/* SECTION 1: ROTATE / SCALE & FIND EIGENVECTORS */}
       {/* ========================================================================= */}
       {activeTab === 'explore' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Controls Column */}
-          <div className="lg:col-span-5 space-y-5">
-            <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Compass size={17} className="text-pink-400" />
-                  Transformation Matrix A
+        <div className="step18-workbench">
+          {/* Left Column: Controls & Checklist */}
+          <div className="step18-left-col">
+            <div className="step18-card">
+              <div className="step18-card-header">
+                <h3 className="step18-card-title">
+                  <Compass size={15} style={{ color: 'var(--accent-primary, #697951)' }} />
+                  <span>Transformation Matrix A</span>
                 </h3>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-pink-500/15 text-pink-300 border border-pink-500/30 font-mono">
-                  A = [2 0; 0 1]
-                </span>
+                <span className="step18-badge">A = [2 0; 0 1]</span>
               </div>
 
-              <p className="text-xs text-zinc-300 leading-relaxed">
-                For a vector X = [x, y]ᵀ, the matrix gives
-                AX = [2x, y]ᵀ.
-                Rotate and scale X. When X and AX <strong>lie on the exact same line</strong>,
-                it is an <strong>eigenvector</strong>!
+              <p className="step18-desc">
+                For vector v = [x, y]ᵀ, matrix multiplication yields Av = [2x, y]ᵀ.
+                Rotate and scale v. When v and Av <strong>lie on the exact same line</strong>, v is an <strong>eigenvector</strong>.
               </p>
 
-              {/* Slider Rotation Angle */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-zinc-300">Rotate Input Vector ($θ$):</span>
-                  <span className="text-cyan-400 font-bold">{vectorAngle}°</span>
+              {/* Sliders in Params Box */}
+              <div className="step18-params-box">
+                {/* Angle Slider */}
+                <div className="step18-slider-row">
+                  <div className="step18-slider-header">
+                    <span>Rotate Input Vector (θ):</span>
+                    <span className="step18-slider-val">{vectorAngle}°</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    step="1"
+                    value={vectorAngle}
+                    onChange={e => setVectorAngle(parseInt(e.target.value, 10))}
+                    className="step18-range-input"
+                    style={{ '--slider-pct': `${(vectorAngle / 360) * 100}%` }}
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="360"
-                  step="1"
-                  value={vectorAngle}
-                  onChange={e => setVectorAngle(parseInt(e.target.value, 10))}
-                  className="w-full accent-cyan-400 cursor-pointer"
-                />
+
+                {/* Magnitude Slider */}
+                <div className="step18-slider-row">
+                  <div className="step18-slider-header">
+                    <span>Magnitude ‖v‖:</span>
+                    <span className="step18-slider-val">{vectorMag.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="3.0"
+                    step="0.1"
+                    value={vectorMag}
+                    onChange={e => setVectorMag(parseFloat(e.target.value))}
+                    className="step18-range-input"
+                    style={{ '--slider-pct': `${((vectorMag - 0.5) / 2.5) * 100}%` }}
+                  />
+                </div>
               </div>
 
-              {/* Slider Magnitude */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-zinc-300">Magnitude ‖X‖:</span>
-                  <span className="text-cyan-400 font-bold">{vectorMag.toFixed(1)}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="3.0"
-                  step="0.1"
-                  value={vectorMag}
-                  onChange={e => setVectorMag(parseFloat(e.target.value))}
-                  className="w-full accent-cyan-400 cursor-pointer"
-                />
-              </div>
-
-              {/* Presets & Jump Targets */}
-              <div className="pt-2">
-                <span className="text-xs font-semibold text-zinc-400 block mb-2">Test Candidate Directions:</span>
-                <div className="grid grid-cols-2 gap-2">
+              {/* Candidate Direction Presets */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.70rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  Test Candidate Directions:
+                </span>
+                <div className="step18-pill-grid">
                   <button
                     type="button"
                     onClick={() => { setVectorAngle(0); setVectorMag(2); }}
-                    className={`px-3 py-2 rounded-xl text-xs font-mono border transition-all text-left flex items-center justify-between cursor-pointer ${
-                      vectorAngle === 0
-                        ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200'
-                        : 'bg-white/5 border-white/10 hover:bg-white/10 text-zinc-300'
-                    }`}
+                    className={`step18-pill-btn ${vectorAngle === 0 ? 'active' : ''}`}
                   >
-                    <span>Horizontal X₁ [1, 0]</span>
-                    <span className="text-[10px] text-cyan-400">0°</span>
+                    <span>Horizontal v₁ [1, 0]</span>
+                    <span style={{ fontSize: '0.64rem', opacity: 0.8 }}>0°</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => { setVectorAngle(90); setVectorMag(2); }}
-                    className={`px-3 py-2 rounded-xl text-xs font-mono border transition-all text-left flex items-center justify-between cursor-pointer ${
-                      vectorAngle === 90
-                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200'
-                        : 'bg-white/5 border-white/10 hover:bg-white/10 text-zinc-300'
-                    }`}
+                    className={`step18-pill-btn ${vectorAngle === 90 ? 'active' : ''}`}
                   >
-                    <span>Vertical X₂ [0, 1]</span>
-                    <span className="text-[10px] text-emerald-400">90°</span>
+                    <span>Vertical v₂ [0, 1]</span>
+                    <span style={{ fontSize: '0.64rem', opacity: 0.8 }}>90°</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => { setVectorAngle(45); setVectorMag(2); }}
-                    className={`px-3 py-2 rounded-xl text-xs font-mono border transition-all text-left flex items-center justify-between cursor-pointer ${
-                      vectorAngle === 45
-                        ? 'bg-amber-500/20 border-amber-400 text-amber-200'
-                        : 'bg-white/5 border-white/10 hover:bg-white/10 text-zinc-300'
-                    }`}
+                    className={`step18-pill-btn ${vectorAngle === 45 ? 'active' : ''}`}
                   >
                     <span>Diagonal [1, 1]</span>
-                    <span className="text-[10px] text-zinc-400">45° (Off)</span>
+                    <span style={{ fontSize: '0.64rem', opacity: 0.8 }}>45° (Off)</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => { setVectorAngle(180); setVectorMag(2); }}
-                    className={`px-3 py-2 rounded-xl text-xs font-mono border transition-all text-left flex items-center justify-between cursor-pointer ${
-                      vectorAngle === 180
-                        ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200'
-                        : 'bg-white/5 border-white/10 hover:bg-white/10 text-zinc-300'
-                    }`}
+                    className={`step18-pill-btn ${vectorAngle === 180 ? 'active' : ''}`}
                   >
-                    <span>Negative X₁ [-1, 0]</span>
-                    <span className="text-[10px] text-cyan-400">180°</span>
+                    <span>Negative v₁ [-1, 0]</span>
+                    <span style={{ fontSize: '0.64rem', opacity: 0.8 }}>180°</span>
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Checklist of Special Directions */}
-            <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center justify-between">
-                <span>Special Eigenvectors Checklist</span>
-                <span className="text-pink-400 font-mono text-[11px] font-semibold">
-                  {(foundX1 ? 1 : 0) + (foundX2 ? 1 : 0)} / 2 Found
+            <div className="step18-card">
+              <div className="step18-card-header">
+                <h4 className="step18-card-title">
+                  <CheckCircle2 size={15} style={{ color: 'var(--accent-primary, #697951)' }} />
+                  <span>Eigenvector Checklist</span>
+                </h4>
+                <span className="step18-badge-accent">
+                  {(foundX1 ? 1 : 0) + (foundX2 ? 1 : 0)} / 2 Detected
                 </span>
-              </h4>
+              </div>
 
-              <div className="space-y-2">
-                <div className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
-                  foundX1 ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-200' : 'bg-black/20 border-white/5 text-zinc-400'
-                }`}>
-                  <div className="flex items-center gap-2.5">
-                    {foundX1 ? <CheckCircle2 size={16} className="text-cyan-400" /> : <div className="w-4 h-4 rounded-full border border-zinc-600" />}
+              <div className="step18-checklist">
+                <div className={`step18-check-item ${foundX1 ? 'found' : ''}`}>
+                  <div className="step18-check-left">
+                    {foundX1 ? (
+                      <CheckCircle2 size={15} style={{ color: isLight ? '#697951' : '#FFFFFF', flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1.5px solid var(--border-color)', flexShrink: 0 }} />
+                    )}
                     <div>
-                      <div className="text-xs font-bold font-mono">Horizontal Eigenvector X₁ = [1, 0]ᵀ</div>
-                      <div className="text-[11px] text-zinc-400">AX₁ = [2, 0]ᵀ = 2 · X₁ (Stretched by 2)</div>
+                      <div className="step18-check-title">Horizontal Eigenvector v₁ = [1, 0]ᵀ</div>
+                      <div className="step18-check-sub">Av₁ = [2, 0]ᵀ = 2 · v₁ (Stretched × 2)</div>
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-bold text-cyan-400">λ₁ = 2</span>
+                  <span className="step18-check-badge">λ₁ = 2</span>
                 </div>
 
-                <div className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
-                  foundX2 ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-200' : 'bg-black/20 border-white/5 text-zinc-400'
-                }`}>
-                  <div className="flex items-center gap-2.5">
-                    {foundX2 ? <CheckCircle2 size={16} className="text-emerald-400" /> : <div className="w-4 h-4 rounded-full border border-zinc-600" />}
+                <div className={`step18-check-item ${foundX2 ? 'found' : ''}`}>
+                  <div className="step18-check-left">
+                    {foundX2 ? (
+                      <CheckCircle2 size={15} style={{ color: isLight ? '#697951' : '#FFFFFF', flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1.5px solid var(--border-color)', flexShrink: 0 }} />
+                    )}
                     <div>
-                      <div className="text-xs font-bold font-mono">Vertical Eigenvector X₂ = [0, 1]ᵀ</div>
-                      <div className="text-[11px] text-zinc-400">AX₂ = [0, 1]ᵀ = 1 · X₂ (Unchanged)</div>
+                      <div className="step18-check-title">Vertical Eigenvector v₂ = [0, 1]ᵀ</div>
+                      <div className="step18-check-sub">Av₂ = [0, 1]ᵀ = 1 · v₂ (Unchanged length)</div>
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-bold text-emerald-400">λ₂ = 1</span>
+                  <span className="step18-check-badge">λ₂ = 1</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Interactive Canvas Column */}
-          <div className="lg:col-span-7">
-            <div className="glass-level-2 p-4 rounded-2xl border border-white/10 flex flex-col items-center">
-              <div className="w-full flex items-center justify-between mb-3 px-2">
-                <span className="text-xs font-semibold text-zinc-400">Interactive Span Line &amp; Vector Invariance</span>
-                <span className="text-xs font-mono text-cyan-400">Dashed = 1D Span Line</span>
+          {/* Right Column: Interactive Canvas */}
+          <div className="step18-right-col">
+            <div className="step18-canvas-card">
+              <div className="step18-card-header">
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Interactive 2D Vector &amp; Span Line Simulation
+                </span>
+                <span className="step18-badge">
+                  A = diag(2, 1)
+                </span>
               </div>
-              <canvas
-                ref={exploreCanvasRef}
-                width={560}
-                height={420}
-                className="w-full max-w-[560px] h-auto rounded-xl bg-slate-950/80 border border-white/5 shadow-inner"
-              />
-              <div className="w-full mt-3 px-2 flex items-center justify-between text-xs text-zinc-400">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" />
-                  Input X
+
+              <div className="step18-canvas-frame">
+                <canvas ref={exploreCanvasRef} width={560} height={400} />
+              </div>
+
+              {/* Clean Legend */}
+              <div className="step18-legend-bar">
+                <span className="step18-legend-item">
+                  <span className="step17-legend-dot" style={{ background: isLight ? '#292F25' : '#FFFFFF' }} />
+                  <span>Input Vector v</span>
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
-                  Transformed AX
+                <span className="step18-legend-item">
+                  <span className="step17-legend-dot" style={{ background: isLight ? '#697951' : '#A8BDD9' }} />
+                  <span>Transformed Av</span>
                 </span>
-                <span className="flex items-center gap-1.5 text-pink-400 font-semibold">
-                  <Sparkles size={13} />
-                  Coincides = Eigenvector!
+                <span className="step18-legend-item">
+                  <span style={{ width: 14, height: 2, borderTop: '2px dashed var(--text-muted)' }} />
+                  <span>1D Span Line</span>
                 </span>
               </div>
             </div>
@@ -1107,93 +1113,98 @@ export default function Step18Eigenvalues({ onSelectStep }) {
       {/* SECTION 2: INTRODUCE EIGENVALUES & DYNAMIC MATRIX A */}
       {/* ========================================================================= */}
       {activeTab === 'eigenvalues' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 space-y-5">
-            <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Sliders size={17} className="text-cyan-400" />
-                  Matrix A = [λx 0; 0 λy]
+        <div className="step18-workbench">
+          {/* Left Column: Sliders & Form */}
+          <div className="step18-left-col">
+            <div className="step18-card">
+              <div className="step18-card-header">
+                <h3 className="step18-card-title">
+                  <Sliders size={15} style={{ color: 'var(--accent-primary, #697951)' }} />
+                  <span>Matrix A = diag(λx, λy)</span>
                 </h3>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-mono">
-                  AX = λX
-                </span>
+                <span className="step18-badge">Av = λv</span>
               </div>
 
-              <p className="text-xs text-zinc-300 leading-relaxed">
-                The numbers λx and λy are <strong>eigenvalues</strong>: they represent the
-                scaling factors along their respective eigenvector directions! Use the sliders to change them in real-time.
+              <p className="step18-desc">
+                The diagonal entries λx and λy are <strong>eigenvalues</strong>: they represent the exact scaling factors
+                along their respective eigenvector axes.
               </p>
 
-              {/* Slider Lambda X */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-zinc-300">Horizontal Eigenvalue (λx):</span>
-                  <span className="text-cyan-400 font-bold">{lambdaX.toFixed(1)}</span>
+              {/* Sliders in Params Box */}
+              <div className="step18-params-box">
+                <div className="step18-slider-row">
+                  <div className="step18-slider-header">
+                    <span>Horizontal Eigenvalue (λx):</span>
+                    <span className="step18-slider-val">{lambdaX.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="-3.0"
+                    max="3.0"
+                    step="0.1"
+                    value={lambdaX}
+                    onChange={e => setLambdaX(parseFloat(e.target.value))}
+                    className="step18-range-input"
+                    style={{ '--slider-pct': `${((lambdaX + 3.0) / 6.0) * 100}%` }}
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="-3.0"
-                  max="3.0"
-                  step="0.1"
-                  value={lambdaX}
-                  onChange={e => setLambdaX(parseFloat(e.target.value))}
-                  className="w-full accent-cyan-400 cursor-pointer"
-                />
+
+                <div className="step18-slider-row">
+                  <div className="step18-slider-header">
+                    <span>Vertical Eigenvalue (λy):</span>
+                    <span className="step18-slider-val">{lambdaY.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="-3.0"
+                    max="3.0"
+                    step="0.1"
+                    value={lambdaY}
+                    onChange={e => setLambdaY(parseFloat(e.target.value))}
+                    className="step18-range-input"
+                    style={{ '--slider-pct': `${((lambdaY + 3.0) / 6.0) * 100}%` }}
+                  />
+                </div>
+
+                <div className="step18-slider-row">
+                  <div className="step18-slider-header">
+                    <span>Arbitrary Probe Vector Angle:</span>
+                    <span className="step18-slider-val">{probeAngle}°</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    step="5"
+                    value={probeAngle}
+                    onChange={e => setProbeAngle(parseInt(e.target.value, 10))}
+                    className="step18-range-input"
+                    style={{ '--slider-pct': `${(probeAngle / 360) * 100}%` }}
+                  />
+                </div>
               </div>
 
-              {/* Slider Lambda Y */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-zinc-300">Vertical Eigenvalue (λy):</span>
-                  <span className="text-emerald-400 font-bold">{lambdaY.toFixed(1)}</span>
-                </div>
-                <input
-                  type="range"
-                  min="-3.0"
-                  max="3.0"
-                  step="0.1"
-                  value={lambdaY}
-                  onChange={e => setLambdaY(parseFloat(e.target.value))}
-                  className="w-full accent-emerald-400 cursor-pointer"
-                />
-              </div>
-
-              {/* Slider Probe Vector */}
-              <div className="space-y-1.5 pt-1">
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-amber-300">Arbitrary Probe Vector Angle:</span>
-                  <span className="text-amber-400 font-bold">{probeAngle}°</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="360"
-                  step="5"
-                  value={probeAngle}
-                  onChange={e => setProbeAngle(parseInt(e.target.value, 10))}
-                  className="w-full accent-amber-400 cursor-pointer"
-                />
-              </div>
-
-              {/* Presets from PDF */}
-              <div className="pt-2">
-                <span className="text-xs font-semibold text-zinc-400 block mb-2">Preset Matrix Configurations:</span>
-                <div className="flex flex-wrap gap-2">
+              {/* Preset Matrix Configurations */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.70rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  Preset Configurations:
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                   {[
-                    { label: 'PDF Initial: [2 0; 0 1]', lx: 2.0, ly: 1.0 },
+                    { label: 'Curriculum: [2 0; 0 1]', lx: 2.0, ly: 1.0 },
                     { label: 'Identity: [1 0; 0 1]', lx: 1.0, ly: 1.0 },
-                    { label: 'Horizontal Flip: [-1 0; 0 1]', lx: -1.0, ly: 1.0 },
+                    { label: 'Reflection: [-1 0; 0 1]', lx: -1.0, ly: 1.0 },
                     { label: 'Uniform Zoom: [2 0; 0 2]', lx: 2.0, ly: 2.0 },
-                    { label: 'Flatten X: [0 0; 0 1]', lx: 0.0, ly: 1.0 }
+                    { label: 'Singular: [0 0; 0 1]', lx: 0.0, ly: 1.0 }
                   ].map(p => (
                     <button
                       key={p.label}
                       type="button"
                       onClick={() => { setLambdaX(p.lx); setLambdaY(p.ly); }}
-                      className="px-2.5 py-1 rounded-lg text-xs font-mono bg-white/5 border border-white/10 hover:border-cyan-500/40 hover:bg-cyan-500/10 text-zinc-300 hover:text-cyan-300 transition-all cursor-pointer"
+                      className="step18-pill-btn"
+                      style={{ width: 'auto', flexGrow: 1 }}
                     >
-                      {p.label}
+                      <span>{p.label}</span>
                     </button>
                   ))}
                 </div>
@@ -1201,43 +1212,60 @@ export default function Step18Eigenvalues({ onSelectStep }) {
             </div>
 
             {/* Matrix Form Visual Display */}
-            <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-3 font-mono">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Current Linear System</h4>
-              <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center text-sm space-y-2">
-                <div className="text-zinc-200">
-                  A = <span className="text-cyan-400">[{lambdaX.toFixed(1)} &nbsp; 0]</span> / <span className="text-emerald-400">[0 &nbsp; {lambdaY.toFixed(1)}]</span>
+            <div className="step18-card">
+              <div className="step18-card-header">
+                <h4 className="step18-card-title">
+                  <Info size={14} style={{ color: 'var(--accent-primary, #697951)' }} />
+                  <span>Current Linear System</span>
+                </h4>
+              </div>
+              <div style={{ padding: '0.65rem 0.85rem', borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                  A = [{lambdaX.toFixed(1)} &nbsp; 0; &nbsp; 0 &nbsp; {lambdaY.toFixed(1)}]
                 </div>
-                <div className="text-xs text-zinc-400">
-                  A · X₁ = {lambdaX.toFixed(1)} · [1, 0]ᵀ &nbsp; | &nbsp; A · X₂ = {lambdaY.toFixed(1)} · [0, 1]ᵀ
+                <div style={{ fontSize: '0.70rem', color: 'var(--text-secondary)' }}>
+                  Av₁ = {lambdaX.toFixed(1)} · [1, 0]ᵀ &nbsp; | &nbsp; Av₂ = {lambdaY.toFixed(1)} · [0, 1]ᵀ
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="lg:col-span-7">
-            <div className="glass-level-2 p-4 rounded-2xl border border-white/10 flex flex-col items-center">
-              <div className="w-full flex items-center justify-between mb-3 px-2">
-                <span className="text-xs font-semibold text-zinc-400">Deformation Ellipse &amp; Eigenvector Scaling</span>
-                <label className="text-xs font-mono text-zinc-400 flex items-center gap-1.5 cursor-pointer">
+          {/* Right Column: Canvas */}
+          <div className="step18-right-col">
+            <div className="step18-canvas-card">
+              <div className="step18-card-header">
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Deformation Ellipse &amp; Eigenvector Scaling
+                </span>
+                <label style={{ fontSize: '0.70rem', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={showGridMesh}
                     onChange={e => setShowGridMesh(e.target.checked)}
-                    className="rounded accent-purple-500"
+                    style={{ cursor: 'pointer' }}
                   />
-                  Show Unit Circle
+                  <span>Show Unit Circle</span>
                 </label>
               </div>
-              <canvas
-                ref={eigenCanvasRef}
-                width={560}
-                height={420}
-                className="w-full max-w-[560px] h-auto rounded-xl bg-slate-950/80 border border-white/5 shadow-inner"
-              />
-              <p className="text-xs text-zinc-400 mt-3 text-center">
-                Observe: While the arbitrary probe vector skews off its line, X₁ and X₂ stay strictly on the axes,
-                scaling exactly by λx and λy!
-              </p>
+
+              <div className="step18-canvas-frame">
+                <canvas ref={eigenCanvasRef} width={560} height={400} />
+              </div>
+
+              <div className="step18-legend-bar">
+                <span className="step18-legend-item">
+                  <span className="step17-legend-dot" style={{ background: isLight ? '#292F25' : '#FFFFFF' }} />
+                  <span>Av₁ (λx = {lambdaX.toFixed(1)})</span>
+                </span>
+                <span className="step18-legend-item">
+                  <span className="step17-legend-dot" style={{ background: isLight ? '#697951' : '#A8BDD9' }} />
+                  <span>Av₂ (λy = {lambdaY.toFixed(1)})</span>
+                </span>
+                <span className="step18-legend-item">
+                  <span className="step17-legend-dot" style={{ background: isLight ? '#B45309' : '#FBBF24' }} />
+                  <span>Off-axis Probe Av</span>
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -1247,92 +1275,80 @@ export default function Step18Eigenvalues({ onSelectStep }) {
       {/* SECTION 3: TRY YOUR OWN IMAGE / FLOWER LAB */}
       {/* ========================================================================= */}
       {activeTab === 'image-scaling' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 space-y-5">
-            <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Layers size={17} className="text-emerald-400" />
-                  Image Transformation
+        <div className="step18-workbench">
+          {/* Left Column: Image Controls */}
+          <div className="step18-left-col">
+            <div className="step18-card">
+              <div className="step18-card-header">
+                <h3 className="step18-card-title">
+                  <Layers size={15} style={{ color: 'var(--accent-primary, #697951)' }} />
+                  <span>Image Transformation</span>
                 </h3>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono">
-                  A = [2 0; 0 1]
-                </span>
+                <span className="step18-badge">A = [{imageLambdaX.toFixed(1)} 0; 0 {imageLambdaY.toFixed(1)}]</span>
               </div>
 
-              <p className="text-xs text-zinc-300 leading-relaxed">
-                As detailed in the curriculum: Apply scaling operation A = [2 0; 0 1] to
-                a flower or uploaded image. It stretches the image horizontally by factor 2 while vertical dimensions remain unchanged.
-                The eigenvalues are <strong>2</strong> and <strong>1</strong>.
+              <p className="step18-desc">
+                Apply diagonal scaling A = [2 0; 0 1] to a flower image. Horizontal dimensions stretch by factor 2 while vertical
+                dimensions remain unchanged. The eigenvalues are <strong>2</strong> and <strong>1</strong>.
               </p>
 
-              {/* Image Source Selection */}
-              <div className="space-y-2">
-                <span className="text-xs font-semibold text-zinc-400 block">Choose Image:</span>
-                <div className="grid grid-cols-3 gap-2">
+              {/* Preset Selector */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.70rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  Choose Image Source:
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
                   <button
                     type="button"
                     onClick={() => { setCustomImageSrc(null); setSelectedPreset('flower'); }}
-                    className={`px-3 py-2 rounded-xl text-xs font-medium border text-center transition-all cursor-pointer ${
-                      !customImageSrc && selectedPreset === 'flower'
-                        ? 'bg-pink-500/20 border-pink-500 text-pink-200'
-                        : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
-                    }`}
+                    className={`step18-pill-btn ${!customImageSrc && selectedPreset === 'flower' ? 'active' : ''}`}
+                    style={{ justifyContent: 'center' }}
                   >
-                    🌸 Flower (PDF)
+                    🌸 Flower
                   </button>
-
                   <button
                     type="button"
                     onClick={() => { setCustomImageSrc(null); setSelectedPreset('portrait'); }}
-                    className={`px-3 py-2 rounded-xl text-xs font-medium border text-center transition-all cursor-pointer ${
-                      !customImageSrc && selectedPreset === 'portrait'
-                        ? 'bg-blue-500/20 border-blue-500 text-blue-200'
-                        : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
-                    }`}
+                    className={`step18-pill-btn ${!customImageSrc && selectedPreset === 'portrait' ? 'active' : ''}`}
+                    style={{ justifyContent: 'center' }}
                   >
                     👤 Icon
                   </button>
-
                   <button
                     type="button"
                     onClick={() => { setCustomImageSrc(null); setSelectedPreset('grid'); }}
-                    className={`px-3 py-2 rounded-xl text-xs font-medium border text-center transition-all cursor-pointer ${
-                      !customImageSrc && selectedPreset === 'grid'
-                        ? 'bg-purple-500/20 border-purple-500 text-purple-200'
-                        : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
-                    }`}
+                    className={`step18-pill-btn ${!customImageSrc && selectedPreset === 'grid' ? 'active' : ''}`}
+                    style={{ justifyContent: 'center' }}
                   >
                     🌐 Grid
                   </button>
                 </div>
 
-                {/* Upload Custom File Button */}
-                <div className="pt-1">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-2.5 px-3 rounded-xl border border-dashed border-white/20 bg-white/5 hover:bg-white/10 text-xs text-zinc-300 flex items-center justify-center gap-2 cursor-pointer transition-all"
-                  >
-                    <Upload size={14} className="text-emerald-400" />
-                    <span>Upload Your Own Image File</span>
-                  </button>
-                </div>
+                {/* Upload Button */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="step18-pill-btn"
+                  style={{ justifyContent: 'center', marginTop: '0.2rem', gap: '0.4rem' }}
+                >
+                  <Upload size={13} />
+                  <span>Upload Image File</span>
+                </button>
               </div>
 
-              {/* Sliders for Image Matrix */}
-              <div className="space-y-3 pt-2">
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-cyan-300">Stretch in x-direction (λₓ):</span>
-                    <span className="text-cyan-400 font-bold">{imageLambdaX.toFixed(1)}</span>
+              {/* Stretch Sliders */}
+              <div className="step18-params-box">
+                <div className="step18-slider-row">
+                  <div className="step18-slider-header">
+                    <span>Stretch in x-direction (λx):</span>
+                    <span className="step18-slider-val">{imageLambdaX.toFixed(1)}</span>
                   </div>
                   <input
                     type="range"
@@ -1341,14 +1357,15 @@ export default function Step18Eigenvalues({ onSelectStep }) {
                     step="0.1"
                     value={imageLambdaX}
                     onChange={e => setImageLambdaX(parseFloat(e.target.value))}
-                    className="w-full accent-cyan-400 cursor-pointer"
+                    className="step18-range-input"
+                    style={{ '--slider-pct': `${((imageLambdaX - 0.5) / 2.5) * 100}%` }}
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-emerald-300">Stretch in y-direction (λᵧ):</span>
-                    <span className="text-emerald-400 font-bold">{imageLambdaY.toFixed(1)}</span>
+                <div className="step18-slider-row">
+                  <div className="step18-slider-header">
+                    <span>Stretch in y-direction (λy):</span>
+                    <span className="step18-slider-val">{imageLambdaY.toFixed(1)}</span>
                   </div>
                   <input
                     type="range"
@@ -1357,47 +1374,69 @@ export default function Step18Eigenvalues({ onSelectStep }) {
                     step="0.1"
                     value={imageLambdaY}
                     onChange={e => setImageLambdaY(parseFloat(e.target.value))}
-                    className="w-full accent-emerald-400 cursor-pointer"
+                    className="step18-range-input"
+                    style={{ '--slider-pct': `${((imageLambdaY - 0.5) / 2.5) * 100}%` }}
                   />
                 </div>
               </div>
 
-              {/* Fast Reset to PDF defaults */}
+              {/* Reset Button */}
               <button
                 type="button"
                 onClick={() => { setImageLambdaX(2.0); setImageLambdaY(1.0); }}
-                className="w-full py-2 rounded-xl text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="step18-pill-btn"
+                style={{ justifyContent: 'center', gap: '0.4rem' }}
               >
-                <RefreshCw size={14} />
-                <span>Reset to PDF Lab: A = [2 0; 0 1]</span>
+                <RefreshCw size={13} />
+                <span>Reset: A = [2 0; 0 1]</span>
               </button>
             </div>
 
-            {/* Analysis Box */}
-            <div className="glass-level-2 p-5 rounded-2xl border border-white/10 text-xs text-zinc-300 space-y-2">
-              <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">Why are eigenvalues 2 and 1?</h4>
-              <p className="leading-relaxed">
-                Horizontal pixels stretch by <strong>{imageLambdaX.toFixed(1)}</strong> while vertical coordinates remain multiplied by <strong>{imageLambdaY.toFixed(1)}</strong>.
-                Because the transformation matrix is diagonal, the Cartesian coordinate axes coincide exactly with the eigenvectors!
+            {/* Analysis Card */}
+            <div className="step18-card">
+              <div className="step18-card-header">
+                <h4 className="step18-card-title">
+                  <Info size={14} style={{ color: 'var(--accent-primary, #697951)' }} />
+                  <span>Why are eigenvalues 2 and 1?</span>
+                </h4>
+              </div>
+              <p className="step18-desc">
+                Horizontal coordinates stretch by <strong>{imageLambdaX.toFixed(1)}</strong> while vertical coordinates scale by <strong>{imageLambdaY.toFixed(1)}</strong>.
+                Because the matrix is diagonal, the Cartesian axes coincide with the eigenvectors.
               </p>
             </div>
           </div>
 
-          <div className="lg:col-span-7">
-            <div className="glass-level-2 p-4 rounded-2xl border border-white/10 flex flex-col items-center">
-              <div className="w-full flex items-center justify-between mb-3 px-2">
-                <span className="text-xs font-semibold text-zinc-400">Real-time Image Eigen-Stretch</span>
-                <span className="text-xs font-mono text-emerald-400">λₓ = {imageLambdaX.toFixed(1)}, λᵧ = {imageLambdaY.toFixed(1)}</span>
+          {/* Right Column: Canvas */}
+          <div className="step18-right-col">
+            <div className="step18-canvas-card">
+              <div className="step18-card-header">
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Real-time Image Eigen-Stretch
+                </span>
+                <span className="step18-badge">
+                  λx = {imageLambdaX.toFixed(1)}, λy = {imageLambdaY.toFixed(1)}
+                </span>
               </div>
-              <canvas
-                ref={imageCanvasRef}
-                width={560}
-                height={420}
-                className="w-full max-w-[560px] h-auto rounded-xl bg-slate-950/80 border border-white/5 shadow-inner"
-              />
-              <p className="text-xs text-zinc-400 mt-3 text-center">
-                Dashed box represents original dimensions. The cyan and emerald arrows highlight the two invariant eigenvector axes.
-              </p>
+
+              <div className="step18-canvas-frame">
+                <canvas ref={imageCanvasRef} width={560} height={400} />
+              </div>
+
+              <div className="step18-legend-bar">
+                <span className="step18-legend-item">
+                  <span className="step17-legend-dot" style={{ background: isLight ? '#292F25' : '#FFFFFF' }} />
+                  <span>Horizontal Axis (× {imageLambdaX.toFixed(1)})</span>
+                </span>
+                <span className="step18-legend-item">
+                  <span className="step17-legend-dot" style={{ background: isLight ? '#697951' : '#A8BDD9' }} />
+                  <span>Vertical Axis (× {imageLambdaY.toFixed(1)})</span>
+                </span>
+                <span className="step18-legend-item">
+                  <span style={{ width: 14, height: 2, borderTop: '2px dashed var(--text-muted)' }} />
+                  <span>Original Proportions</span>
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -1407,57 +1446,51 @@ export default function Step18Eigenvalues({ onSelectStep }) {
       {/* SECTION 4: REFLECTION & NEGATIVE EIGENVALUE CHALLENGE */}
       {/* ========================================================================= */}
       {activeTab === 'reflection-challenge' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 space-y-5">
-            <div className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <FlipHorizontal size={17} className="text-amber-400" />
-                  Horizontal Reflection Matrix
+        <div className="step18-workbench">
+          {/* Left Column: Quiz & Controls */}
+          <div className="step18-left-col">
+            <div className="step18-card">
+              <div className="step18-card-header">
+                <h3 className="step18-card-title">
+                  <FlipHorizontal size={15} style={{ color: 'var(--accent-primary, #697951)' }} />
+                  <span>Horizontal Reflection Matrix</span>
                 </h3>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono">
-                  A = [-1 0; 0 1]
-                </span>
+                <span className="step18-badge">A = [-1 0; 0 1]</span>
               </div>
 
-              <div className="flex gap-2">
+              {/* Orientation Buttons */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem' }}>
                 <button
                   type="button"
                   onClick={() => setReflectionAnim(1)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                    reflectionAnim === 1
-                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200'
-                      : 'bg-white/5 border-white/10 text-zinc-400'
-                  }`}
+                  className={`step18-pill-btn ${reflectionAnim === 1 ? 'active' : ''}`}
+                  style={{ justifyContent: 'center' }}
                 >
                   Original Orientation
                 </button>
                 <button
                   type="button"
                   onClick={() => setReflectionAnim(-1)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                    reflectionAnim === -1
-                      ? 'bg-rose-500/20 border-rose-400 text-rose-200'
-                      : 'bg-white/5 border-white/10 text-zinc-400'
-                  }`}
+                  className={`step18-pill-btn ${reflectionAnim === -1 ? 'active' : ''}`}
+                  style={{ justifyContent: 'center' }}
                 >
-                  Reflected (A = [-1 0; 0 1])
+                  Reflected (x → −x)
                 </button>
               </div>
 
-              {/* PDF Pedagogical Prompt */}
-              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-2">
-                <div className="font-bold text-amber-300 flex items-center gap-1.5">
-                  <HelpCircle size={15} />
+              {/* Conceptual Question */}
+              <div style={{ padding: '0.65rem 0.85rem', borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <HelpCircle size={14} style={{ color: 'var(--accent-primary, #697951)' }} />
                   <span>Curriculum Conceptual Question:</span>
                 </div>
-                <p className="text-zinc-200 leading-relaxed italic">
+                <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', margin: 0, fontStyle: 'italic', lineHeight: 1.45 }}>
                   "If the image is reflected horizontally, does the horizontal eigenvector cease to be an eigenvector? Why or why not?"
                 </p>
               </div>
 
               {/* Quiz Options */}
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                 {[
                   {
                     id: 'ceases',
@@ -1466,7 +1499,7 @@ export default function Step18Eigenvalues({ onSelectStep }) {
                   },
                   {
                     id: 'stays',
-                    text: 'No: It is STILL an eigenvector! It still lies along the same horizontal line, with negative eigenvalue λ = -1.',
+                    text: 'No: It is STILL an eigenvector! It still lies along the same horizontal 1D line, with negative eigenvalue λ = −1.',
                     isCorrect: true
                   },
                   {
@@ -1482,22 +1515,22 @@ export default function Step18Eigenvalues({ onSelectStep }) {
                       setSelectedAnswer(opt.id);
                       setIsAnswerSubmitted(true);
                     }}
-                    className={`w-full p-3 rounded-xl text-xs text-left border transition-all flex items-start gap-2.5 cursor-pointer ${
+                    className={`step18-quiz-option ${
                       selectedAnswer === opt.id
                         ? opt.isCorrect
-                          ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200'
-                          : 'bg-rose-500/20 border-rose-400 text-rose-200'
-                        : 'bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10'
+                          ? 'correct'
+                          : 'incorrect'
+                        : ''
                     }`}
                   >
-                    <div className="mt-0.5">
+                    <div style={{ marginTop: '0.1rem', flexShrink: 0 }}>
                       {selectedAnswer === opt.id ? (
-                        opt.isCorrect ? <Check size={14} className="text-emerald-400" /> : <X size={14} className="text-rose-400" />
+                        opt.isCorrect ? <Check size={14} /> : <X size={14} />
                       ) : (
-                        <div className="w-3.5 h-3.5 rounded-full border border-zinc-500" />
+                        <div style={{ width: 12, height: 12, borderRadius: '50%', border: '1.5px solid var(--border-color)' }} />
                       )}
                     </div>
-                    <span className="leading-snug">{opt.text}</span>
+                    <span>{opt.text}</span>
                   </button>
                 ))}
               </div>
@@ -1507,25 +1540,25 @@ export default function Step18Eigenvalues({ onSelectStep }) {
             <AnimatePresence>
               {isAnswerSubmitted && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="glass-level-2 p-5 rounded-2xl border border-white/10 space-y-3"
+                  className="step18-card"
                 >
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                    <CheckCircle2 size={15} />
-                    <span>Line Subspace vs. Arrow Orientation</span>
-                  </h4>
-                  <div className="text-xs text-zinc-300 space-y-2 leading-relaxed">
-                    <p>
-                      <strong>Crucial Distinction:</strong> In linear algebra, an eigenvector only requires that
-                      AX lies in the <em>1-dimensional subspace</em> (the infinite straight line) spanned by X:
+                  <div className="step18-card-header">
+                    <h4 className="step18-card-title">
+                      <CheckCircle2 size={15} style={{ color: 'var(--accent-primary, #697951)' }} />
+                      <span>Line Subspace vs. Arrow Orientation</span>
+                    </h4>
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.45rem', lineHeight: 1.45 }}>
+                    <p style={{ margin: 0 }}>
+                      <strong>Subspace Invariance:</strong> An eigenvector only requires that Av lies within the <em>1-dimensional subspace</em> (the infinite straight line) spanned by v:
                     </p>
-                    <div className="p-2.5 rounded-lg bg-black/40 font-mono text-center text-amber-300">
-                      A · X₁ = [-1 &nbsp; 0; 0 &nbsp; 1] · [1, 0]ᵀ = [-1, 0]ᵀ = (-1) · X₁
+                    <div style={{ padding: '0.45rem 0.65rem', borderRadius: 6, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', fontFamily: 'var(--font-mono)', textAlign: 'center', fontSize: '0.74rem', color: 'var(--text-primary)' }}>
+                      A · v₁ = [-1 &nbsp; 0; 0 &nbsp; 1] · [1, 0]ᵀ = [-1, 0]ᵀ = (-1) · v₁
                     </div>
-                    <p>
-                      The scalar factor λ = -1 reverses the arrow's orientation, but <strong>preserves its direction as a line</strong>!
-                      Therefore, X₁ = [1, 0]ᵀ remains a true eigenvector with eigenvalue λ₁ = -1.
+                    <p style={{ margin: 0 }}>
+                      The scalar factor λ = −1 reverses orientation along the axis, but <strong>preserves its direction as a line</strong>. Thus, v₁ = [1, 0]ᵀ remains a valid eigenvector.
                     </p>
                   </div>
                 </motion.div>
@@ -1533,25 +1566,45 @@ export default function Step18Eigenvalues({ onSelectStep }) {
             </AnimatePresence>
           </div>
 
-          <div className="lg:col-span-7">
-            <div className="glass-level-2 p-4 rounded-2xl border border-white/10 flex flex-col items-center">
-              <div className="w-full flex items-center justify-between mb-3 px-2">
-                <span className="text-xs font-semibold text-zinc-400">Horizontal Reflection Visualizer</span>
-                <span className="text-xs font-mono text-pink-400">λ₁ = -1, λ₂ = +1</span>
+          {/* Right Column: Canvas */}
+          <div className="step18-right-col">
+            <div className="step18-canvas-card">
+              <div className="step18-card-header">
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Horizontal Reflection Visualizer
+                </span>
+                <span className="step18-badge">
+                  λ₁ = −1, λ₂ = +1
+                </span>
               </div>
-              <canvas
-                ref={reflectionCanvasRef}
-                width={560}
-                height={420}
-                className="w-full max-w-[560px] h-auto rounded-xl bg-slate-950/80 border border-white/5 shadow-inner"
-              />
-              <p className="text-xs text-zinc-400 mt-3 text-center">
-                Toggle between Original and Reflected above to witness how X₁ flips 180° along the exact same horizontal line!
-              </p>
+
+              <div className="step18-canvas-frame">
+                <canvas ref={reflectionCanvasRef} width={560} height={400} />
+              </div>
+
+              <div className="step18-legend-bar">
+                <span className="step18-legend-item">
+                  <span className="step17-legend-dot" style={{ background: isLight ? '#292F25' : '#FFFFFF' }} />
+                  <span>Original v₁ [1, 0]ᵀ</span>
+                </span>
+                <span className="step18-legend-item">
+                  <span className="step17-legend-dot" style={{ background: isLight ? '#697951' : '#A8BDD9' }} />
+                  <span>Reflected Av₁ [-1, 0]ᵀ</span>
+                </span>
+                <span className="step18-legend-item">
+                  <span style={{ width: 14, height: 2, borderTop: '2px dashed var(--text-muted)' }} />
+                  <span>Preserved 1D Span Line</span>
+                </span>
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* STANDARDIZED EDUCATIONAL DOCUMENTATION */}
+      <div style={{ marginTop: '1.25rem' }}>
+        <ModuleDocumentation stepNumber={18} defaultOpen={false} />
+      </div>
 
       {/* FOOTER NAVIGATION */}
       <StepFooter stepNumber={18} onSelectStep={onSelectStep} />

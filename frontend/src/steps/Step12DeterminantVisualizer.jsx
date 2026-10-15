@@ -1,154 +1,84 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Sparkles,
-  RotateCcw,
-  Blend,
-  Scissors,
-  Scan,
-  Activity,
-  Maximize2,
-  Minimize2,
-  FlipHorizontal,
-  AlertTriangle,
-  Upload,
-  Image as ImageIcon,
-  Sliders,
-  Info,
-  Compass,
-  CheckCircle2,
-  Layers,
-  ArrowRight,
-  TrendingDown,
-  Grid,
-  Undo2,
-  ZoomIn
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Sliders, RotateCcw, Compass, Activity, Minus, Plus } from 'lucide-react';
 import { computeDeterminant, getDeterminantAnalysis } from '../core/transformEngine';
 import CoordinateTransformCanvas from '../components/visualizers/CoordinateTransformCanvas';
 import StepFooter from '../components/layout/StepFooter';
+import ModuleDocumentation from '../components/experiment/ModuleDocumentation';
 
-// Curated presets specifically demonstrating the 4 core cases requested
 const DETERMINANT_PRESETS = [
   {
+    id: 'identity',
+    name: 'Identity Matrix',
+    badge: 'det = 1.00',
+    matrix: { a: 1.0, b: 0.0, c: 0.0, d: 1.0 },
+    desc: 'Standard orthogonal basis'
+  },
+  {
     id: 'stretch',
-    name: 'Area Stretch',
-    badge: '|det| > 1',
+    name: 'Uniform Stretch',
+    badge: 'det = 2.25',
     matrix: { a: 1.5, b: 0.0, c: 0.0, d: 1.5 },
-    category: 'stretch',
-    icon: Maximize2,
-    color: '#3B82F6',
-    desc: 'Uniform expansion: det = 2.25. Transformed area is 225% of original.'
+    desc: 'Uniform 1.5× area expansion'
   },
   {
     id: 'shrink',
-    name: 'Area Shrink',
-    badge: '0 < |det| < 1',
+    name: 'Uniform Shrink',
+    badge: 'det = 0.36',
     matrix: { a: 0.6, b: 0.0, c: 0.0, d: 0.6 },
-    category: 'shrink',
-    icon: Minimize2,
-    color: '#F59E0B',
-    desc: 'Uniform compression: det = 0.36. Transformed area shrinks down to 36%.'
-  },
-  {
-    id: 'collapse_line',
-    name: 'Dimension Collapse',
-    badge: 'det = 0',
-    matrix: { a: 1.0, b: 1.0, c: 1.0, d: 1.0 },
-    category: 'collapse',
-    icon: AlertTriangle,
-    color: '#EF4444',
-    desc: 'Colinear columns: det = 0.00. 2D geometry squashes onto the 1D line y = x.'
-  },
-  {
-    id: 'collapse_axis',
-    name: 'Axis Collapse',
-    badge: 'det = 0',
-    matrix: { a: 1.2, b: 0.0, c: 0.0, d: 0.0 },
-    category: 'collapse',
-    icon: TrendingDown,
-    color: '#EF4444',
-    desc: 'Projection: det = 0.00. Y-dimension is flattened completely onto the X-axis.'
-  },
-  {
-    id: 'flip_mirror',
-    name: 'Orientation Flip',
-    badge: 'det < 0',
-    matrix: { a: -1.0, b: 0.0, c: 0.0, d: 1.0 },
-    category: 'flip',
-    icon: FlipHorizontal,
-    color: '#8B5CF6',
-    desc: 'Horizontal mirror: det = -1.00. Area preserved (1.00×), but left and right flip!'
-  },
-  {
-    id: 'flip_stretch',
-    name: 'Flip + Stretch',
-    badge: 'det < -1',
-    matrix: { a: -1.4, b: 0.2, c: 0.3, d: 1.2 },
-    category: 'flip',
-    icon: Maximize2,
-    color: '#A855F7',
-    desc: 'Reflected and enlarged: det = -1.74. Orientation reversed with 174% area scaling.'
+    desc: 'Uniform 0.6× area compression'
   },
   {
     id: 'shear_preserve',
     name: 'Pure Shear',
     badge: 'det = 1.00',
     matrix: { a: 1.0, b: 0.8, c: 0.0, d: 1.0 },
-    category: 'preserve',
-    icon: Grid,
-    color: '#10B981',
-    desc: 'Skewed geometry: det = 1.00. Shapes tilt, but total area remains invariant.'
+    desc: 'Horizontal shear, area preserved'
   },
   {
     id: 'rotation_45',
     name: 'Rotation 45°',
     badge: 'det = 1.00',
     matrix: { a: 0.71, b: -0.71, c: 0.71, d: 0.71 },
-    category: 'preserve',
-    icon: Compass,
-    color: '#06B6D4',
-    desc: 'Rigid rotation: det = 1.00. Isometry preserving both distances and orientation.'
+    desc: 'Rigid spin, area & orientation preserved'
   },
   {
-    id: 'identity',
-    name: 'Identity (Reset)',
-    badge: 'det = 1.00',
-    matrix: { a: 1.0, b: 0.0, c: 0.0, d: 1.0 },
-    category: 'preserve',
-    icon: RotateCcw,
-    color: 'var(--text-secondary)',
-    desc: 'Unaltered standard basis: i = [1, 0]^T and j = [0, 1]^T.'
+    id: 'flip_mirror',
+    name: 'Orientation Flip',
+    badge: 'det = -1.00',
+    matrix: { a: -1.0, b: 0.0, c: 0.0, d: 1.0 },
+    desc: 'Y-axis mirror reflection'
+  },
+  {
+    id: 'collapse_line',
+    name: 'Line Collapse',
+    badge: 'det = 0.00',
+    matrix: { a: 1.0, b: 1.0, c: 1.0, d: 1.0 },
+    desc: 'Squashed onto 1D line y = x'
+  },
+  {
+    id: 'collapse_axis',
+    name: 'Axis Collapse',
+    badge: 'det = 0.00',
+    matrix: { a: 1.2, b: 0.0, c: 0.0, d: 0.0 },
+    desc: 'Flattened completely onto X-axis'
   }
 ];
 
 export default function Step12DeterminantVisualizer({ onSelectStep }) {
-  // 2x2 matrix state
-  const [matrix, setMatrix] = useState({ a: 1.5, b: 0.0, c: 0.0, d: 1.5 });
-  const [activePreset, setActivePreset] = useState('stretch');
+  const [matrix, setMatrix] = useState({ a: 1.0, b: 0.0, c: 0.0, d: 1.0 });
+  const [activePreset, setActivePreset] = useState('identity');
 
-  // Visualization options
-  const [subjectType, setSubjectType] = useState('portrait'); // 'portrait' | 'geometry' | 'rocket' | 'custom'
-  const [customImage, setCustomImage] = useState(null);
-  const [customImagePreview, setCustomImagePreview] = useState(null);
-  const fileInputRef = useRef(null);
-
-  // Layer visibility toggles
-  const [showImage, setShowImage] = useState(true);
+  // Layer toggles for coordinate canvas
   const [showParallelogram, setShowParallelogram] = useState(true);
   const [showBasisVectors, setShowBasisVectors] = useState(true);
   const [showGhostOutline, setShowGhostOutline] = useState(true);
-  const [showGrid, setShowGrid] = useState(true);
-  const [showOrientationArc, setShowOrientationArc] = useState(true);
 
-  // Inspector coordinate hover state
-  const [hoverCoords, setHoverCoords] = useState(null);
-
-  // Real-time determinant calculation
+  // Real-time determinant calculations
   const rawDet = computeDeterminant(matrix);
   const detAnalysis = getDeterminantAnalysis(rawDet);
+  const trace = matrix.a + matrix.d;
 
-  // Sliders handler
   const handleSliderChange = (key, value) => {
     const num = parseFloat(value);
     setMatrix(prev => ({ ...prev, [key]: num }));
@@ -168,76 +98,71 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
     setActivePreset(preset.id);
   };
 
-  // Custom photo upload handler
-  const handleImageUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        setCustomImage(img);
-        setCustomImagePreview(event.target.result);
-        setSubjectType('custom');
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
+  const handleResetIdentity = () => {
+    setMatrix({ a: 1.0, b: 0.0, c: 0.0, d: 1.0 });
+    setActivePreset('identity');
   };
 
-  // Render individual matrix entry control inside authentic 2x2 matrix
-  const renderEntryControl = (key, label, coordLabel, accentColor = 'var(--accent-purple)') => {
+  const renderEntryControl = (key, role) => {
     const val = matrix[key];
     const isDiagonal = key === 'a' || key === 'd';
+    const minVal = -2.5;
+    const maxVal = 2.5;
+    const pct = Math.max(0, Math.min(100, ((val - minVal) / (maxVal - minVal)) * 100));
+    const subscript = key === 'a' ? '₁₁' : key === 'b' ? '₁₂' : key === 'c' ? '₂₁' : '₂₂';
+
     return (
-      <div
-        className="det-matrix-cell"
-        key={key}
-        style={{
-          '--cell-accent': accentColor,
-          '--cell-accent-glow': `${accentColor}30`
-        }}
-      >
+      <div className="det-matrix-cell" key={key}>
         <div className="det-cell-header">
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.45rem' }}>
-            <span className="det-cell-key" style={{ color: accentColor }}>{key}</span>
-            <span style={{ fontSize: '0.72rem', color: accentColor, opacity: 0.9, fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-              {coordLabel}
-            </span>
+          <div className="det-cell-key-group">
+            <span className="det-cell-key">a{subscript}</span>
           </div>
-          <span className="det-cell-role">{label}</span>
+          <span className="det-cell-role">{role}</span>
         </div>
 
         <div className="det-cell-value-row">
-          <span className="det-cell-val" style={{ color: accentColor }}>
-            {val.toFixed(2)}
-          </span>
-          <div style={{ display: 'flex', gap: '0.3rem' }}>
+          <input
+            type="number"
+            step="0.05"
+            min="-2.5"
+            max="2.5"
+            value={val}
+            onChange={(e) => {
+              const parsed = parseFloat(e.target.value);
+              if (!isNaN(parsed)) {
+                handleSliderChange(key, Math.min(2.5, Math.max(-2.5, parsed)));
+              }
+            }}
+            className="det-cell-val-input"
+            aria-label={`Matrix entry a${subscript}`}
+          />
+          <div className="det-stepper-group">
             <button
               type="button"
-              className="det-cell-step-btn"
+              className="det-stepper-btn"
               onClick={() => handleStepValue(key, -0.1)}
-              title="Decrease by 0.1"
+              title={`Decrease a${subscript} by 0.1`}
+              aria-label={`Decrease a${subscript}`}
             >
-              -0.1
+              <Minus size={11} />
             </button>
             <button
               type="button"
-              className="det-cell-step-btn"
+              className="det-stepper-btn"
               onClick={() => handleStepValue(key, 0.1)}
-              title="Increase by 0.1"
+              title={`Increase a${subscript} by 0.1`}
+              aria-label={`Increase a${subscript}`}
             >
-              +0.1
+              <Plus size={11} />
             </button>
             <button
               type="button"
-              className="det-cell-step-btn"
+              className="det-stepper-btn det-stepper-reset"
               onClick={() => handleSliderChange(key, isDiagonal ? 1.0 : 0.0)}
-              title={`Reset to ${isDiagonal ? '1.0' : '0.0'}`}
-              style={{ opacity: 0.75 }}
+              title={`Reset to default (${isDiagonal ? '1.0' : '0.0'})`}
+              aria-label={`Reset a${subscript}`}
             >
-              {isDiagonal ? '1' : '0'}
+              <RotateCcw size={10} />
             </button>
           </div>
         </div>
@@ -251,7 +176,10 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
             value={val}
             onChange={(e) => handleSliderChange(key, e.target.value)}
             className="det-cell-slider"
-            style={{ accentColor }}
+            style={{
+              '--slider-pct': `${pct}%`
+            }}
+            aria-label={`Slider for a${subscript}`}
           />
         </div>
       </div>
@@ -265,525 +193,264 @@ export default function Step12DeterminantVisualizer({ onSelectStep }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      {/* CHAPTER HEADER & SUB-CHAPTER NAVIGATION */}
+      {/* 1. CLEAN COMPACT HEADER */}
       <div className="step-header-box">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.45rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-            <span className="modal-badge-tag" style={{ margin: 0, background: 'rgba(56, 189, 248, 0.15)', color: 'var(--accent-cyan)', borderColor: 'rgba(56, 189, 248, 0.35)' }}>
-              Visual Lab 12
-            </span>
-            <span style={{ fontSize: '0.85rem', color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-              Area Scaling Geometry: det(A) = ad − bc
-            </span>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.35rem' }}>
+          <h2 className="step-heading" style={{ margin: 0 }}>
+            Determinant Lab
+          </h2>
+          <span className="badge-tag-mini" style={{ fontSize: '0.78rem', padding: '0.2rem 0.55rem' }}>
+            2D Linear Transformations
+          </span>
         </div>
-
-        <h2 className="step-heading">
-          Visual Lab 12: Determinant Lab
-        </h2>
         <p className="step-description">
-          Transform an image using <code>x′ = Ax</code> with matrix <code>A = [a b; c d]</code>.
-          The determinant <code>det(A) = ad − bc</code> is not merely a numerical formula—it is a
-          <strong> visual measure of how linear transformations scale area and orient space</strong>.
-          Modify the sliders below to explore how <strong>|det(A)| &gt; 1</strong> stretches area,
-          <strong>0 &lt; |det(A)| &lt; 1</strong> compresses area,
-          <strong>det(A) = 0</strong> collapses 2D planar space into a line or point,
-          and <strong>det(A) &lt; 0</strong> flips orientation inside-out!
+          The determinant of a 2×2 matrix <code>A = [a b; c d]</code> is <code>det(A) = ad − bc</code>.
+          Geometrically, it measures the signed area scaling factor of the transformation:
+          values greater than 1 stretch area, values between 0 and 1 shrink area, 
+          <code>det(A) = 0</code> collapses space into a 1D line, and negative values flip orientation.
         </p>
-
-        {/* REAL-TIME DETERMINANT FORMULA & STATUS HUD */}
-        <div
-          className="determinant-hero-hud"
-          style={{
-            marginTop: '1.25rem',
-            background: 'var(--bg-secondary)',
-            border: `1.5px solid ${detAnalysis.borderColor}`,
-            borderRadius: '16px',
-            padding: '1.2rem 1.4rem',
-            boxShadow: `0 12px 30px ${detAnalysis.bgColor}`,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1rem',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
-          {/* Top Row: Formula Breakdown & Status Badge */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
-              <div style={{
-                background: detAnalysis.bgColor,
-                color: detAnalysis.color,
-                borderRadius: '10px',
-                padding: '0.45rem 0.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                fontWeight: 800,
-                fontSize: '0.9rem',
-                border: `1px solid ${detAnalysis.borderColor}`
-              }}>
-                <Sparkles size={16} />
-                <span>{detAnalysis.label}</span>
-              </div>
-
-              {/* Dynamic Formula Display */}
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.05rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>det(A) =</span>
-                <span>ad − bc =</span>
-                <span style={{ color: 'var(--accent-purple)' }}>({matrix.a.toFixed(2)})({matrix.d.toFixed(2)})</span>
-                <span>−</span>
-                <span style={{ color: 'var(--accent-cyan)' }}>({matrix.b.toFixed(2)})({matrix.c.toFixed(2)})</span>
-                <span>=</span>
-                <strong style={{ fontSize: '1.35rem', color: detAnalysis.color, textShadow: `0 0 16px ${detAnalysis.color}40` }}>
-                  {rawDet.toFixed(2)}
-                </strong>
-              </div>
-            </div>
-
-            {/* Quick Area and Orientation Pills */}
-            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-              <div className="stat-pill" style={{ borderColor: 'var(--border-color)' }}>
-                <span className="stat-pill-label">Area Factor:</span>
-                <span className="stat-pill-val font-mono" style={{ color: detAnalysis.color }}>
-                  {Math.abs(rawDet).toFixed(2)}×
-                </span>
-              </div>
-              <div className="stat-pill" style={{ borderColor: 'var(--border-color)' }}>
-                <span className="stat-pill-label">Chirality:</span>
-                <span className="stat-pill-val font-mono" style={{ color: detAnalysis.orientationFlipped ? '#A855F7' : '#10B981' }}>
-                  {detAnalysis.orientationFlipped ? 'Flipped (-)' : 'Standard (+)'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Description of Current State */}
-          <div style={{
-            fontSize: '0.92rem',
-            color: 'var(--text-secondary)',
-            lineHeight: 1.55,
-            borderTop: '1px solid var(--border-color)',
-            paddingTop: '0.75rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.65rem'
-          }}>
-            <Info size={16} style={{ color: detAnalysis.color, flexShrink: 0 }} />
-            <span>{detAnalysis.description}</span>
-          </div>
-        </div>
       </div>
 
-      {/* MAIN TWO-COLUMN LAB WORKBENCH */}
-      <div className="interactive-lab-grid" style={{ marginTop: '1.5rem', alignItems: 'start' }}>
+      {/* 2. BALANCED TWO-COLUMN LAB WORKBENCH */}
+      <div className="step12-desktop-grid" style={{ marginTop: '1.25rem' }}>
 
-        {/* LEFT COLUMN: Controls, Presets, Image Picker */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
+        {/* LEFT COLUMN: Matrix Panel & Presets */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', width: '100%' }}>
 
-          {/* 1. HERO 2x2 TRANSFORMATION MATRIX */}
-          <div className="control-panel-card">
-            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Sliders size={16} style={{ color: 'var(--accent-purple)' }} />
-                <span>Transformation Matrix A &isin; ℝ<sup>2×2</sup></span>
+          {/* Card 1: Transformation Matrix & Live Determinant Summary */}
+          <div className="control-panel-card" style={{ padding: '0.85rem 1rem' }}>
+            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.55rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <Sliders size={15} style={{ color: 'var(--text-secondary)' }} />
+                <span style={{ fontSize: '0.90rem', fontWeight: 700 }}>
+                  Transformation Matrix A
+                </span>
               </div>
-              <span className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--accent-cyan)' }}>
-                x' = A &middot; x
-              </span>
+              <button
+                type="button"
+                className="icon-action-btn"
+                onClick={handleResetIdentity}
+                title="Reset to Identity Matrix I"
+                style={{ padding: '0.2rem 0.5rem', fontSize: '0.76rem' }}
+              >
+                <RotateCcw size={12} />
+                <span>Identity I</span>
+              </button>
             </div>
 
-            {/* Matrix Envelope with LaTeX Brackets & Indices */}
-            <div className="det-2x2-matrix-envelope">
-              <div className="matrix-with-indices" style={{ width: '100%' }}>
-                {/* Column Basis Vector Headers */}
-                <div className="matrix-col-indices-row" style={{ display: 'grid', gridTemplateColumns: '24px 1fr 1fr', paddingLeft: '4px', marginBottom: '4px' }}>
-                  <span />
-                  <span className="matrix-index-num" style={{ color: '#38BDF8', fontWeight: 700, fontSize: '0.76rem', textAlign: 'center' }}>
-                    Basis î' (Col 1)
-                  </span>
-                  <span className="matrix-index-num" style={{ color: '#A855F7', fontWeight: 700, fontSize: '0.76rem', textAlign: 'center' }}>
-                    Basis ĵ' (Col 2)
-                  </span>
+            {/* Clean 2x2 Matrix Controls Grid */}
+            <div className="det-matrix-2x2-grid">
+              {renderEntryControl('a', 'Scale X')}
+              {renderEntryControl('b', 'Shear X')}
+              {renderEntryControl('c', 'Shear Y')}
+              {renderEntryControl('d', 'Scale Y')}
+            </div>
+
+            {/* Compact, Clearly Structured Determinant Summary */}
+            <div className="det-summary-box" style={{ marginTop: '0.75rem' }}>
+              <div className="det-summary-header-row">
+                <div className="det-summary-formula">
+                  <span>det(A) = ad − bc =</span>
+                  <span>({matrix.a.toFixed(2)})({matrix.d.toFixed(2)}) − ({matrix.b.toFixed(2)})({matrix.c.toFixed(2)}) =</span>
+                  <strong style={{ color: detAnalysis.type === 'collapse' ? '#DC2626' : 'var(--text-primary)' }}>
+                    {rawDet.toFixed(2)}
+                  </strong>
                 </div>
-
-                <div className="matrix-bracket-container" style={{ '--bracket-color': 'var(--accent-purple)', width: '100%' }}>
-                  <div className="matrix-left-bracket" />
-
-                  {/* 2x2 Matrix Grid with Row Labels */}
-                  <div style={{ display: 'flex', alignItems: 'stretch', gap: '0.5rem', width: '100%' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around', padding: '0.5rem 0' }}>
-                      <span className="matrix-row-index-num" style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>x'</span>
-                      <span className="matrix-row-index-num" style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>y'</span>
-                    </div>
-
-                    <div className="det-matrix-2x2-grid">
-                      {renderEntryControl('a', 'Scale X', "î'_x", '#38BDF8')}
-                      {renderEntryControl('b', 'Shear X', "ĵ'_x", '#A855F7')}
-                      {renderEntryControl('c', 'Shear Y', "î'_y", '#38BDF8')}
-                      {renderEntryControl('d', 'Scale Y', "ĵ'_y", '#A855F7')}
-                    </div>
-                  </div>
-
-                  <div className="matrix-right-bracket" />
-                </div>
+                <span
+                  className="det-summary-badge"
+                  style={{
+                    color: detAnalysis.type === 'collapse' ? '#DC2626' : undefined,
+                    borderColor: detAnalysis.type === 'collapse' ? 'rgba(220, 38, 38, 0.4)' : undefined
+                  }}
+                >
+                  {detAnalysis.shortBadge}
+                </span>
               </div>
 
-              {/* Dynamic Coordinate & Basis Vector Inspector */}
-              <div style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                background: 'var(--bg-primary)',
-                borderRadius: '12px',
-                border: '1px solid var(--border-color)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '0.75rem',
-                fontSize: '0.82rem'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-mono)', flexWrap: 'wrap' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Basis Vectors:</span>
-                  <span style={{ color: '#38BDF8', fontWeight: 700 }}>î' = [{matrix.a.toFixed(2)}, {matrix.c.toFixed(2)}]ᵀ</span>
-                  <span style={{ color: 'var(--text-muted)' }}>&amp;</span>
-                  <span style={{ color: '#A855F7', fontWeight: 700 }}>ĵ' = [{matrix.b.toFixed(2)}, {matrix.d.toFixed(2)}]ᵀ</span>
+              <div className="det-summary-metrics">
+                <div className="det-metric-item">
+                  <span className="det-metric-label">Area Scale</span>
+                  <span className="det-metric-val">{Math.abs(rawDet).toFixed(2)}×</span>
                 </div>
-
-                <div style={{ fontFamily: 'var(--font-mono)', color: detAnalysis.color, fontWeight: 700 }}>
-                  Area Multiplier: {Math.abs(rawDet).toFixed(2)}&times;
+                <div className="det-metric-item">
+                  <span className="det-metric-label">Trace</span>
+                  <span className="det-metric-val">{trace.toFixed(2)}</span>
+                </div>
+                <div className="det-metric-item">
+                  <span className="det-metric-label">Orientation</span>
+                  <span
+                    className="det-metric-val"
+                    style={{
+                      color: detAnalysis.type === 'collapse'
+                        ? '#DC2626'
+                        : detAnalysis.orientationFlipped
+                          ? '#B45309'
+                          : 'var(--accent-primary, #697951)'
+                    }}
+                  >
+                    {detAnalysis.type === 'collapse' ? 'Collapsed (0)' : detAnalysis.orientationFlipped ? 'Reversed (−)' : 'Preserved (+)'}
+                  </span>
+                </div>
+                <div className="det-metric-item">
+                  <span className="det-metric-label">Invertibility</span>
+                  <span
+                    className="det-metric-val"
+                    style={{ color: detAnalysis.type === 'collapse' ? '#DC2626' : 'var(--accent-primary, #697951)' }}
+                  >
+                    {detAnalysis.type === 'collapse' ? 'Singular' : 'Invertible'}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 2. CORE PHENOMENA PRESETS */}
-          <div className="control-panel-card">
-            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Sparkles size={16} style={{ color: 'var(--accent-cyan)' }} />
-                <span>Core Regimes &amp; Presets</span>
+          {/* Card 2: Geometric Properties (Non-redundant, Aligned Key-Value List) */}
+          <div className="control-panel-card" style={{ padding: '0.85rem 1rem' }}>
+            <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.45rem' }}>
+              <Activity size={15} style={{ color: 'var(--text-secondary)' }} />
+              <span style={{ fontSize: '0.90rem', fontWeight: 700 }}>Geometric Properties</span>
+            </div>
+            
+            <div className="geo-props-list">
+              <div className="geo-prop-row">
+                <span className="geo-prop-label">Subspace Dimension:</span>
+                <span className="geo-prop-val" style={{ color: detAnalysis.type === 'collapse' ? '#DC2626' : undefined }}>
+                  {detAnalysis.type === 'collapse' ? '1D Line Subspace (Rank 1)' : '2D Full Plane (Rank 2)'}
+                </span>
               </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>1-Click Scenarios</span>
+              <div className="geo-prop-row">
+                <span className="geo-prop-label">Matrix Invertibility:</span>
+                <span className="geo-prop-val" style={{ color: detAnalysis.type === 'collapse' ? '#DC2626' : undefined }}>
+                  {detAnalysis.type === 'collapse' ? 'Singular (No Inverse)' : 'Invertible (A⁻¹ Exists)'}
+                </span>
+              </div>
+              <div className="geo-prop-row">
+                <span className="geo-prop-label">Orientation Handedness:</span>
+                <span className="geo-prop-val" style={{ color: detAnalysis.orientationFlipped ? '#B45309' : undefined }}>
+                  {detAnalysis.orientationFlipped ? 'Left-Handed (Reflected)' : 'Right-Handed (Preserved)'}
+                </span>
+              </div>
+              <div className="geo-prop-row">
+                <span className="geo-prop-label">Geometric Action:</span>
+                <span className="geo-prop-val" style={{ color: 'var(--text-secondary)', fontWeight: 500, maxWidth: '62%' }}>
+                  {detAnalysis.description}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Large Coordinate Graph + Presets (Balanced Layout) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', width: '100%' }}>
+
+          {/* 1. Large Prominent Coordinate Graph */}
+          <CoordinateTransformCanvas
+            matrix2x2={matrix}
+            title="2D Transformation Plane"
+            showParallelogram={showParallelogram}
+            showBasisVectors={showBasisVectors}
+            showGhostOutline={showGhostOutline}
+          />
+
+          {/* 2. Compact Visualization Layers Strip */}
+          <div className="control-panel-card" style={{ padding: '0.55rem 0.95rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-around',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
+                fontSize: '0.80rem',
+                color: 'var(--text-primary)'
+              }}
+            >
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={showParallelogram}
+                  onChange={(e) => setShowParallelogram(e.target.checked)}
+                />
+                <span style={{ fontWeight: 600 }}>Parallelogram Area</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={showBasisVectors}
+                  onChange={(e) => setShowBasisVectors(e.target.checked)}
+                />
+                <span style={{ fontWeight: 600 }}>Basis Vectors (î′, ĵ′)</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={showGhostOutline}
+                  onChange={(e) => setShowGhostOutline(e.target.checked)}
+                />
+                <span>Reference Ghost [0, 1]²</span>
+              </label>
+            </div>
+          </div>
+
+          {/* 3. Transformation Presets Grid - Fills under-graph space evenly */}
+          <div className="control-panel-card" style={{ padding: '0.85rem 1.05rem' }}>
+            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.55rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <Compass size={15} style={{ color: 'var(--text-secondary)' }} />
+                <span style={{ fontSize: '0.90rem', fontWeight: 700 }}>Transformation Presets</span>
+              </div>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>1-Click Transforms</span>
             </div>
 
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))',
-              gap: '0.65rem',
-              marginTop: '0.85rem'
-            }}>
+            <div className="det-preset-grid">
               {DETERMINANT_PRESETS.map((preset) => {
-                const Icon = preset.icon;
                 const isSelected = activePreset === preset.id;
                 return (
                   <button
                     key={preset.id}
                     type="button"
                     onClick={() => handleApplyPreset(preset)}
-                    className={`preset-card-btn ${isSelected ? 'active' : ''}`}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-start',
-                      padding: '0.65rem 0.75rem',
-                      background: isSelected ? 'var(--bg-card-hover)' : 'var(--bg-primary)',
-                      border: isSelected ? `1.5px solid ${preset.color}` : '1px solid var(--border-color)',
-                      borderRadius: '10px',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease',
-                      gap: '0.35rem'
-                    }}
+                    className={`det-preset-btn ${isSelected ? 'active' : ''}`}
+                    title={preset.desc}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ fontSize: '0.80rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                         {preset.name}
                       </span>
-                      <Icon size={14} style={{ color: preset.color }} />
+                      <span
+                        style={{
+                          fontSize: '0.68rem',
+                          fontFamily: 'var(--font-mono)',
+                          color: 'var(--text-muted)',
+                          background: 'var(--bg-primary)',
+                          padding: '0.1rem 0.35rem',
+                          borderRadius: '4px',
+                          border: '1px solid var(--border-color)',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {preset.badge}
+                      </span>
                     </div>
-                    <span
-                      className="font-mono"
-                      style={{
-                        fontSize: '0.72rem',
-                        color: preset.color,
-                        fontWeight: 700,
-                        background: `${preset.color}15`,
-                        padding: '0.1rem 0.4rem',
-                        borderRadius: '4px'
-                      }}
-                    >
-                      {preset.badge}
-                    </span>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.25 }}>
-                      {preset.desc.split(':')[0]}
+                    <span style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', lineHeight: 1.25 }}>
+                      {preset.desc}
                     </span>
                   </button>
                 );
               })}
             </div>
           </div>
-
-          {/* 3. SUBJECT CHOOSER & PHOTO UPLOAD */}
-          <div className="control-panel-card">
-            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <ImageIcon size={16} style={{ color: 'var(--accent-green)' }} />
-                <span>Image Subject</span>
-              </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Transform Any Subject</span>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className={`sub-chapter-pill ${subjectType === 'portrait' ? 'active' : ''}`}
-                onClick={() => setSubjectType('portrait')}
-              >
-                <span>👤 Portrait Face</span>
-              </button>
-              <button
-                type="button"
-                className={`sub-chapter-pill ${subjectType === 'geometry' ? 'active' : ''}`}
-                onClick={() => setSubjectType('geometry')}
-              >
-                <span>🔲 Grid &amp; Letter 'R'</span>
-              </button>
-              <button
-                type="button"
-                className={`sub-chapter-pill ${subjectType === 'rocket' ? 'active' : ''}`}
-                onClick={() => setSubjectType('rocket')}
-              >
-                <span>🚀 Space Rocket</span>
-              </button>
-              <button
-                type="button"
-                className={`sub-chapter-pill ${subjectType === 'custom' ? 'active' : ''}`}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload size={13} />
-                <span>Upload Photo</span>
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                style={{ display: 'none' }}
-              />
-            </div>
-
-            {/* Custom Image Info if Loaded */}
-            {customImagePreview && subjectType === 'custom' && (
-              <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem', background: 'var(--bg-primary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                <img
-                  src={customImagePreview}
-                  alt="Custom uploaded preview"
-                  style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px' }}
-                />
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>
-                  <strong>Custom Image Active</strong>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Currently transformed by matrix A</div>
-                </div>
-              </div>
-            )}
-
-            {/* Visual Layer Toggles */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '0.65rem',
-              marginTop: '1rem',
-              paddingTop: '0.85rem',
-              borderTop: '1px solid var(--border-color)',
-              fontSize: '0.8rem',
-              color: 'var(--text-secondary)'
-            }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={showImage}
-                  onChange={(e) => setShowImage(e.target.checked)}
-                />
-                <span>Show Transformed Image</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={showParallelogram}
-                  onChange={(e) => setShowParallelogram(e.target.checked)}
-                />
-                <span>Show det(A) Parallelogram</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={showBasisVectors}
-                  onChange={(e) => setShowBasisVectors(e.target.checked)}
-                />
-                <span>Show Basis Vectors (i', j')</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={showGhostOutline}
-                  onChange={(e) => setShowGhostOutline(e.target.checked)}
-                />
-                <span>Show Original Boundary</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: Interactive Transformation Canvas & Live Readouts */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-          <CoordinateTransformCanvas
-            matrix2x2={matrix}
-            subjectType={subjectType}
-            customImage={customImage}
-            showImage={showImage}
-            showParallelogram={showParallelogram}
-            showBasisVectors={showBasisVectors}
-            showGhostOutline={showGhostOutline}
-            showGrid={showGrid}
-            showOrientationArc={showOrientationArc}
-            title="Image Transformation: x' = Ax"
-            subtitle="Hover to inspect point mapping"
-            onHoverCoords={setHoverCoords}
-          />
-
-          {/* DYNAMIC CASE COMPARISON CARDS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.85rem' }}>
-
-            {/* Case 1: Stretch */}
-            <div
-              className={`case-callout-card ${Math.abs(rawDet) > 1.0001 ? 'active' : ''}`}
-              style={{
-                padding: '0.85rem 1rem',
-                borderRadius: '12px',
-                background: Math.abs(rawDet) > 1.0001 ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-secondary)',
-                border: Math.abs(rawDet) > 1.0001 ? '1.5px solid #3B82F6' : '1px solid var(--border-color)',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                <Maximize2 size={16} style={{ color: '#3B82F6' }} />
-                <strong style={{ fontSize: '0.85rem', color: '#3B82F6' }}>|det(A)| &gt; 1: Stretch</strong>
-              </div>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                Corresponds to an <strong>increase in 2D area</strong>. The transformation pulls coordinates outward, magnifying geometric features.
-              </p>
-            </div>
-
-            {/* Case 2: Shrink */}
-            <div
-              className={`case-callout-card ${Math.abs(rawDet) < 0.9999 && Math.abs(rawDet) > 0.0001 ? 'active' : ''}`}
-              style={{
-                padding: '0.85rem 1rem',
-                borderRadius: '12px',
-                background: Math.abs(rawDet) < 0.9999 && Math.abs(rawDet) > 0.0001 ? 'rgba(245, 158, 11, 0.12)' : 'var(--bg-secondary)',
-                border: Math.abs(rawDet) < 0.9999 && Math.abs(rawDet) > 0.0001 ? '1.5px solid #F59E0B' : '1px solid var(--border-color)',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                <Minimize2 size={16} style={{ color: '#F59E0B' }} />
-                <strong style={{ fontSize: '0.85rem', color: '#F59E0B' }}>0 &lt; |det(A)| &lt; 1: Shrink</strong>
-              </div>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                Corresponds to a <strong>decrease in 2D area</strong>. Shapes compress inward, packing image pixels into a tighter footprint.
-              </p>
-            </div>
-
-            {/* Case 3: Collapse */}
-            <div
-              className={`case-callout-card ${Math.abs(rawDet) <= 0.0001 ? 'active' : ''}`}
-              style={{
-                padding: '0.85rem 1rem',
-                borderRadius: '12px',
-                background: Math.abs(rawDet) <= 0.0001 ? 'rgba(239, 68, 68, 0.16)' : 'var(--bg-secondary)',
-                border: Math.abs(rawDet) <= 0.0001 ? '1.5px solid #EF4444' : '1px solid var(--border-color)',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                <AlertTriangle size={16} style={{ color: '#EF4444' }} />
-                <strong style={{ fontSize: '0.85rem', color: '#EF4444' }}>det(A) = 0: Collapse</strong>
-              </div>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                <strong>Dimensionality collapse!</strong> 2D geometry squashes into a 1D line or 0D point. Area is zero and inverse <code>A⁻¹</code> does not exist.
-              </p>
-            </div>
-
-            {/* Case 4: Orientation Reversal (Flip) */}
-            <div
-              className={`case-callout-card ${rawDet < -0.0001 ? 'active' : ''}`}
-              style={{
-                padding: '0.85rem 1rem',
-                borderRadius: '12px',
-                background: rawDet < -0.0001 ? 'rgba(168, 85, 247, 0.14)' : 'var(--bg-secondary)',
-                border: rawDet < -0.0001 ? '1.5px solid #A855F7' : '1px solid var(--border-color)',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                <FlipHorizontal size={16} style={{ color: '#A855F7' }} />
-                <strong style={{ fontSize: '0.85rem', color: '#A855F7' }}>det(A) &lt; 0: Flip (Chirality)</strong>
-              </div>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                <strong>Orientation reversal!</strong> Space is turned inside-out like looking into a mirror. The counter-clockwise basis flips to clockwise.
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* EDUCATIONAL THEORY ACCORDION */}
-      <div className="theory-explainer-card" style={{ marginTop: '2rem' }}>
-        <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Compass size={18} style={{ color: 'var(--accent-purple)' }} />
-          <span>Mathematical Intuition: The Determinant as an Area Scaling Factor</span>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1.25rem', marginTop: '1rem' }}>
-          <div className="theory-sub-block">
-            <h4 style={{ color: 'var(--accent-cyan)', fontSize: '0.92rem', marginBottom: '0.4rem' }}>
-              1. Why det(A) = ad − bc measures Area
-            </h4>
-            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-              Consider the unit square spanned by basis vectors <code>i = [1, 0]ᵀ</code> and <code>j = [0, 1]ᵀ</code> with area <code>1 × 1 = 1</code>.
-              The matrix maps these vectors to <code>i' = [a, c]ᵀ</code> and <code>j' = [b, d]ᵀ</code>.
-              By cross-product geometry, the area of the resulting parallelogram is exactly <code>|a·d − b·c|</code>!
-              Since any complex 2D image is built from infinitesimal square tiles, <strong>every tiny area element scales by |det(A)|</strong>.
-            </p>
-          </div>
-
-          <div className="theory-sub-block">
-            <h4 style={{ color: '#EF4444', fontSize: '0.92rem', marginBottom: '0.4rem' }}>
-              2. The Geometry of Collapse: det(A) = 0
-            </h4>
-            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-              When <code>ad − bc = 0</code>, the two column vectors <code>[a, c]ᵀ</code> and <code>[b, d]ᵀ</code> are parallel (linearly dependent).
-              Instead of spanning a 2D surface, every pixel in the entire image is forced onto the 1D line defined by their common span.
-              Because infinitely many 2D input points land on the exact same 1D coordinate, <strong>information is irreversibly lost</strong>, which is why matrices with <code>det(A) = 0</code> are non-invertible (singular).
-            </p>
-          </div>
-
-          <div className="theory-sub-block">
-            <h4 style={{ color: '#A855F7', fontSize: '0.92rem', marginBottom: '0.4rem' }}>
-              3. The Meaning of Negative Determinants: Orientation Flip
-            </h4>
-            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-              Why would area ever be "negative"? In linear algebra, the sign indicates <strong>spatial chirality (handedness)</strong>.
-              In the standard coordinate system, rotating from <code>i</code> to <code>j</code> takes a 90° counter-clockwise path.
-              When a matrix performs a reflection across an axis, that rotation becomes clockwise.
-              A negative determinant alerts you that the image has been flipped inside out—like looking at a transparent slide from the reverse side!
-            </p>
-          </div>
-        </div>
+      {/* 3. STANDARDIZED EDUCATIONAL DOCUMENTATION (Collapsed by Default for Vertical Compactness) */}
+      <div style={{ marginTop: '1.25rem' }}>
+        <ModuleDocumentation stepNumber={12} defaultOpen={false} />
       </div>
 
+      {/* 4. FOOTER NAVIGATION */}
       <StepFooter stepNumber={12} onSelectStep={onSelectStep} />
     </motion.div>
   );

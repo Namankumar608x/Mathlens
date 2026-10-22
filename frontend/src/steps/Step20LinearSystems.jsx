@@ -224,21 +224,28 @@ export default function Step20LinearSystems({ onSelectStep }) {
   // Helper: Draw 2D grayscale numerical matrix onto HTML5 canvas
   const drawMatrixCanvas = (canvas, matrix, size = 32) => {
     if (!canvas || !matrix) return;
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    const imgData = ctx.createImageData(size, size);
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        const val = matrix[r][c];
-        const idx = (r * size + c) * 4;
-        imgData.data[idx] = val;
-        imgData.data[idx + 1] = val;
-        imgData.data[idx + 2] = val;
-        imgData.data[idx + 3] = 255;
+    try {
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const imgData = ctx.createImageData(size, size);
+      for (let r = 0; r < size; r++) {
+        const row = matrix[r];
+        if (!row) continue;
+        for (let c = 0; c < size; c++) {
+          const val = row[c] ?? 0;
+          const idx = (r * size + c) * 4;
+          imgData.data[idx] = val;
+          imgData.data[idx + 1] = val;
+          imgData.data[idx + 2] = val;
+          imgData.data[idx + 3] = 255;
+        }
       }
+      ctx.putImageData(imgData, 0, 0);
+    } catch {
+      // Graceful fallback if browser shields or canvas context limits prevent drawing
     }
-    ctx.putImageData(imgData, 0, 0);
   };
 
   // Canvas Refs
@@ -742,10 +749,10 @@ export default function Step20LinearSystems({ onSelectStep }) {
               <div className="step20-message-box">
                 <CheckCircle2 size={18} style={{ flexShrink: 0, color: '#10B981' }} />
                 <div style={{ fontSize: '0.78rem', lineHeight: 1.45 }}>
-                  <strong>How Pixel Cancellation Works:</strong> In $X_1 = 1.4 B_1 - 0.4 B_2$:
-                  The triangle component in $1.4 B_1$ equals $1.4 \times (0.2 X_2) = +0.28 X_2$.
-                  The triangle component in $-0.4 B_2$ equals $-0.4 \times (0.7 X_2) = -0.28 X_2$.
-                  Adding them together yields $+0.28 X_2 - 0.28 X_2 = \mathbf{0}$, completely annihilating the triangle artifact!
+                  <strong>How Pixel Cancellation Works:</strong> In X₁ = 1.4 B₁ − 0.4 B₂:
+                  The triangle component in 1.4 B₁ equals 1.4 × (0.2 X₂) = +0.28 X₂.
+                  The triangle component in −0.4 B₂ equals −0.4 × (0.7 X₂) = −0.28 X₂.
+                  Adding them together yields +0.28 X₂ − 0.28 X₂ = <strong>0</strong>, completely annihilating the triangle artifact!
                 </div>
               </div>
             </div>
@@ -767,13 +774,13 @@ export default function Step20LinearSystems({ onSelectStep }) {
                   <span>What Happens If Both Mixed Images Are Identical?</span>
                 </h3>
                 <span className={`step20-status-pill ${isSingular ? 'singular' : 'invertible'}`}>
-                  det(A) = {detA.toFixed(2)} {isSingular ? '→ Singular!' : ''}
+                  det(A) = {typeof detA === 'number' && !isNaN(detA) ? detA.toFixed(2) : '0.00'} {isSingular ? '→ Singular!' : ''}
                 </span>
               </div>
 
               <p className="step20-desc">
                 As stated on Page 2 of the curriculum: suppose <strong>B₁ = 0.5X₁ + 0.5X₂</strong> and <strong>B₂ = 0.5X₁ + 0.5X₂</strong>.
-                Here, $\det(A) = (0.5)(0.5) - (0.5)(0.5) = 0$.
+                Here, det(A) = (0.5)(0.5) − (0.5)(0.5) = 0.
                 Students <strong>cannot uniquely recover the original images</strong> because the two equations contain the exact same redundant information!
               </p>
 
@@ -851,7 +858,7 @@ export default function Step20LinearSystems({ onSelectStep }) {
                 <div className="step20-image-card">
                   <div className="step20-image-card-title">
                     <span>Mixture B₁</span>
-                    <span className="step20-mini-tag">{a11.toFixed(2)}X₁ + {a12.toFixed(2)}X₂</span>
+                    <span className="step20-mini-tag">{(Number(a11) || 0).toFixed(2)}X₁ + {(Number(a12) || 0).toFixed(2)}X₂</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'center', padding: '0.35rem 0' }}>
                     <canvas ref={canvasB1Ref} style={{ width: '120px', height: '120px', imageRendering: 'pixelated', borderRadius: 8, border: '1px solid var(--border-color)' }} />
@@ -861,7 +868,7 @@ export default function Step20LinearSystems({ onSelectStep }) {
                 <div className="step20-image-card">
                   <div className="step20-image-card-title">
                     <span>Mixture B₂</span>
-                    <span className="step20-mini-tag">{a21.toFixed(2)}X₁ + {a22.toFixed(2)}X₂</span>
+                    <span className="step20-mini-tag">{(Number(a21) || 0).toFixed(2)}X₁ + {(Number(a22) || 0).toFixed(2)}X₂</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'center', padding: '0.35rem 0' }}>
                     <canvas ref={canvasB2Ref} style={{ width: '120px', height: '120px', imageRendering: 'pixelated', borderRadius: 8, border: '1px solid var(--border-color)' }} />
@@ -873,10 +880,10 @@ export default function Step20LinearSystems({ onSelectStep }) {
               <div className="step20-message-box">
                 <Info size={18} style={{ flexShrink: 0, color: 'var(--accent-primary, #C59B67)' }} />
                 <div style={{ fontSize: '0.78rem', lineHeight: 1.45 }}>
-                  <strong>Connecting to Matrix Rank:</strong>
-                  When $\det(A) = 0$, both mixed images provide the same physical constraint.
-                  You have <strong>1 equation with 2 unknowns</strong> ($X_1, X_2$) at every pixel.
-                  To separate $N$ overlapping layers, you strictly require at least $N$ linearly independent mixtures ($\text{rank}(A) = N$)!
+                  <strong>Connecting to Matrix Rank:</strong>{' '}
+                  When det(A) = 0, both mixed images provide the same physical constraint.
+                  You have <strong>1 equation with 2 unknowns</strong> (X₁, X₂) at every pixel.
+                  To separate N overlapping layers, you strictly require at least N linearly independent mixtures (Rank(A) = N)!
                 </div>
               </div>
             </div>
@@ -1090,8 +1097,8 @@ export default function Step20LinearSystems({ onSelectStep }) {
                     2. Spectrophotometry Chemical Dye Unmixing
                   </span>
                   <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.74rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                    According to the Beer-Lambert law, light absorbance of mixed dyes is a linear sum $A_\lambda = \epsilon_1 C_1 + \epsilon_2 C_2$.
-                    Measuring absorption at two optical wavelengths forms a $2 \times 2$ linear system that yields individual chemical concentrations.
+                    According to the Beer-Lambert law, light absorbance of mixed dyes is a linear sum A(λ) = ε₁·C₁ + ε₂·C₂.
+                    Measuring absorption at two optical wavelengths forms a 2 × 2 linear system that yields individual chemical concentrations.
                   </p>
                 </div>
 

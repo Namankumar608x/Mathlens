@@ -38,6 +38,42 @@ import { getFeatureByStep, FEATURES } from './config/features';
 import './index.css';
 import './App.css';
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('ErrorBoundary caught:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '2.5rem 1.5rem', maxWidth: '640px', margin: '3rem auto', textAlign: 'center', background: 'var(--bg-card, #ffffff)', border: '1px solid var(--border-color, #e5e7eb)', borderRadius: '14px', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}>
+          <h3 style={{ color: '#EF4444', marginBottom: '0.6rem', fontSize: '1.1rem', fontWeight: 700 }}>Something went wrong rendering this module</h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary, #6b7280)', marginBottom: '1.25rem', lineHeight: 1.5 }}>
+            {this.state.error?.message || 'An unexpected runtime error occurred.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+            style={{ padding: '0.55rem 1.25rem', borderRadius: '8px', background: 'var(--accent-primary, #C59B67)', color: '#ffffff', border: 'none', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
+          >
+            Reload Module
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const [currentLevel, setCurrentLevel] = useState(() => {
     return (typeof window !== 'undefined' && localStorage.getItem('mathlens_level')) || 'basic';
@@ -314,7 +350,9 @@ export default function App() {
             />
           )}
 
-          {renderMainContent()}
+          <ErrorBoundary>
+            {renderMainContent()}
+          </ErrorBoundary>
         </main>
 
         <Footer

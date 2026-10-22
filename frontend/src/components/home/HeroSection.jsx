@@ -99,7 +99,8 @@ export default function HeroSection({
     { id: 'visual-labs', label: 'Visual Labs', count: 9 },
     { id: 'ray-optics', label: 'Optics', count: 1 },
     { id: 'eigen-spaces', label: 'Advanced', count: 1 },
-    { id: 'matrix-rank', label: 'Rank', count: 1 }
+    { id: 'matrix-rank', label: 'Rank', count: 1 },
+    { id: 'linear-systems', label: 'Systems', count: 1 }
   ];
 
   return (

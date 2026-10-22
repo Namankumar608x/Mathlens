@@ -23,7 +23,8 @@ import {
   Variable,
   FunctionSquare,
   Network,
-  Zap
+  Zap,
+  Split
 } from 'lucide-react';
 
 export const CATEGORIES = [
@@ -73,6 +74,14 @@ export const CATEGORIES = [
     shortLabel: 'Matrix Rank',
     description: 'How much independent information do images, force vectors, and sensor signals contain?',
     icon: Binary,
+    color: 'var(--accent-primary, #C59B67)'
+  },
+  {
+    id: 'linear-systems',
+    label: 'Systems of Linear Equations (AX = b)',
+    shortLabel: 'Linear Systems',
+    description: 'Recover hidden images by inverting linear combinations, unmixing layers, and exploring matrix singularity',
+    icon: Split,
     color: 'var(--accent-primary, #C59B67)'
   }
 ];
@@ -409,6 +418,34 @@ export const FEATURES = [
       'Multi-Sensor Signal Processing & Sensor Redundancy'
     ],
     keywords: ['matrix rank', 'linear independence', 'redundant images', 'image collection matrix', 'reconstruct missing image', 'linear combination', 'SVD', 'forces', 'collinear', 'sensors', 'signal processing', 'redundancy', 'gaussian elimination']
+  },
+
+  // Category 7: Linear Systems (Step 20)
+  {
+    id: 'linear-systems-unmixing',
+    stepNumber: 20,
+    code: '20',
+    slug: 'linear-systems-unmixing',
+    title: 'System of Linear Equations — Recovering Hidden Images (AX = b)',
+    shortTitle: 'Hidden Images (AX = b)',
+    category: 'linear-systems',
+    categoryLabel: 'Core: Linear Systems',
+    icon: Split,
+    formula: 'AX = B ⟹ X = A⁻¹ B,  B₁ = 0.8X₁ + 0.2X₂',
+    rawFormula: 'A X = B \\implies X = A^{-1} B, \\quad \\begin{bmatrix} B_1 \\\\ B_2 \\end{bmatrix} = \\begin{bmatrix} a_{11} & a_{12} \\\\ a_{21} & a_{22} \\end{bmatrix} \\begin{bmatrix} X_1 \\\\ X_2 \\end{bmatrix}',
+    summary: 'A digital image can be created by combining multiple image layers. If we know how these layers were mixed, can we recover the original images by solving a system of linear equations? Explore forward mixing, matrix inversion X = A⁻¹B, negative coefficient ghost cancellation, and singularity/rank collapse when det(A) = 0.',
+    concepts: [
+      'Layer Mixing (B₁ = 0.8X₁ + 0.2X₂, B₂ = 0.3X₁ + 0.7X₂)',
+      'Matrix Formulation AX = B',
+      'Matrix Inversion (X = A⁻¹ B)',
+      'Inverse Formula X₁ = 1.4B₁ − 0.4B₂, X₂ = −0.6B₁ + 1.6B₂',
+      'Negative Weight Pixel Cancellation',
+      'Singular Matrix & Rank Collapse (det(A) = 0)',
+      'Identical Blends (B₁ = B₂ = 0.5X₁ + 0.5X₂)',
+      'Dual-Energy X-Ray Bone & Soft Tissue Separation',
+      'Spectrophotometry Dye Unmixing & CMYK Printing'
+    ],
+    keywords: ['linear systems', 'AX = b', 'image recovery', 'unmixing', 'layers', 'matrix inversion', 'determinant', 'singular matrix', 'rank collapse', 'circle triangle', 'bone tissue', 'spectrophotometry']
   }
 ];
 

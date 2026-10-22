@@ -8,6 +8,7 @@ import {
   Zap,
   Variable,
   Binary,
+  Split,
   ChevronUp,
   Check,
   PanelLeftClose,
@@ -68,6 +69,7 @@ export default function FloatingDock({
   const isOptics = currentView === 'module' && currentStep === 17;
   const isAdvanced = currentView === 'module' && currentStep === 18;
   const isRank = currentView === 'module' && currentStep === 19;
+  const isLinearSystems = currentView === 'module' && currentStep === 20;
 
   const activeFeature = getFeatureByStep(currentStep);
 
@@ -301,6 +303,19 @@ export default function FloatingDock({
                 {isRank && <span className="dock-active-indicator" />}
                 <Binary size={15} className="dock-icon" />
                 <span className="dock-label">Rank</span>
+              </button>
+
+              {/* 8. Linear Systems (B20) */}
+              <button
+                type="button"
+                className={`dock-item ${isLinearSystems ? 'active' : ''}`}
+                onClick={() => handleNavClick('linear-systems', 20, false)}
+                title="System of Linear Equations — Recovering Hidden Images AX = b (B20)"
+                aria-label="Linear Systems module"
+              >
+                {isLinearSystems && <span className="dock-active-indicator" />}
+                <Split size={15} className="dock-icon" />
+                <span className="dock-label">Systems</span>
               </button>
             </nav>
           </motion.div>

@@ -1835,6 +1835,135 @@ export const MODULE_DOCUMENTATION = {
       'Natural photos under varied lighting exhibit low effective rank (approximate dependence) dominated by the 1st singular value.',
       'In an n-dimensional physical space, at most n independent force or sensor directions can exist.'
     ]
+  },
+
+  20: {
+    stepNumber: 20,
+    code: '20',
+    title: 'System of Linear Equations — Recovering Hidden Images (AX = b)',
+    category: 'Linear Systems',
+    oneLiner: 'Unmix blended digital image layers into their pristine originals by formulating and inverting the linear system AX = B.',
+    formula: 'A X = B \\implies X = A^{-1} B',
+    formulaDisplay:
+      '\\begin{bmatrix} B_1 \\\\ B_2 \\end{bmatrix} = \\begin{bmatrix} a_{11} & a_{12} \\\\ a_{21} & a_{22} \\end{bmatrix} \\begin{bmatrix} X_1 \\\\ X_2 \\end{bmatrix} \\implies \\begin{bmatrix} X_1 \\\\ X_2 \\end{bmatrix} = \\frac{1}{a_{11}a_{22} - a_{12}a_{21}} \\begin{bmatrix} a_{22} & -a_{12} \\\\ -a_{21} & a_{11} \\end{bmatrix} \\begin{bmatrix} B_1 \\\\ B_2 \\end{bmatrix}',
+    whatIsThis:
+      'In digital imaging, medical diagnostics, and remote sensing, sensors frequently capture overlapping mixtures of physical layers. A system of linear equations AX = B models this blending at every single pixel. When the mixing matrix A is non-singular (det(A) ≠ 0), its inverse A⁻¹ exists and acts as an unmixing filter. By applying negative linear combinations to the mixed layers, A⁻¹ cancels out ghost artifacts and perfectly reconstructs the original hidden images X₁ and X₂.',
+    whyNeedIt:
+      'In dual-energy X-ray imaging, radiologists need to cleanly separate dense bone from soft tissue to detect fractures and pulmonary nodules. In chemical spectrophotometry, solutions containing multiple dyes create superimposed absorption spectra that must be unmixed to find exact chemical concentrations. Furthermore, exploring matrix singularity (det(A) = 0 and rank collapse) teaches learners why duplicate or proportional sensor readings cause irreversible information loss where unmixing is mathematically impossible.',
+    subsections: [
+      {
+        title: 'Forward Blending (AX = B)',
+        desc: 'Combine pristine images X₁ (Circle) and X₂ (Triangle) using weights: B₁ = 0.8X₁ + 0.2X₂ and B₂ = 0.3X₁ + 0.7X₂.'
+      },
+      {
+        title: 'Inverse Unmixing (X = A⁻¹ B)',
+        desc: 'Compute the inverse matrix A⁻¹ and observe how negative weights cancel the unwanted ghost layer at every pixel.'
+      },
+      {
+        title: 'Singularity & Rank Collapse (det(A) = 0)',
+        desc: 'Set identical mixtures B₁ = B₂ = 0.5X₁ + 0.5X₂ to trigger rank collapse (Rank = 1) and witness division-by-zero failure.'
+      },
+      {
+        title: 'Matrix Sandbox & Interactive Sliders',
+        desc: 'Dynamically vary all four matrix entries, monitor the determinant in real time, and unmix custom test shapes.'
+      },
+      {
+        title: 'Real-World Medical & Chemical Imaging',
+        desc: 'Explore dual-energy bone/tissue separation, chemical spectrophotometry dye unmixing, and CMYK color printing.'
+      }
+    ],
+    howItWorks: [
+      {
+        step: 1,
+        title: 'Linear Layer Combination',
+        description: 'Each sensor captures a linear mixture of the true source layers: B_i(x, y) = a_i1 X₁(x, y) + a_i2 X₂(x, y).'
+      },
+      {
+        step: 2,
+        title: 'Formulate Matrix System',
+        description: 'Stack into the compact system A · [X₁, X₂]ᵀ = [B₁, B₂]ᵀ with mixing matrix A = [[a₁₁, a₁₂], [a₂₁, a₂₂]].'
+      },
+      {
+        step: 3,
+        title: 'Check Invertibility',
+        description: 'Compute the determinant det(A) = a₁₁a₂₂ - a₁₂a₂₁. If det(A) ≠ 0, the matrix has full rank (Rank = 2) and A⁻¹ exists.'
+      },
+      {
+        step: 4,
+        title: 'Invert & Cancel Ghosts',
+        description: 'Multiply both sides by A⁻¹: X = A⁻¹ B. The negative off-diagonal coefficients in A⁻¹ subtract the ghost layer from each mixture.'
+      }
+    ],
+    symbols: [
+      { symbol: 'X₁, X₂', name: 'Original Image Layers', meaning: 'Pristine ground-truth 2D matrices of pixel intensities (Circle and Triangle).' },
+      { symbol: 'B₁, B₂', name: 'Mixed Observed Images', meaning: 'Composite images recorded by cameras or sensors with overlapping signals.' },
+      { symbol: 'A', name: 'Mixing Matrix (2×2)', meaning: 'Coefficients specifying the percentage blend of each layer into each observation.' },
+      { symbol: 'A⁻¹', name: 'Unmixing Matrix (Inverse)', meaning: 'The inverse operator that reconstructs original layers from the mixed observations.' },
+      { symbol: 'det(A)', name: 'Matrix Determinant', meaning: 'The scaling factor a₁₁a₂₂ - a₁₂a₂₁; if zero, the system is singular and unsolvable.' },
+      { symbol: 'Rank(A)', name: 'System Rank', meaning: 'Number of linearly independent equations; Rank = 1 indicates redundant information.' }
+    ],
+    additionalFormulas: [
+      { label: '2×2 Matrix Inversion', formula: 'A^{-1} = \\frac{1}{ad - bc} \\begin{bmatrix} d & -b \\\\ -c & a \\end{bmatrix}', desc: 'Explicit formula for the inverse of a 2×2 matrix.' },
+      { label: 'Unmixing Equations', formula: 'X_1 = 1.4 B_1 - 0.4 B_2, \\quad X_2 = -0.6 B_1 + 1.6 B_2', desc: 'Inverse equations for mixing matrix [[0.8, 0.2], [0.3, 0.7]].' },
+      { label: 'Singularity Condition', formula: '\\det(A) = 0 \\iff a_{11}a_{22} = a_{12}a_{21}', desc: 'Proportional rows produce an infinite null space and no unique solution.' },
+      { label: 'Condition Number', formula: '\\kappa(A) = \\|A\\| \\|A^{-1}\\|', desc: 'Measures numerical sensitivity; ill-conditioned matrices amplify sensor noise.' }
+    ],
+    guidedInquiry: [
+      {
+        question: '1. Why does recovering the original images require negative coefficients in the inverse matrix?',
+        answer: 'Each mixed image B₁ and B₂ contains a fraction of both X₁ and X₂. To isolate X₁, we must subtract the unwanted triangle ghost contributed by X₂. The negative coefficient (-0.4 in X₁ = 1.4B₁ - 0.4B₂) provides exact destructive cancellation of the triangle layer.'
+      },
+      {
+        question: '2. What happens visually if both mixed images are identical (B₁ = B₂)?',
+        answer: 'When B₁ = B₂ = 0.5X₁ + 0.5X₂, both rows of matrix A are identical. The determinant det(A) = (0.5)(0.5) - (0.5)(0.5) = 0. The system collapses to Rank 1, meaning we have two copies of the same equation. We have 1 equation with 2 unknowns, resulting in infinitely many valid solutions and zero unique recovery.'
+      },
+      {
+        question: '3. What happens if the mixing matrix is nearly singular (ill-conditioned)?',
+        answer: 'If det(A) is very small (e.g. 0.001), the unmixing coefficients (1/det(A)) blow up into huge numbers. Even a tiny 1-pixel sensor noise or rounding difference gets magnified into extreme visual artifacts, producing blown-out or noisy reconstructions.'
+      },
+      {
+        question: '4. How does medical dual-energy CT use AX = B in clinical practice?',
+        answer: 'CT scanners pulse X-rays at 70 kVp (low energy) and 140 kVp (high energy). Calcium in bones absorbs low-energy photons much more strongly than soft tissue (water and muscle). The linear attenuation equations form a 2×2 system at every voxel, solved in real time to produce separate bone-free and tissue-free diagnostic scans.'
+      }
+    ],
+    workedExample: {
+      title: 'Unmixing Circle and Triangle at a Specific Pixel',
+      input: 'At pixel (16, 16), original circle has X₁ = 200, triangle has X₂ = 50. Blending matrix A = [[0.8, 0.2], [0.3, 0.7]]:',
+      matrixDisplay: [
+        [0.8, 0.2],
+        [0.3, 0.7]
+      ],
+      calculation:
+        '1. Forward Mixing:\n' +
+        '   B₁ = 0.8(200) + 0.2(50) = 160 + 10 = 170\n' +
+        '   B₂ = 0.3(200) + 0.7(50) = 60 + 35 = 95\n\n' +
+        '2. Determinant:\n' +
+        '   det(A) = (0.8)(0.7) - (0.2)(0.3) = 0.56 - 0.06 = 0.50\n\n' +
+        '3. Inverse Matrix A⁻¹:\n' +
+        '   A⁻¹ = (1 / 0.50) · [[0.7, -0.2], [-0.3, 0.8]] = [[1.4, -0.4], [-0.6, 1.6]]\n\n' +
+        '4. Unmixing Reconstruction:\n' +
+        '   X₁ = 1.4(170) - 0.4(95) = 238 - 38 = 200 (Exact Circle!)\n' +
+        '   X₂ = -0.6(170) + 1.6(95) = -102 + 152 = 50 (Exact Triangle!)',
+      output: 'Both original pixel intensities (200 and 50) are recovered with 100% mathematical precision.'
+    },
+    observations: [
+      'Digital image blending is a linear algebraic transformation governed by AX = B.',
+      'Unmixing requires solving AX = B independently at every single pixel (x, y) across the image matrix.',
+      'Negative coefficients in the inverse matrix A⁻¹ act as optical phase cancelers that eliminate ghost silhouettes.',
+      'When rows of A are linearly dependent, det(A) = 0 and recovery fails completely, proving that independent information is essential for solving linear systems.'
+    ],
+    applications: [
+      { name: 'Dual-Energy Medical Computed Tomography (DECT)', desc: 'Isolating bone fractures and kidney stones from soft organ tissues using two distinct X-ray energy spectra.' },
+      { name: 'Chemical Spectrophotometry & Dye Deconvolution', desc: 'Separating overlapping chemical absorption spectra in liquid chromatography and pharmaceutical testing.' },
+      { name: 'Multi-Spectral Satellite Remote Sensing', desc: 'Unmixing composite satellite pixels into percentages of vegetation, water, and urban concrete using spectral linear mixture models.' },
+      { name: 'CMYK Printing & Color Separation', desc: 'Decomposing RGB screen imagery into physical Cyan, Magenta, Yellow, and Key black ink pigment densities.' }
+    ],
+    keyTakeaways: [
+      'Image layer mixing is a forward matrix multiplication AX = B.',
+      'If det(A) ≠ 0, the inverse A⁻¹ uniquely recovers original pristine images via X = A⁻¹ B.',
+      'Negative unmixing coefficients are mathematically necessary to cancel ghost artifacts.',
+      'If det(A) = 0, the matrix collapses to Rank 1 and unique image recovery is impossible.'
+    ]
   }
 };
 

@@ -248,6 +248,36 @@ export default function Step20LinearSystems({ onSelectStep }) {
     }
   };
 
+  // Dedicated X-Ray Dual-Energy Data for Tab 5 simulation
+  const xrayData = useMemo(() => {
+    const images = generatePresetImages('xray', imgResolution);
+    const medMatrix = [
+      [0.85, 0.35], // 70 kVp: high bone attenuation, moderate soft tissue
+      [0.40, 0.80]  // 140 kVp: lower bone attenuation, higher relative tissue
+    ];
+    const mix = mixImageLayers(images.X1, images.X2, medMatrix, true);
+    const unmix = unmixImageLayers(mix.B1, mix.B2, medMatrix, true);
+    return {
+      B1: mix.B1,
+      B2: mix.B2,
+      recX1: unmix?.X1_rec,
+      recX2: unmix?.X2_rec
+    };
+  }, [imgResolution]);
+
+  // Helper: Clear 2D numerical canvas
+  const clearCanvas = (canvas, size = 32) => {
+    if (!canvas) return;
+    try {
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, size, size);
+    } catch {
+      // Graceful fallback
+    }
+  };
+
   // Canvas Refs
   const canvasX1Ref = useRef(null);
   const canvasX2Ref = useRef(null);
@@ -258,15 +288,39 @@ export default function Step20LinearSystems({ onSelectStep }) {
 
   // Update canvas renders
   useEffect(() => {
+    if (activeTab === 'applications') {
+      // Tab 5: Dual-Energy X-Ray Unmixing Simulation
+      drawMatrixCanvas(canvasB1Ref.current, xrayData.B1, imgResolution);
+      drawMatrixCanvas(canvasB2Ref.current, xrayData.B2, imgResolution);
+      if (xrayData.recX1 && xrayData.recX2) {
+        drawMatrixCanvas(canvasRecX1Ref.current, xrayData.recX1, imgResolution);
+        drawMatrixCanvas(canvasRecX2Ref.current, xrayData.recX2, imgResolution);
+      } else {
+        clearCanvas(canvasRecX1Ref.current, imgResolution);
+        clearCanvas(canvasRecX2Ref.current, imgResolution);
+      }
+      return;
+    }
+
+    // Tabs 1, 2, 3, 4
     drawMatrixCanvas(canvasX1Ref.current, X1, imgResolution);
     drawMatrixCanvas(canvasX2Ref.current, X2, imgResolution);
     drawMatrixCanvas(canvasB1Ref.current, B1, imgResolution);
     drawMatrixCanvas(canvasB2Ref.current, B2, imgResolution);
-    if (recoveryResult?.X1_rec && isSolved) {
+
+    // In Tab 4 (sandbox), unmixing is real-time whenever invertible.
+    // In Tab 2 (inverse-recovery), unmixing shows once solved.
+    const shouldDrawRecovered =
+      (activeTab === 'sandbox' || isSolved) && recoveryResult?.X1_rec;
+
+    if (shouldDrawRecovered) {
       drawMatrixCanvas(canvasRecX1Ref.current, recoveryResult.X1_rec, imgResolution);
       drawMatrixCanvas(canvasRecX2Ref.current, recoveryResult.X2_rec, imgResolution);
+    } else {
+      clearCanvas(canvasRecX1Ref.current, imgResolution);
+      clearCanvas(canvasRecX2Ref.current, imgResolution);
     }
-  }, [X1, X2, B1, B2, recoveryResult, isSolved, activeTab]);
+  }, [X1, X2, B1, B2, recoveryResult, isSolved, activeTab, xrayData]);
 
   return (
     <div className="math-step-view" style={{ maxWidth: '1240px', margin: '0 auto', padding: '1.25rem 1rem' }}>
@@ -1035,7 +1089,9 @@ export default function Step20LinearSystems({ onSelectStep }) {
                 <div className="step20-image-card">
                   <div className="step20-image-card-title">
                     <span>Recovered X₁</span>
-                    <span className="step20-mini-tag" style={{ color: '#10B981' }}>{fidelityX1}%</span>
+                    <span className="step20-mini-tag" style={{ color: invA ? '#10B981' : '#EF4444' }}>
+                      {invA ? `${fidelityX1}%` : 'Singular'}
+                    </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'center', padding: '0.35rem 0' }}>
                     <canvas ref={canvasRecX1Ref} style={{ width: '110px', height: '110px', imageRendering: 'pixelated', borderRadius: 8, border: '1px solid var(--border-color)' }} />
@@ -1045,7 +1101,9 @@ export default function Step20LinearSystems({ onSelectStep }) {
                 <div className="step20-image-card">
                   <div className="step20-image-card-title">
                     <span>Recovered X₂</span>
-                    <span className="step20-mini-tag" style={{ color: '#10B981' }}>{fidelityX2}%</span>
+                    <span className="step20-mini-tag" style={{ color: invA ? '#10B981' : '#EF4444' }}>
+                      {invA ? `${fidelityX2}%` : 'Singular'}
+                    </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'center', padding: '0.35rem 0' }}>
                     <canvas ref={canvasRecX2Ref} style={{ width: '110px', height: '110px', imageRendering: 'pixelated', borderRadius: 8, border: '1px solid var(--border-color)' }} />

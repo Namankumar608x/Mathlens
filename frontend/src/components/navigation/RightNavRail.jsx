@@ -137,7 +137,8 @@ export default function RightNavRail({
     { id: 'transformations', label: 'Transforms', count: 1 },
     { id: 'visual-labs', label: 'Visual Labs', count: 9 },
     { id: 'ray-optics', label: 'Optics', count: 1 },
-    { id: 'eigen-spaces', label: 'Advanced', count: 1 }
+    { id: 'eigen-spaces', label: 'Advanced', count: 1 },
+    { id: 'matrix-rank', label: 'Rank', count: 1 }
   ];
 
   return (

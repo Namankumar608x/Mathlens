@@ -98,7 +98,8 @@ export default function HeroSection({
     { id: 'transformations', label: 'Transforms', count: 1 },
     { id: 'visual-labs', label: 'Visual Labs', count: 9 },
     { id: 'ray-optics', label: 'Optics', count: 1 },
-    { id: 'eigen-spaces', label: 'Advanced', count: 1 }
+    { id: 'eigen-spaces', label: 'Advanced', count: 1 },
+    { id: 'matrix-rank', label: 'Rank', count: 1 }
   ];
 
   return (
@@ -123,7 +124,7 @@ export default function HeroSection({
 
           {/* Subheading */}
           <p className="hero-subheading">
-            Bridge the gap between abstract matrix equations and tangible digital pixels through 18 real-time visual laboratories. Discover intensity tensors, 2D coordinate mappings, and eigenspaces.
+            Bridge the gap between abstract matrix equations and tangible digital pixels through {FEATURES.length} real-time visual laboratories. Discover intensity tensors, 2D coordinate mappings, eigenspaces, and matrix rank redundancy.
           </p>
         </motion.div>
       </section>

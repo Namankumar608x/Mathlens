@@ -66,6 +66,14 @@ export const CATEGORIES = [
     description: 'Finding invariant directions and natural scaling factors in transformations',
     icon: Variable,
     color: 'var(--accent-primary, #C59B67)'
+  },
+  {
+    id: 'matrix-rank',
+    label: 'Rank of a Matrix & Redundancy',
+    shortLabel: 'Matrix Rank',
+    description: 'How much independent information do images, force vectors, and sensor signals contain?',
+    icon: Binary,
+    color: 'var(--accent-primary, #C59B67)'
   }
 ];
 
@@ -374,6 +382,33 @@ export const FEATURES = [
       'Line Direction vs Arrow Orientation (Negative λ)'
     ],
     keywords: ['eigenvalues', 'eigenvectors', 'special directions', 'stretch', 'flower image', 'reflection', 'negative eigenvalue', 'subspace', 'collinear']
+  },
+
+  // Category 6: Matrix Rank (Step 19)
+  {
+    id: 'matrix-rank-information',
+    stepNumber: 19,
+    code: '19',
+    slug: 'matrix-rank-information',
+    title: 'Rank of a Matrix — Information Redundancy in Images & Physics',
+    shortTitle: 'Matrix Rank & Redundancy',
+    category: 'matrix-rank',
+    categoryLabel: 'Intermediate: Matrix Rank',
+    icon: Binary,
+    formula: 'rank(M) = dim(col(M)),  C = 2A + B ⟹ rank = 2',
+    rawFormula: '\\text{rank}(M) = \\dim(\\text{col}(M)), \\quad C = 2A + B \\implies \\text{rank}([A \\mid B \\mid C]) = \\text{rank}([A \\mid B])',
+    summary: 'Discover how much independent information images, force vectors, and multi-sensor signals contain. Explore 2×2 grayscale image redundancy, missing image reconstruction via linear combinations, lighting variations via SVD, 2D force vectors, and experimental sensor signal processing.',
+    concepts: [
+      'Matrix Rank as Independent Information',
+      'Image Redundancy (B = 2A, C = 3A)',
+      'Image Collection Matrix M (4×3)',
+      'Linear Combinations (C = 2A + B) Preserve Rank',
+      'Exact vs Approximate Dependence in Photographs',
+      'SVD Singular Value Spectrum (σ₁, σ₂, σ₃)',
+      'Multiple Forces & Independent Directions in ℝ²',
+      'Multi-Sensor Signal Processing & Sensor Redundancy'
+    ],
+    keywords: ['matrix rank', 'linear independence', 'redundant images', 'image collection matrix', 'reconstruct missing image', 'linear combination', 'SVD', 'forces', 'collinear', 'sensors', 'signal processing', 'redundancy', 'gaussian elimination']
   }
 ];
 

@@ -1699,5 +1699,142 @@ export const MODULE_DOCUMENTATION = {
       'Negative eigenvalues (λ = −1) preserve straight-line subspaces while flipping vector direction.',
       'Eigen-decomposition reveals the fundamental axes of vibration, variance, and stability in physical and digital systems.'
     ]
+  },
+
+  19: {
+    stepNumber: 19,
+    code: '19',
+    title: 'Rank of a Matrix — Information Redundancy in Images & Physics',
+    category: 'Matrix Rank',
+    oneLiner: 'Discover how much independent information images, force vectors, and multi-sensor signals contain: rank(M) = dim(col(M)).',
+    formula: '\\text{rank}(M) = \\dim(\\text{col}(M)), \\quad C = 2A + B \\implies \\text{rank}([A \\mid B \\mid C]) = \\text{rank}([A \\mid B])',
+    formulaDisplay: 'rank(M) = dim(col(M)),  C = 2A + B ⟹ rank([A | B | C]) = 2',
+    whatIsThis:
+      'The rank of a matrix is the fundamental measure of how much truly independent information it contains. In digital image collections, a collection of three images does not necessarily contain three independent visual signals: if image B is twice as bright as A (B = 2A) and image C is three times as bright (C = 3A), both images B and C are redundant. In linear algebra, flattening each 2D image into a column vector forms an image collection matrix M = [a | b | c]. Because columns b and c are scalar multiples of a, Gaussian elimination reduces the columns to a single non-zero pivot column: rank(M) = 1.',
+    whyNeedIt:
+      'Matrix rank connects linear algebra to data compression (SVD / PCA), signal processing, computer vision, and experimental physics. By identifying linear dependence, engineers can eliminate redundant sensors in IoT networks, compress gigapixel image databases without loss of essential structure, and determine whether multiple forces acting on a mechanical structure provide new degrees of freedom or merely repeat existing directional constraints.',
+    subsections: [
+      {
+        title: 'Information Redundancy in 2×2 Grayscale Images',
+        content:
+          'Consider an image A represented by a (2×2) pixel-intensity matrix: A = [[40, 80], [120, 160]]. Suppose image B = 2A and C = 3A. Unrolling each image into a column vector yields a 4×3 collection matrix M = [vec(A) | vec(B) | vec(C)]. Because columns 2 and 3 can be constructed purely by scalar multiplication of column 1, knowing image A alone is sufficient to reconstruct both B and C. The mathematical rank of M is 1.',
+        formula: 'M = \\begin{bmatrix} 40 & 80 & 120 \\\\ 80 & 160 & 240 \\\\ 120 & 240 & 360 \\\\ 160 & 320 & 480 \\end{bmatrix} \\implies \\text{rank}(M) = 1'
+      },
+      {
+        title: 'Linear Combinations Preserve Matrix Rank',
+        content:
+          'If an image C is generated from existing images A and B through a linear combination C = 2A + B, does it add a new dimension to the collection? No. Because vector c lies entirely in the span(a, b), the rank of [A | B | C] equals rank([A | B]) = 2. A linear combination never increases the rank of a dataset.',
+        formula: 'C = c_1 A + c_2 B \\implies \\text{rank}([A \\mid B \\mid C]) = \\text{rank}([A \\mid B]) = 2'
+      },
+      {
+        title: 'Exact vs. Approximate Dependence in Natural Photographs',
+        content:
+          'In synthetic matrices, B = 2A yields exact linear dependence (rank = 1). In natural photographs of flowers or trees captured under different lighting (morning, noon ambient, direct sun), lighting shifts scale the overall luminance manifold while cast shadows introduce minor variations. Singular Value Decomposition (SVD) reveals that the first singular value σ₁ dominates with >85–95% of total variance, demonstrating that multi-lighting photos are approximately dependent (effective rank ≈ 1).',
+        formula: '\\frac{\\sigma_1^2}{\\sigma_1^2 + \\sigma_2^2 + \\sigma_3^2} > 90\\% \\implies \\text{Effective Rank} \\approx 1'
+      },
+      {
+        title: 'Physics Example 1: Forces in a 2D Plane',
+        content:
+          'Consider three forces acting on an object in a plane: F₁ = [2, 1]ᵀ, F₂ = [4, 2]ᵀ, and F₃ = [1, 3]ᵀ. Arranging them into matrix F = [[2, 4, 1], [1, 2, 3]], we see F₂ = 2F₁. Forces F₁ and F₂ lie along the exact same line of action in the plane. Because F₃ points in an independent direction, rank(F) = 2. In a 2D plane (ℝ²), any set of 3 or more vectors must be linearly dependent because dim(ℝ²) = 2.',
+        formula: 'F = \\begin{bmatrix} 2 & 4 & 1 \\\\ 1 & 2 & 3 \\end{bmatrix}, \\quad F_2 = 2F_1 \\implies \\text{rank}(F) = 2'
+      },
+      {
+        title: 'Physics Example 2: Multi-Sensor Signal Processing',
+        content:
+          'Three sensors record the displacement of an oscillating object across four time instants: S₁ = [1, 2, 3, 4]ᵀ, S₂ = [2, 4, 6, 8]ᵀ, and S₃ = [3, 6, 9, 12]ᵀ. Because S₂ = 2S₁ and S₃ = 3S₁, rank(S) = 1. Although three physical instruments are deployed, they measure only 1 independent physical signal. If the third sensor is modified to capture an independent vibration mode, rank(S) increases to 2.',
+        formula: 'S_2 = 2S_1, \\, S_3 = 3S_1 \\implies \\text{rank}(S_{4 \\times 3}) = 1'
+      }
+    ],
+    howItWorks: [
+      {
+        step: 1,
+        title: 'Vectorize the Observations',
+        description: 'Unroll each 2D image or time-series record into a column vector v_i ∈ ℝ^m.'
+      },
+      {
+        step: 2,
+        title: 'Form the Collection Matrix',
+        description: 'Stack all observations side-by-side into matrix M = [v₁ | v₂ | ... | v_n] of order m × n.'
+      },
+      {
+        step: 3,
+        title: 'Row Reduction / SVD',
+        description: 'Apply Gaussian elimination to find pivot columns, or compute SVD to examine singular value decay.'
+      },
+      {
+        step: 4,
+        title: 'Interpret Information Content',
+        description: 'Rank equals the number of independent signals. Any rank strictly less than n indicates redundancy.'
+      }
+    ],
+    symbols: [
+      { symbol: 'M', name: 'Collection Matrix', meaning: 'The m × n matrix containing n column observations of dimension m.' },
+      { symbol: 'rank(M)', name: 'Matrix Rank', meaning: 'The dimension of the column space col(M), equal to the number of linearly independent columns.' },
+      { symbol: 'span(v₁, ..., v_k)', name: 'Linear Span', meaning: 'The set of all possible linear combinations c₁v₁ + ... + c_k v_k.' },
+      { symbol: 'c₁A + c₂B', name: 'Linear Combination', meaning: 'Reconstructing an image via scalar weighting and matrix addition.' },
+      { symbol: 'σ_i (sigma)', name: 'Singular Values', meaning: 'Square roots of eigenvalues of MᵀM indicating independent energy distribution.' },
+      { symbol: 'det([F₁, F₂])', name: '2D Minor / Determinant', meaning: 'Zero cross-product indicates collinear force vectors along the same line.' }
+    ],
+    additionalFormulas: [
+      { label: 'Rank-Nullity Theorem', formula: '\\text{rank}(M) + \\text{nullity}(M) = n', desc: 'Dimension of column space plus dimension of kernel equals number of columns.' },
+      { label: 'Linear Independence Condition', formula: 'c_1 \\vec{v}_1 + c_2 \\vec{v}_2 + c_3 \\vec{v}_3 = \\vec{0} \\implies c_1 = c_2 = c_3 = 0', desc: 'Columns are independent only if trivial combination produces zero.' },
+      { label: 'Collinearity in ℝ²', formula: '\\det([\\vec{F}_1, \\vec{F}_2]) = F_{1x}F_{2y} - F_{1y}F_{2x} = 0', desc: 'Vectors are collinear if their 2×2 determinant vanishes.' },
+      { label: 'SVD Energy Ratio', formula: 'E_1 = \\frac{\\sigma_1^2}{\\sum_{i} \\sigma_i^2} \\times 100\\%', desc: 'Percentage of total matrix energy captured by the dominant singular value.' }
+    ],
+    guidedInquiry: [
+      {
+        question: '1. Why does knowing Image A allow us to reconstruct B = 2A and C = 3A?',
+        answer: 'Because scalar multiplication scales every pixel intensity uniformly by a constant factor. The spatial distribution and ratios between pixels remain identical, so no new visual information exists in B or C.'
+      },
+      {
+        question: '2. Does creating image C = 2A + B increase the rank of [A | B]?',
+        answer: 'No. Matrix rank measures the dimension of the subspace spanned by the columns. Since C is already an element of span(A, B), adding C does not expand the subspace dimension.'
+      },
+      {
+        question: '3. Why are real photographs under different lighting approximately dependent rather than exactly dependent?',
+        answer: 'Real light sources cast shadows and highlight specularity that introduce minor local nonlinearities. However, the underlying geometric reflectance remains constant, causing the first singular value to dominate with >85% of energy.'
+      },
+      {
+        question: '4. Why can you not have 3 linearly independent force vectors in a 2D plane?',
+        answer: 'The ambient vector space ℝ² has dimension 2. Any set of k vectors in an n-dimensional space with k > n must be linearly dependent.'
+      }
+    ],
+    workedExample: {
+      title: 'Determining Rank of M = [A | 2A | 3A]',
+      input: 'A = [[40, 80], [120, 160]] unrolled to column vector a = [40, 80, 120, 160]ᵀ:',
+      matrixDisplay: [
+        [40, 80, 120],
+        [80, 160, 240],
+        [120, 240, 360],
+        [160, 320, 480]
+      ],
+      calculation:
+        'Gaussian Elimination:\n' +
+        'Row 1 scaled by 1/40: [1, 2, 3]\n' +
+        'Eliminate Row 2: Row 2 - 80 × Row 1 = [0, 0, 0]\n' +
+        'Eliminate Row 3: Row 3 - 120 × Row 1 = [0, 0, 0]\n' +
+        'Eliminate Row 4: Row 4 - 160 × Row 1 = [0, 0, 0]\n' +
+        'RREF has exactly 1 non-zero pivot row: rank(M) = 1',
+      output: 'The collection matrix has rank 1. Exactly 1 independent image exists; the other 2 are completely redundant.'
+    },
+    observations: [
+      'Scalar multiplication of an image preserves spatial pattern and does not increase matrix rank.',
+      'Linear combinations (C = 2A + B) create composite images that lie entirely within the existing subspace.',
+      'In experimental physics, redundant sensors waste bandwidth and computational power by providing rank-1 measurements.',
+      'Modifying a sensor or capturing an orthogonal signal increases rank, indicating new physical degrees of freedom.'
+    ],
+    applications: [
+      { name: 'Low-Rank Image Compression (PCA & SVD)', desc: 'Compressing surveillance video and facial databases by storing only the dominant rank-k basis vectors.' },
+      { name: 'Sensor Fusion & Fault Detection', desc: 'Detecting failed or stuck sensors in aircraft and industrial turbines by analyzing the rank of telemetry correlation matrices.' },
+      { name: 'Structural Mechanics & Degree-of-Freedom Analysis', desc: 'Civil engineers compute stiffness matrix ranks to ensure structures have adequate independent load-bearing supports.' },
+      { name: 'Computer Vision Photometric Stereo', desc: 'Reconstructing 3D surface normals by capturing photographs under at least 3 linearly independent lighting directions.' }
+    ],
+    keyTakeaways: [
+      'Rank equals the number of linearly independent column observations in a dataset.',
+      'Images related by scalar multiples or linear combinations are redundant and do not increase rank.',
+      'Natural photos under varied lighting exhibit low effective rank (approximate dependence) dominated by the 1st singular value.',
+      'In an n-dimensional physical space, at most n independent force or sensor directions can exist.'
+    ]
   }
 };
+

@@ -7,6 +7,7 @@ import {
   Blend,
   Zap,
   Variable,
+  Binary,
   ChevronUp,
   Check,
   PanelLeftClose,
@@ -66,6 +67,7 @@ export default function FloatingDock({
   const isVisualLabs = currentView === 'module' && currentStep >= 8 && currentStep <= 16;
   const isOptics = currentView === 'module' && currentStep === 17;
   const isAdvanced = currentView === 'module' && currentStep === 18;
+  const isRank = currentView === 'module' && currentStep === 19;
 
   const activeFeature = getFeatureByStep(currentStep);
 
@@ -286,6 +288,19 @@ export default function FloatingDock({
                 {isAdvanced && <span className="dock-active-indicator" />}
                 <Variable size={15} className="dock-icon" />
                 <span className="dock-label">Advanced</span>
+              </button>
+
+              {/* 7. Matrix Rank (B19) */}
+              <button
+                type="button"
+                className={`dock-item ${isRank ? 'active' : ''}`}
+                onClick={() => handleNavClick('rank', 19, false)}
+                title="Rank of a Matrix — Information Redundancy (B19)"
+                aria-label="Matrix Rank module"
+              >
+                {isRank && <span className="dock-active-indicator" />}
+                <Binary size={15} className="dock-icon" />
+                <span className="dock-label">Rank</span>
               </button>
             </nav>
           </motion.div>

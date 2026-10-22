@@ -12629,4 +12629,401 @@ input[type="range"].step18-range-input::-webkit-slider-thumb:hover {
   border-color: rgba(225, 29, 72, 0.35);
   background: #FFF1F2;
   color: #E11D48;
-}
+}
+
+/* =========================================================
+   Visual Lab 19: Matrix Rank & Information Redundancy Theme
+   ========================================================= */
+.step19-workbench {
+  display: grid;
+  grid-template-columns: minmax(380px, 440px) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+  width: 100%;
+}
+
+@media (max-width: 980px) {
+  .step19-workbench {
+    grid-template-columns: 1fr;
+  }
+}
+
+.step19-left-col,
+.step19-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+}
+
+.step19-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.95rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .step19-card {
+  background: #FFFFFF;
+  border-color: #DCE2D2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.step19-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.step19-card-title {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.step19-badge {
+  font-family: var(--font-mono);
+  font-size: 0.70rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+[data-theme="light"] .step19-badge {
+  background: rgba(105, 121, 81, 0.12);
+  color: #3B472E;
+  border-color: rgba(105, 121, 81, 0.3);
+}
+
+.step19-desc {
+  font-size: 0.80rem;
+  color: var(--text-secondary);
+  line-height: 1.48;
+  margin: 0;
+}
+
+.step19-params-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+[data-theme="light"] .step19-params-box {
+  background: #F8F9F3;
+  border-color: #E2E8D8;
+}
+
+.step19-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.step19-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.step19-slider-label {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.step19-slider-val {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.76rem;
+  color: var(--accent-primary, #C59B67);
+}
+
+.step19-range-input {
+  width: 100%;
+  accent-color: var(--accent-primary, #C59B67);
+  cursor: pointer;
+}
+
+.step19-subslider {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--bg-primary);
+  padding: 0.25rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.step19-subslider-lbl {
+  font-size: 0.70rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.step19-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--accent-primary, #C59B67);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.step19-btn-primary:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.step19-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.74rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.step19-btn-secondary:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.step19-btn-secondary.active {
+  background: rgba(197, 155, 103, 0.18);
+  border-color: var(--accent-primary, #C59B67);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.step19-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 9999px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.step19-pill-btn:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.step19-pill-btn.active {
+  background: var(--accent-primary, #C59B67);
+  border-color: var(--accent-primary, #C59B67);
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.step19-status-pill {
+  font-size: 0.70rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  font-family: var(--font-mono);
+}
+
+.step19-status-pill.redundant {
+  background: rgba(217, 119, 6, 0.15);
+  color: #F59E0B;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+}
+
+.step19-status-pill.independent {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.step19-status-pill.approx {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3B82F6;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.step19-image-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .step19-image-card {
+  background: #F8F9F3;
+  border-color: #E2E8D8;
+}
+
+.step19-image-card-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.step19-mini-tag {
+  font-size: 0.64rem;
+  font-weight: 600;
+  padding: 0.08rem 0.4rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+}
+
+.step19-pixel-grid-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.step19-pixel-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+.step19-pixel-num {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.step19-image-card-footer {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.step19-canvas-frame {
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+[data-theme="light"] .step19-canvas-frame {
+  background: #FDFEFA;
+  border-color: #E2E8D8;
+}
+
+.step19-canvas-frame canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.step19-legend-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.step19-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.step19-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.step19-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.4rem;
+  background: var(--bg-primary);
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.70rem;
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+}
+
+.step19-upload-label:hover {
+  border-color: var(--accent-primary, #C59B67);
+  color: var(--text-primary);
+}
+
+.step19-message-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.75rem 0.95rem;
+  border-radius: 8px;
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .step19-message-box {
+  background: #F8F9F3;
+  border-color: #E2E8D8;
+}
+

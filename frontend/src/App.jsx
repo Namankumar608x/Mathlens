@@ -31,6 +31,7 @@ import Step15MatrixMultiplicationShadows from './steps/Step15MatrixMultiplicatio
 import Step16MyImageMyMatrix from './steps/Step16MyImageMyMatrix';
 import Step17RayOptics from './steps/Step17RayOptics';
 import Step18Eigenvalues from './steps/Step18Eigenvalues';
+import Step19MatrixRank from './steps/Step19MatrixRank';
 
 import { getFeatureByStep, FEATURES } from './config/features';
 import './index.css';
@@ -238,6 +239,8 @@ export default function App() {
         return <Step17RayOptics onSelectStep={handleSelectStep} />;
       case 18:
         return <Step18Eigenvalues onSelectStep={handleSelectStep} />;
+      case 19:
+        return <Step19MatrixRank onSelectStep={handleSelectStep} />;
       default:
         return <Step1Grayscale onSelectStep={handleSelectStep} />;
     }

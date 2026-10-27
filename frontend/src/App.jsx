@@ -34,6 +34,7 @@ import Step18Eigenvalues from './steps/Step18Eigenvalues';
 import Step19MatrixRank from './steps/Step19MatrixRank';
 import Step20LinearSystems from './steps/Step20LinearSystems';
 
+import { Analytics } from "@vercel/analytics/react"
 import { getFeatureByStep, FEATURES } from './config/features';
 import './index.css';
 import './App.css';
@@ -310,6 +311,7 @@ export default function App() {
   return (
     <div className="app-shell-root">
       {/* 0. Fast & Simple Optical Loader */}
+
       <FetchSimulationLoader
         isOpen={isLoading}
         onComplete={() => setIsLoading(false)}
@@ -344,8 +346,8 @@ export default function App() {
                 currentView === 'module'
                   ? `Workspace • Module ${activeFeature.code}: ${activeFeature.title}`
                   : currentView === 'learn'
-                  ? 'Curriculum & Pathways'
-                  : 'About Platform Architecture'
+                    ? 'Curriculum & Pathways'
+                    : 'About Platform Architecture'
               }
             />
           )}
@@ -402,6 +404,7 @@ export default function App() {
         isOpen={isCreditsOpen}
         onClose={() => setIsCreditsOpen(false)}
       /> */}
+      <Analytics />
     </div>
   );
 }

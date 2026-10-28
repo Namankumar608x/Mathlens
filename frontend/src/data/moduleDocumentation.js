@@ -1964,6 +1964,130 @@ export const MODULE_DOCUMENTATION = {
       'Negative unmixing coefficients are mathematically necessary to cancel ghost artifacts.',
       'If det(A) = 0, the matrix collapses to Rank 1 and unique image recovery is impossible.'
     ]
+  },
+
+  21: {
+    stepNumber: 21,
+    code: '21',
+    title: 'Vector Norms — What is Length & Measuring Image Distance',
+    category: 'Vector Norms',
+    oneLiner: 'Discover what "length" truly means for vectors, explore unit balls (diamond L₁, circle L₂, square L_∞), and see how norms measure concentrated vs. distributed image defects.',
+    formula: '\\|v\\|_1 = |x| + |y|, \\quad \\|v\\|_2 = \\sqrt{x^2 + y^2}, \\quad \\|v\\|_\\infty = \\max(|x|, |y|)',
+    formulaDisplay: '‖v‖₁ = |x| + |y|,  ‖v‖₂ = √(x² + y²),  ‖v‖_∞ = max(|x|, |y|)',
+    whatIsThis:
+      'In everyday geometry, the "length" of a vector is calculated using the Pythagorean theorem: ||v||₂ = √(x² + y²). But in linear algebra, data science, and image processing, Euclidean length is only one of many ways to measure magnitude! A norm is any mathematical function that assigns a strictly positive magnitude to non-zero vectors while satisfying positive definiteness, absolute homogeneity, and the triangle inequality. Different norms measure geometry differently: L₁ produces diamond unit balls, L₂ produces circles, and L_∞ produces squares.',
+    whyNeedIt:
+      'Norms allow computers to measure the "distance" or difference between two digital images, high-dimensional data points, or AI predictions. In computer vision, subtracting two images produces an error matrix D = |I_mod - I_orig|. The L₁ norm measures the total cumulative pixel change (useful for sparse error detection), L₂ measures root-mean-square energy (overall visual fidelity), and L_∞ identifies the single worst peak pixel error (maximum distortion). Understanding norms explains why JPEG compression, LASSO regression, and deep learning loss functions choose specific metrics.',
+    subsections: [
+      {
+        title: 'Module 1: What is the Length of a Vector?',
+        content:
+          'Begin with a 2D vector v = [3, 4]ᵀ. Its Euclidean length is ||v||₂ = √(3² + 4²) = 5. If we double both components to 2v = [6, 8]ᵀ, the length doubles to √(6² + 8²) = 10 = 2 × 5. But is Euclidean distance the only way to measure vector size? This fundamental question motivates the concept of general vector norms.',
+        formula: '\\|v\\|_2 = \\sqrt{x^2 + y^2}, \\quad v = \\begin{bmatrix} 3 \\\\ 4 \\end{bmatrix} \\implies \\|v\\|_2 = 5'
+      },
+      {
+        title: 'Step 2: The Three Axiomatic Norm Properties',
+        content:
+          'For a function N(v) to qualify as a valid norm, it must satisfy three rigorous axioms:\n' +
+          '1. Positive Definiteness: ||X|| ≥ 0, and ||X|| = 0 if and only if X = 0.\n' +
+          '2. Absolute Homogeneity: ||c·X|| = |c|·||X|| for any scalar c.\n' +
+          '3. Triangle Inequality: ||X + Y|| ≤ ||X|| + ||Y|| (the shortest distance between two points is direct).',
+        formula: '\\|X\\| \\ge 0 \\iff X \\ne \\mathbf{0}, \\quad \\|cX\\| = |c|\\|X\\|, \\quad \\|X + Y\\| \\le \\|X\\| + \\|Y\\|'
+      },
+      {
+        title: 'Step 3: Unit Balls — Why L₁ is a Diamond, L₂ is a Circle, and L_∞ is a Square',
+        content:
+          'A closed unit ball contains all vectors whose norm is ≤ 1; at its boundary, ||v|| = 1. The unit ball need not be circular!\n' +
+          '• L₁ norm (Manhattan): |x| + |y| = 1. In the first quadrant, x + y = 1 connecting (1, 0) and (0, 1). Rotating across four quadrants forms a Diamond!\n' +
+          '• L₂ norm (Euclidean): √(x² + y²) = 1 ⟹ x² + y² = 1, the standard Circle.\n' +
+          '• L_∞ norm (Chebyshev): max(|x|, |y|) = 1 ⟹ x ∈ [-1, 1] and y ∈ [-1, 1], forming a Square with corners at (±1, ±1).',
+        formula: '\\{ v \\in \\mathbb{R}^2 \\mid \\|v\\|_p \\le 1 \\}: \\quad L_1 \\to \\text{Diamond}, \\quad L_2 \\to \\text{Circle}, \\quad L_\\infty \\to \\text{Square}'
+      },
+      {
+        title: 'Activity: Measuring Image Changes (One Large vs. Four Small Errors)',
+        content:
+          'Consider a 3×3 grayscale image where all pixels are 40. Suppose Modification 1 changes the central pixel by +80, while Modification 2 changes four pixels by +20 each. In both cases, the L₁ norm of the difference matrix is identically 80!\n' +
+          'Does this mean the images changed in the same way? No! Modification 1 is a severe single-pixel spike (dead pixel / impulse noise), with L_∞ = 80 and L₂ = 80. Modification 2 distributes the error into gentle blur, dropping L₂ to 40 and L_∞ to 20. Different norms distinguish between concentrated and distributed image defects!',
+        formula: '\\Delta_1 = [80, 0, ..., 0] \\implies \\|D\\|_1 = 80, \\, \\|D\\|_2 = 80, \\, \\|D\\|_\\infty = 80'
+      }
+    ],
+    howItWorks: [
+      {
+        step: 1,
+        title: 'Vectorize or Flatten Observations',
+        description: 'Represent vectors v = [x, y]ᵀ or unroll 2D image difference matrices into column vectors D ∈ ℝ^n.'
+      },
+      {
+        step: 2,
+        title: 'Choose the Metric Norm',
+        description: 'Select L₁ for absolute sum / sparsity, L₂ for Euclidean magnitude / RMS energy, or L_∞ for peak worst-case error.'
+      },
+      {
+        step: 3,
+        title: 'Compute Component Sums',
+        description: 'Sum absolute components (|x| + |y|), sum squares (√(x² + y²)), or find the maximum element (max |x_i|).'
+      },
+      {
+        step: 4,
+        title: 'Interpret Visual Error Geometry',
+        description: 'Compare L₁ vs L₂ vs L_∞: identical L₁ with lower L_∞ proves the error is distributed; equal L₁ and L_∞ proves concentrated defect.'
+      }
+    ],
+    symbols: [
+      { symbol: '‖v‖₁', name: 'L₁ Norm (Manhattan / Taxicab)', meaning: 'Sum of absolute coordinates: |x| + |y|. Unit ball is a diamond.' },
+      { symbol: '‖v‖₂', name: 'L₂ Norm (Euclidean Distance)', meaning: 'Standard geometric length: √(x² + y²). Unit ball is a circle.' },
+      { symbol: '‖v‖_∞', name: 'L_∞ Norm (Chebyshev / Max)', meaning: 'Largest absolute coordinate: max(|x|, |y|). Unit ball is a square.' },
+      { symbol: 'N(X + Y) ≤ N(X) + N(Y)', name: 'Triangle Inequality', meaning: 'The length of the direct vector path cannot exceed the sum of detour legs.' },
+      { symbol: 'N(cX) = |c|·N(X)', name: 'Absolute Homogeneity', meaning: 'Scaling a vector by c stretches its length by exactly |c|.' },
+      { symbol: 'D = |I_mod − I_orig|', name: 'Pixel Difference Matrix', meaning: 'Absolute pixel-by-pixel intensity error between baseline and altered images.' }
+    ],
+    additionalFormulas: [
+      { label: 'General Lp Norm Definition', formula: '\\|v\\|_p = \\left( \\sum_{i=1}^n |v_i|^p \\right)^{1/p}', desc: 'Generalized p-norm family for p ≥ 1.' },
+      { label: 'Norm Equivalence in ℝⁿ', formula: '\\|v\\|_\\infty \\le \\|v\\|_2 \\le \\|v\\|_1 \\le \\sqrt{n} \\|v\\|_2 \\le n \\|v\\|_\\infty', desc: 'Topological equivalence: all norms bound each other within constant geometric factors in finite dimensions.' },
+      { label: 'Cauchy-Schwarz Inequality', formula: '|\\vec{u} \\cdot \\vec{v}| \\le \\|\\vec{u}\\|_2 \\|\\vec{v}\\|_2', desc: 'Upper bound on inner product yielding the Euclidean triangle inequality.' },
+      { label: 'Peak Signal-to-Noise Ratio (PSNR)', formula: '\\text{PSNR} = 10 \\log_{10}\\left(\\frac{255^2}{\\frac{1}{mn}\\|D\\|_2^2}\\right)', desc: 'Standard visual quality metric inversely proportional to squared L₂ error.' }
+    ],
+    workedExample: {
+      title: 'Comparing One Large Error vs Four Small Errors on 3×3 Image',
+      input: 'Original image is uniform 40 across all 9 pixels. We compare two distinct modifications:',
+      matrixDisplay: [
+        [0, 20, 0],
+        [20, 0, 20],
+        [0, 20, 0]
+      ],
+      calculation:
+        'Case 1: Single Center Pixel +80:\n' +
+        '   Difference Vector: [0, 0, 0, 0, 80, 0, 0, 0, 0]ᵀ\n' +
+        '   L₁ Norm = |80| = 80\n' +
+        '   L₂ Norm = √(80²) = 80\n' +
+        '   L_∞ Norm = max(80) = 80\n\n' +
+        'Case 2: Four Cross Pixels +20 Each:\n' +
+        '   Difference Vector: [0, 20, 0, 20, 0, 20, 0, 20, 0]ᵀ\n' +
+        '   L₁ Norm = 20 + 20 + 20 + 20 = 80\n' +
+        '   L₂ Norm = √(20² + 20² + 20² + 20²) = √(4 × 400) = √1600 = 40\n' +
+        '   L_∞ Norm = max(20, 20, 20, 20) = 20\n\n' +
+        'Hierarchy: Case 1 has L₁ = L₂ = L_∞ = 80. Case 2 has L₁ > L₂ > L_∞ (80 > 40 > 20).',
+      output: 'Both modifications have the exact same L₁ error (80), but Case 2 has half the Euclidean error (40) and one-quarter the peak error (20).'
+    },
+    observations: [
+      'The Euclidean length ||v||₂ = √(x² + y²) is the straight-line hypotenuse given by Pythagoras.',
+      'A norm must satisfy positive definiteness (only zero vector has length 0), homogeneity (linear scaling), and triangle inequality.',
+      'Functions like x² + y² fail homogeneity, while |x + y| and |xy| fail positive definiteness because non-zero vectors can evaluate to 0.',
+      'Unit balls are not always circular: L₁ produces a diamond, L₂ a circle, and L_∞ a square.',
+      'Different norms distinguish between concentrated and distributed image errors: identical L₁ with lower L₂ and L_∞ reveals distributed changes.'
+    ],
+    applications: [
+      { name: 'JPEG & Wavelet Lossy Compression', desc: 'Using L₂ and L₁ frequency coefficient thresholds to discard imperceptible image data while maintaining high PSNR.' },
+      { name: 'LASSO Regression & Compressed Sensing', desc: 'L₁ regularization drives coefficients to exact zero, selecting sparse feature subsets and reconstructing images from minimal sensor measurements.' },
+      { name: 'Adversarial Attack Robustness (L_∞ Perturbations)', desc: 'Testing AI computer vision models against imperceptible adversarial perturbations bounded within an L_∞ epsilon square.' },
+      { name: 'Robot Motion Planning (Manhattan vs Euclidean Grid)', desc: 'Calculating grid navigation costs: L₁ for street grid taxi routes, L₂ for drone flight paths, and L_∞ for simultaneous multi-axis CNC machine movement.' }
+    ],
+    keyTakeaways: [
+      'A vector norm assigns a non-negative magnitude satisfying positive definiteness, homogeneity, and triangle inequality.',
+      'Unit balls {v | ||v|| ≤ 1} change geometry: diamond for L₁, circle for L₂, and square for L_∞.',
+      'L₁ measures total absolute error budget, L₂ measures root-mean-square energy, and L_∞ measures peak outlier distortion.',
+      'Two different image modifications can have identical L₁ norm (80), yet completely different visual character (concentrated spike vs distributed blur).'
+    ]
   }
 };
 

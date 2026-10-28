@@ -83,6 +83,14 @@ export const CATEGORIES = [
     description: 'Recover hidden images by inverting linear combinations, unmixing layers, and exploring matrix singularity',
     icon: Split,
     color: 'var(--accent-primary, #C59B67)'
+  },
+  {
+    id: 'vector-norms',
+    label: 'Vector Norms & Distance Metrics',
+    shortLabel: 'Vector Norms',
+    description: 'What is the length of a vector? Unit balls (diamond, circle, square), norm axioms, and image change metrics.',
+    icon: Maximize2,
+    color: 'var(--accent-primary, #C59B67)'
   }
 ];
 
@@ -446,6 +454,53 @@ export const FEATURES = [
       'Spectrophotometry Dye Unmixing & CMYK Printing'
     ],
     keywords: ['linear systems', 'AX = b', 'image recovery', 'unmixing', 'layers', 'matrix inversion', 'determinant', 'singular matrix', 'rank collapse', 'circle triangle', 'bone tissue', 'spectrophotometry']
+  },
+
+  // Category 8: Vector Norms & Distance Metrics (Step 21)
+  {
+    id: 'vector-norms-image-distance',
+    stepNumber: 21,
+    code: '21',
+    slug: 'vector-norms-image-distance',
+    title: 'Vector Norms — What is Vector Length & Measuring Image Distance',
+    shortTitle: 'Vector Norms & Distances',
+    category: 'vector-norms',
+    categoryLabel: 'Foundations: Vector Norms',
+    icon: Maximize2,
+    formula: '‖v‖₁ = |x| + |y|,  ‖v‖₂ = √(x² + y²),  ‖v‖_∞ = max(|x|, |y|)',
+    rawFormula: '\\|v\\|_1 = |x| + |y|, \\quad \\|v\\|_2 = \\sqrt{x^2 + y^2}, \\quad \\|v\\|_\\infty = \\max(|x|, |y|)',
+    summary: 'What does "length" mean for a vector? Explore Euclidean distance, 3 fundamental norm axioms, unit balls (diamond L₁, circle L₂, square L_∞), and discover how different norms distinguish between concentrated and distributed image defects.',
+    concepts: [
+      'Euclidean Length ||v||₂ = √(x² + y²)',
+      'Vector Dragging & Real-Time Metric Coordinates',
+      'The 3 Norm Axioms (Positive Definiteness, Homogeneity, Triangle Inequality)',
+      'Candidate Norm Counterexamples & Axiom Failures',
+      'Unit Balls in ℝ²: Diamond (L₁), Circle (L₂), Square (L_∞)',
+      'Geometric Boundary Derivations (|x| + |y| = 1, x² + y² = 1, max(|x|, |y|) = 1)',
+      'Image Distance Metrics: 3×3 Pixel Difference Matrix',
+      'One Large Error (Dead Pixel) vs Four Small Errors (Blur)',
+      'Why L₁ = 80 Can Represent Completely Different Visual Changes'
+    ],
+    keywords: [
+      'vector norms',
+      'vector length',
+      'euclidean distance',
+      'manhattan norm',
+      'chebyshev norm',
+      'l1 norm',
+      'l2 norm',
+      'linf norm',
+      'unit ball',
+      'unit circle',
+      'diamond unit ball',
+      'square unit ball',
+      'triangle inequality',
+      'positive definiteness',
+      'homogeneity',
+      'image difference',
+      'pixel error',
+      'concentrated vs distributed'
+    ]
   }
 ];
 

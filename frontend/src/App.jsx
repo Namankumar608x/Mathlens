@@ -33,6 +33,7 @@ import Step17RayOptics from './steps/Step17RayOptics';
 import Step18Eigenvalues from './steps/Step18Eigenvalues';
 import Step19MatrixRank from './steps/Step19MatrixRank';
 import Step20LinearSystems from './steps/Step20LinearSystems';
+import Step21VectorNorms from './steps/Step21VectorNorms';
 
 import { Analytics } from "@vercel/analytics/react"
 import { getFeatureByStep, FEATURES } from './config/features';
@@ -318,6 +319,8 @@ export default function App() {
         return <Step19MatrixRank onSelectStep={handleSelectStep} />;
       case 20:
         return <Step20LinearSystems onSelectStep={handleSelectStep} />;
+      case 21:
+        return <Step21VectorNorms onSelectStep={handleSelectStep} />;
       default:
         return <Step1Grayscale onSelectStep={handleSelectStep} />;
     }

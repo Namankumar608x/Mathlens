@@ -9,6 +9,7 @@ import {
   Variable,
   Binary,
   Split,
+  Maximize2,
   ChevronUp,
   Check,
   PanelLeftClose,
@@ -70,6 +71,7 @@ export default function FloatingDock({
   const isAdvanced = currentView === 'module' && currentStep === 18;
   const isRank = currentView === 'module' && currentStep === 19;
   const isLinearSystems = currentView === 'module' && currentStep === 20;
+  const isNorms = currentView === 'module' && currentStep === 21;
 
   const activeFeature = getFeatureByStep(currentStep);
 
@@ -316,6 +318,19 @@ export default function FloatingDock({
                 {isLinearSystems && <span className="dock-active-indicator" />}
                 <Split size={15} className="dock-icon" />
                 <span className="dock-label">Systems</span>
+              </button>
+
+              {/* 9. Vector Norms (B21) */}
+              <button
+                type="button"
+                className={`dock-item ${isNorms ? 'active' : ''}`}
+                onClick={() => handleNavClick('vector-norms', 21, false)}
+                title="Vector Norms — What is Length & Measuring Image Distance (B21)"
+                aria-label="Vector Norms module"
+              >
+                {isNorms && <span className="dock-active-indicator" />}
+                <Maximize2 size={15} className="dock-icon" />
+                <span className="dock-label">Norms</span>
               </button>
             </nav>
           </motion.div>

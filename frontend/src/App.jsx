@@ -196,6 +196,43 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  // Global Slider Sync: Ensure all range sliders dynamically track their fill percentage smoothly
+  useEffect(() => {
+    const updateRange = (input) => {
+      if (!input || input.type !== 'range') return;
+      const min = parseFloat(input.min) !== undefined && !isNaN(parseFloat(input.min)) ? parseFloat(input.min) : 0;
+      const max = parseFloat(input.max) !== undefined && !isNaN(parseFloat(input.max)) ? parseFloat(input.max) : 100;
+      const val = parseFloat(input.value) !== undefined && !isNaN(parseFloat(input.value)) ? parseFloat(input.value) : 0;
+      const pct = max > min ? Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100)) : 0;
+      input.style.setProperty('--slider-pct', `${pct}%`);
+    };
+
+    const handleInput = (e) => {
+      if (e.target && e.target.type === 'range') {
+        updateRange(e.target);
+      }
+    };
+
+    document.addEventListener('input', handleInput, { passive: true });
+    document.addEventListener('change', handleInput, { passive: true });
+
+    const updateAllRanges = () => {
+      document.querySelectorAll('input[type="range"]').forEach(updateRange);
+    };
+    updateAllRanges();
+
+    const observer = new MutationObserver(() => {
+      updateAllRanges();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      document.removeEventListener('input', handleInput);
+      document.removeEventListener('change', handleInput);
+      observer.disconnect();
+    };
+  }, []);
+
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {

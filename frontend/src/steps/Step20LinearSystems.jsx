@@ -438,6 +438,7 @@ export default function Step20LinearSystems({ onSelectStep }) {
                     value={a11}
                     onChange={(e) => setA11(parseFloat(e.target.value))}
                     className="step20-range-input"
+                    style={{ '--slider-pct': `${a11 * 100}%` }}
                   />
                 </div>
 
@@ -454,6 +455,7 @@ export default function Step20LinearSystems({ onSelectStep }) {
                     value={a12}
                     onChange={(e) => setA12(parseFloat(e.target.value))}
                     className="step20-range-input"
+                    style={{ '--slider-pct': `${a12 * 100}%` }}
                   />
                 </div>
 
@@ -470,6 +472,7 @@ export default function Step20LinearSystems({ onSelectStep }) {
                     value={a21}
                     onChange={(e) => setA21(parseFloat(e.target.value))}
                     className="step20-range-input"
+                    style={{ '--slider-pct': `${a21 * 100}%` }}
                   />
                 </div>
 
@@ -486,6 +489,7 @@ export default function Step20LinearSystems({ onSelectStep }) {
                     value={a22}
                     onChange={(e) => setA22(parseFloat(e.target.value))}
                     className="step20-range-input"
+                    style={{ '--slider-pct': `${a22 * 100}%` }}
                   />
                 </div>
               </div>

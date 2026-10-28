@@ -10674,6 +10674,27 @@ input[type="range"].det-cell-slider::-moz-range-track {
   overflow-x: auto;
 }
 
+.formula-banner-code-box .katex-display {
+  margin: 0.25rem 0;
+}
+
+.math-rendered {
+  color: inherit;
+}
+
+.math-display {
+  display: block;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.2rem 0;
+  text-align: center;
+}
+
+.math-display .katex {
+  font-size: 1.05em;
+  color: var(--text-primary);
+}
+
 .docs-symbols-table-wrap {
   width: 100%;
 }

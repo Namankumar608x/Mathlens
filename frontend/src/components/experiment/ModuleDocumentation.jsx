@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import katex from 'katex';
 import {
   BookOpen,
   ChevronDown,
@@ -20,6 +21,12 @@ import { MODULE_DOCUMENTATION } from '../../data/moduleDocumentation';
 export function formatMathText(str) {
   if (!str) return '';
   return str
+    .replace(/\\rightarrow/g, '→')
+    .replace(/\\Rightarrow/g, '⟹')
+    .replace(/\\mid/g, '|')
+    .replace(/\\sigma/g, 'σ')
+    .replace(/\\%/g, '%')
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)')
     .replace(/\\mathbb\{Z\}/g, 'ℤ')
     .replace(/\\mathbb\{R\}\^?\+?/g, 'ℝ')
     .replace(/\\mathbb\{R\}/g, 'ℝ')
@@ -65,8 +72,29 @@ export function formatMathText(str) {
     .replace(/\\\{/g, '{')
     .replace(/\\\}/g, '}')
     .replace(/\\\\/g, '\n')
+    .replace(/&/g, '  ')
     .replace(/\\;/g, ' ')
     .replace(/\\,/g, ' ');
+}
+
+export function MathView({ math, displayMode = false, className = '' }) {
+  if (!math) return null;
+  try {
+    const html = katex.renderToString(math, {
+      throwOnError: false,
+      displayMode,
+      strict: false,
+      trust: true
+    });
+    return (
+      <span
+        className={`math-rendered ${displayMode ? 'math-display' : 'math-inline'} ${className}`}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  } catch {
+    return <code className={`math-fallback ${className}`}>{formatMathText(math)}</code>;
+  }
 }
 
 export default function ModuleDocumentation({ stepNumber = 1, defaultOpen = false }) {
@@ -202,7 +230,7 @@ export default function ModuleDocumentation({ stepNumber = 1, defaultOpen = fals
                           <p className="docs-prose" style={{ whiteSpace: 'pre-line' }}>{sub.content}</p>
                           {sub.formula && (
                             <div className="formula-banner-code-box" style={{ marginTop: '0.5rem', padding: '0.35rem 0.65rem' }}>
-                              <code style={{ fontSize: '0.78rem' }}>{formatMathText(sub.formula)}</code>
+                              <MathView math={sub.formula} displayMode={true} />
                             </div>
                           )}
                           {sub.points && sub.points.length > 0 && (
@@ -257,7 +285,7 @@ export default function ModuleDocumentation({ stepNumber = 1, defaultOpen = fals
                     </button>
                   </div>
                   <div className="formula-banner-code-box">
-                    <code>{formatMathText(doc.formulaDisplay || doc.formula)}</code>
+                    <MathView math={doc.formula || doc.formulaDisplay} displayMode={true} />
                   </div>
                 </div>
 
@@ -301,9 +329,9 @@ export default function ModuleDocumentation({ stepNumber = 1, defaultOpen = fals
                       {doc.additionalFormulas.map((fItem, fIdx) => (
                         <div key={fIdx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', padding: '0.55rem 0.75rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
                           <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--accent-primary)' }}>{fItem.label}</span>
-                          <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem', color: 'var(--text-primary)' }}>
-                            {formatMathText(fItem.formula)}
-                          </code>
+                          <div style={{ marginTop: '0.2rem' }}>
+                            <MathView math={fItem.formula} displayMode={false} />
+                          </div>
                           {fItem.desc && (
                             <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', lineHeight: 1.35 }}>{fItem.desc}</span>
                           )}

@@ -21,6 +21,8 @@ import {
   check2DCollinearity
 } from '../core/math/rank';
 
+const getSliderPct = (val, min, max) => `${Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100))}%`;
+
 export default function Step19MatrixRank({ onSelectStep }) {
   // Navigation Tabs: 'same-info' | 'reconstruct' | 'real-photos' | 'forces' | 'sensors'
   const [activeTab, setActiveTab] = useState('same-info');
@@ -694,6 +696,7 @@ export default function Step19MatrixRank({ onSelectStep }) {
                     value={scaleB}
                     onChange={(e) => setScaleB(parseFloat(e.target.value))}
                     className="step19-range-input"
+                    style={{ '--slider-pct': getSliderPct(scaleB, 0.5, 4.0) }}
                   />
                 </div>
 
@@ -710,6 +713,7 @@ export default function Step19MatrixRank({ onSelectStep }) {
                     value={scaleC}
                     onChange={(e) => setScaleC(parseFloat(e.target.value))}
                     className="step19-range-input"
+                    style={{ '--slider-pct': getSliderPct(scaleC, 0.5, 5.0) }}
                   />
                 </div>
               </div>
@@ -969,6 +973,7 @@ export default function Step19MatrixRank({ onSelectStep }) {
                     value={coeffA}
                     onChange={(e) => setCoeffA(parseFloat(e.target.value))}
                     className="step19-range-input"
+                    style={{ '--slider-pct': getSliderPct(coeffA, 0, 4.0) }}
                   />
                 </div>
 
@@ -985,6 +990,7 @@ export default function Step19MatrixRank({ onSelectStep }) {
                     value={coeffB}
                     onChange={(e) => setCoeffB(parseFloat(e.target.value))}
                     className="step19-range-input"
+                    style={{ '--slider-pct': getSliderPct(coeffB, 0, 3.0) }}
                   />
                 </div>
 
@@ -1454,6 +1460,7 @@ export default function Step19MatrixRank({ onSelectStep }) {
                         value={f1[0]}
                         onChange={(e) => setF1([parseFloat(e.target.value), f1[1]])}
                         className="step19-range-input"
+                        style={{ '--slider-pct': getSliderPct(f1[0], -2, 6) }}
                       />
                     </div>
                     <div className="step19-subslider">
@@ -1466,6 +1473,7 @@ export default function Step19MatrixRank({ onSelectStep }) {
                         value={f1[1]}
                         onChange={(e) => setF1([f1[0], parseFloat(e.target.value)])}
                         className="step19-range-input"
+                        style={{ '--slider-pct': getSliderPct(f1[1], -2, 6) }}
                       />
                     </div>
                   </div>
@@ -1488,6 +1496,7 @@ export default function Step19MatrixRank({ onSelectStep }) {
                         value={f2[0]}
                         onChange={(e) => setF2([parseFloat(e.target.value), f2[1]])}
                         className="step19-range-input"
+                        style={{ '--slider-pct': getSliderPct(f2[0], -2, 8) }}
                       />
                     </div>
                     <div className="step19-subslider">
@@ -1500,6 +1509,7 @@ export default function Step19MatrixRank({ onSelectStep }) {
                         value={f2[1]}
                         onChange={(e) => setF2([f2[0], parseFloat(e.target.value)])}
                         className="step19-range-input"
+                        style={{ '--slider-pct': getSliderPct(f2[1], -2, 8) }}
                       />
                     </div>
                   </div>
@@ -1522,6 +1532,7 @@ export default function Step19MatrixRank({ onSelectStep }) {
                         value={f3[0]}
                         onChange={(e) => setF3([parseFloat(e.target.value), f3[1]])}
                         className="step19-range-input"
+                        style={{ '--slider-pct': getSliderPct(f3[0], -2, 6) }}
                       />
                     </div>
                     <div className="step19-subslider">
@@ -1534,6 +1545,7 @@ export default function Step19MatrixRank({ onSelectStep }) {
                         value={f3[1]}
                         onChange={(e) => setF3([f3[0], parseFloat(e.target.value)])}
                         className="step19-range-input"
+                        style={{ '--slider-pct': getSliderPct(f3[1], -2, 6) }}
                       />
                     </div>
                   </div>
@@ -1722,6 +1734,7 @@ export default function Step19MatrixRank({ onSelectStep }) {
                           setSensorPreset('custom');
                         }}
                         className="step19-range-input"
+                        style={{ '--slider-pct': getSliderPct(s3Readings[tIdx], 0, 16) }}
                       />
                       <span style={{ width: 28, fontSize: '0.72rem', fontFamily: 'var(--font-mono)', textAlign: 'right' }}>
                         {s3Readings[tIdx]}
